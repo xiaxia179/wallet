@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TEST SVG</title>
+</head>
+<body>
+
+
+Три круга:
+<svg version = "1.1"
+     baseProfile="full"
+     xmlns = "http://www.w3.org/2000/svg"
+     height = "400px"  width = "400px">
+    <rect x="0" y="0" width="400" height="400"
+          fill="none" stroke="black" stroke-width="5px" stroke-opacity="0.5"/>
+    <g fill-opacity="0.6" stroke="black" stroke-width="0.5px">
+        <circle cx="200px" cy="200px" r="104px" fill="red"   transform="translate(  0,-52)" />
+        <circle cx="200px" cy="200px" r="104px" fill="blue"  transform="translate( 60, 52)" />
+        <circle cx="200px" cy="200px" r="104px" fill="green" transform="translate(-60, 52)" />
+    </g>
+</svg>
+
+Звезда:
+<svg width="198" height="188"
+     viewBox="0 0 198 188"
+     version="1.1"
+     baseProfile="full"
+     xmlns="http://www.w3.org/2000/svg">
+
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="even-odd">
+        <polygon id="Star-1" stroke="#979797" stroke-width="3" fill="#F8E81C"
+                 points="99 154 40 185 51 119 4 73 69 64 99 3 128 64 194 73 147 119 158 185 ">
+        </polygon>
+    </g>
+</svg>
+
+Прямоугольник:
+<svg version="1.1"
+     baseProfile="full"
+     xmlns="http://www.w3.org/2000/svg"
+     width="200px" height="100px">
+
+    <rect fill="silver" x="0" y="0" width="200px" height="100px" rx="1em"/>
+</svg>
+
+</body>
+</html>

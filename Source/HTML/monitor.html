@@ -1,0 +1,2173 @@
+<!doctype html>
+<html>
+<head>
+    <title>MONITOR</title>
+    <meta charset='utf-8' />
+</head>
+<body>
+
+
+<!--<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>-->
+<!--<script type="text/javascript" src="../HTML/JS/constant.js"></script>-->
+<script type="text/javascript" src="../HTML/JS/client.js"></script>
+
+<script type="text/javascript">
+    window.onload=function()
+    {
+        InitStartData();
+
+
+
+        var obj = document.getElementById("BlockChainGraph");
+        obj.addEventListener('mousedown', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+            DoBlockInfo(mouse.x,mouse.y, event);
+        }, false);
+        obj.addEventListener('mouseup', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+            DoBlockInfoUp(mouse.x,mouse.y, event);
+        }, false);
+
+
+        obj.addEventListener('dblclick', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+            DoDblClick(mouse.x,mouse.y, event);
+        }, false);
+
+        InitViewBlock();
+        InitMoveBlock();
+
+        //COMMON MOUSE MOVING
+        window.onmousemove = function(event)
+        {
+            moveBlock(event);
+            SetDiagramMouseX(event);
+        }
+
+    }
+
+
+
+    function CalcStatArr(arr,arrAvg,arrNext,Period)
+    {
+        var arrSum=[arr[0]];
+        for(var i=1;i<arr.length;i++)
+        {
+            arrSum[i]=arrSum[i-1]+arr[i];
+        }
+//        var Avg=arrSum[arrSum.length-1]/arrSum.length;
+//        console.log("Avg="+Avg)
+
+        for(var i=0;i<arrSum.length;i++)
+        {
+            if(i<Period)
+                arrAvg[i]=Math.floor(arrSum[i]/(i+1));
+            else
+            {
+                arrAvg[i]=Math.floor((arrSum[i]-arrSum[i-Period])/Period);
+            }
+        }
+        //console.log("arrAvg="+arrAvg[arrAvg.length-1])
+
+        arrNext[0]=0;
+        for(var i=1;i<arrAvg.length;i++)
+        {
+            var Avg=arrSum[i]/(i+1);
+            var minValue=Avg/20;
+
+            var Value1=arrAvg[i-1];
+            var Value2=arrAvg[i];
+            if(Value1<minValue)
+                Value1=minValue;
+            if(Value2<minValue)
+                Value2=minValue;
+
+            var KLast=Math.floor(100*(Value2-Value1)/Value1)/100;
+            var AvgLast=arrAvg[i];
+            if(Avg>AvgLast)
+                AvgLast=Avg;
+
+            if(KLast>2.0)
+                KLast=2.0;
+            if(KLast<-0.0)
+                KLast=-0.0;
+
+
+            arrNext[i]=AvgLast*(1+KLast);
+
+
+            var AvgMax=0;
+            if(0)
+            if(i>1*Period)
+            {
+                for(var j=i-Period/2;j<=i;j++)
+                if(arrAvg[j]>AvgMax)
+                    AvgMax=arrAvg[j];
+            }
+            //if(AvgMax>arrNext[i])                arrNext[i]=AvgMax;
+
+        }
+
+
+        return arrNext[arrNext.length-1];
+    }
+
+    function TestTest()
+    {
+        SetPause(1);
+
+        var StatArr=[0,0,0,0,0,0,176,287,0,569,0,0,0,0,0,0,200,0,0,569,0,0,0,0,0,52606,200,0,0,570,0,0,0,0,0,53074,814,0,0,0,0,0,52708,0,0,200,557,0,0,0,0,0,52810,0,0,200,557,0,0,0,0,0,52912,0,0,200,556,0,0,0,0,1670,55910,0,0,200];
+
+        var arr=StatArr;
+        var Period=10;
+        var arrAvg=[];
+        var arrNext=[];
+
+        //arr=[10,20,10,30,0,0,0,0,0,0,0,0,10,20,50,20,50,10,10,0,0,10,20,50,20,50,10,10,0,0,10,20,50,20,50,10,10];
+        //Period=2;
+        arr=arr.slice(2200,2850);
+
+        var valNext=CalcStatArr(arr,arrAvg,arrNext,Period);
+
+
+        window.DiagramArr=
+            [
+                {name:"TestData1",text:"Было",arr:arr,value:0,steptime:1,starttime:(new Date)-0,id:"TestData1",red:"#063c8a"},
+                {name:"TestData2",text:"Усредн",arr:arrAvg,value:0,steptime:1,starttime:(new Date)-0,id:"TestData2",red:"#2b8a48"},
+                {name:"TestData3",text:"Прогноз",arr:arrNext,value:0,steptime:1,starttime:(new Date)-0,id:"TestData3",red:"#2b1e8a"},
+            ]
+        InitDiagram(200);
+
+        var MaxValue=0;
+        for(var i=0;i<DiagramArr.length;i++)
+            MaxValue=CalcMaxValue(DiagramArr[i].arr,MaxValue);
+        for(var i=0;i<DiagramArr.length;i++)
+        {
+            var Item=DiagramArr[i];
+            Item.MaxValue=MaxValue;
+            DrawDiagram(Item)
+        }
+    }
+
+    function InitStartData()
+    {
+        //TestTest(); return;
+
+        SetPause(1);
+        InitNodes();
+        InitDiagram();
+        setInterval(UpdateData,900);
+
+        setInterval(function ()
+        {
+            if(bPause)
+                return;
+
+            GetPacketDiagram();
+        },300);
+    }
+
+
+
+
+    var Colorlist=
+        [
+            "LightCyan",
+            "Lavender",
+            "Moccasin",
+            "Honeydew",
+            "Honeydew",
+            "OldLace",
+            "PaleGoldenrod",
+            "#bffb70",
+        ];
+
+
+    var domenlist=
+        [
+//            {name:"http://test.ru",color:"LightCyan"},
+            {name:"",color:"LightCyan"},
+//            {name:"http://test.ru:8001",color:"Lavender"},
+//            {name:"http://test.ru:8002",color:"Moccasin"},
+//            {name:"http://test.ru:8003",color:"Honeydew"},
+//            {name:"http://test.ru:8007",color:"Honeydew"},
+//            {name:"http://test2.ru",color:"OldLace"},
+//        {name:"http://test2.ru:8006",color:"PaleGoldenrod"},
+//            {name:"http://test2.ru:8007",color:"#bffb70"},
+        ];
+
+
+
+    function SetStatus(Str)
+    {
+        var id = document.getElementById("status");
+
+        //id.innerText+=Str+"\n";
+        id.innerHTML=Str;
+    }
+
+
+    var GlErr="";
+    var MaxRed=0;
+
+    var SET_MAX_NUM=1100;
+    var SET_MAX_NUM=0;
+    var COLUMN_WIDTH=55;
+    var BLOCK_WIDTH_COUNT=0;
+    var LineWidth=2;
+    var MaxKW=3;
+    var AllDrawArray=[];
+    var AllDrawMapXY={};
+    var MaxZ=0;
+    var nWork=0;
+    var CountDomens=domenlist.length;
+    var glID=0;
+
+    function InitNodes()
+    {
+        SetPause(1);
+        setTimeout(function ()
+        {
+            GetData("/getnodes",function (Data,Str)
+            {
+                if(!Data)
+                    return;
+
+                document.title+=":"+Data.port;
+                domenlist=[{name:"",color:Colorlist[0] ,webport:Data.webport ,port:Data.port}];
+                var arr=Data.Nodes;
+
+                for(var i=0;i<Math.min(Colorlist.length-1,arr.length);i++)
+                {
+                    var Node=arr[i];
+                    var webport;
+                    if(Node.webport)
+                        webport=Node.webport;
+                    else
+                    {
+                        if(Node.port%100===0)
+                            webport="80";
+                        else
+                            webport="80"+Rigth(""+Node.port,2);
+                    }
+                    if(Node.ip==="192.168.1.1" || (Node.ip==="195.211.195.236" && Node.port<"32000"))
+                        Node.ip="test.ru";
+                    else
+                    if(Node.ip==="195.211.195.236" && Node.port>="32000")
+                    {
+                        Node.ip="test2.ru";
+                    }
+                    else
+                    if(Node.ip==="194.1.237.94")
+                    {
+                        Node.ip="test3.ru";
+                    }
+                    else
+                    if(Node.ip==="91.235.136.81")
+                    {
+                        Node.ip="test5.ru";
+                    }
+
+                    var Item={name:"http://"+Node.ip+":"+webport,color:Colorlist[i+1],webport:webport,port:Node.port,Hot:Node.Hot};
+                    domenlist.push(Item);
+                }
+
+
+
+                SetPause(0);
+            });
+        },500);
+    }
+
+    function InitDrawPaper()
+    {
+        AllDrawArray=[];
+        AllDrawMapXY={};
+        var obj = document.getElementById("BlockChainGraph");
+        var ctx     = obj.getContext('2d');
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+        BLOCK_WIDTH_COUNT=obj.width/COLUMN_WIDTH;
+    }
+
+    function PrepareDrawResult(ResArr,MaxNum)
+    {
+        var MaxRedLocal=0;
+        var DomenArr=[];
+        for(var m=0;m<ResArr.length;m++)
+        {
+            var arr=[];
+            if(!ResArr[m])
+                continue;
+
+            var BlockChain=ResArr[m].BlockChain;
+            for(var i=0;i<BlockChain.length;i++)
+            {
+                var Block=BlockChain[i];
+                if(Block)
+                {
+                    var num=MaxNum-Block.BlockNum;
+                    if(num>=0)
+                        arr[num]=Block;
+                }
+            }
+            DomenArr.push(arr);
+        }
+
+
+        var BlockChain=DomenArr[0];
+        if(BlockChain)
+        for(var i=BlockChain.length;i>=0;i--)
+        {
+            var Block=BlockChain[i];
+            if(Block)
+            {
+                var HashStr=GetHName(Block,MaxNum);
+                var Count=1;
+                for(var m=1;m<DomenArr.length;m++)
+                {
+                    if(HashStr===GetHName(DomenArr[m][i],MaxNum))
+                    {
+                        Count++;
+                    }
+
+                }
+                //MaxRed
+                var HashCountErr=(Count!==DomenArr.length);
+                if(HashCountErr)
+                {
+                    var num=MaxNum-Block.BlockNum;
+                    if(num<=40)
+                    if(num>=MaxRedLocal)
+                    {
+                        MaxRedLocal=num;
+                    }
+                }
+
+                for(var m=0;m<DomenArr.length;m++)
+                {
+                    var CurBlock=DomenArr[m][i];
+                    if(CurBlock)
+                    {
+                        CurBlock.HashCountErr=HashCountErr;
+                    }
+                }
+            }
+        }
+        if(MaxRedLocal<40 && MaxRedLocal>MaxRed)
+            MaxRed=MaxRedLocal;
+    }
+    function GetHName(Block,MaxNum)
+    {
+        if(!Block)
+            return ""
+        if(Block.BlockNum<MaxNum-8)
+            return GetStrFromHash(Block.SumHash);
+        else
+        if(Block.BlockNum<MaxNum-4)
+            return "S:"+GetStrFromHash(Block.SeqHash);
+        else
+            return "T:"+GetStrFromHash(Block.TreeHash);
+    }
+
+    function CopyBlockParam(BlockNew,BlockOld)
+    {
+        if(BlockNew && BlockOld)
+        {
+            BlockNew.z=BlockOld.z;
+            //BlockNew.guid=BlockOld.guid;
+            BlockNew.View=BlockOld.View;
+        }
+//        if(BlockNew && !BlockNew.guid)
+//        {
+//            glID++;
+//            BlockNew.guid=glID;
+//        }
+
+        BlockNew.SumPow=BlockNew.SumPow;
+    }
+    function SetResult(Data,MaxBlockNum,NodeNum)
+    {
+        if(!Data)
+            return;
+        if(!Data.BlockChain)
+            return;
+
+        var NodeParam=domenlist[NodeNum];
+        if(NodeParam.sessionid!=Data.sessionid)
+        {
+            SetNewSession(Data.sessionid);
+
+            NodeParam.MapBlockLoaded={};
+            NodeParam.ChainList=[];
+            NodeParam.MapBlockChain={};
+            NodeParam.sessionid=Data.sessionid;
+            MaxRed=0;
+        }
+
+
+        var MinBlockNum=MaxBlockNum-BLOCK_WIDTH_COUNT;
+        if(MinBlockNum<0)
+            MinBlockNum=0;
+
+
+        for(var i=0;i<Data.LoadedBlocks.length;i++)
+        {
+            var Block=Data.LoadedBlocks[i];
+            if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                continue;
+
+            var BlockOld=NodeParam.MapBlockLoaded[Block.guid];
+            CopyBlockParam(Block,BlockOld);
+
+            NodeParam.MapBlockLoaded[Block.guid]=Block;
+        }
+
+        for(var i=0;i<Data.LoadedChainList.length;i++)
+        {
+            var chain=Data.LoadedChainList[i];
+            if(!chain || chain.BlockNum<MinBlockNum || chain.BlockNum>MaxBlockNum+BLOCK_WIDTH_COUNT)
+                continue;
+
+            var chainOld=NodeParam.ChainList[chain.id];
+            CopyBlockParam(chain,chainOld)
+            NodeParam.ChainList[chain.id]=chain;
+        }
+        //NodeParam.ChainList=Data.LoadedChainList;
+
+        var Map2={};
+        for(var i=0;i<Data.BlockChain.length;i++)
+        {
+            var Block=Data.BlockChain[i];
+            if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                continue;
+
+            Map2[Block.BlockNum]=Block;
+
+            var BlockOld=NodeParam.MapBlockChain[Block.BlockNum];
+            CopyBlockParam(Block,BlockOld)
+        }
+        NodeParam.MapBlockChain=Map2;
+
+
+        DrawChannels(NodeParam,NodeNum,MinBlockNum,MaxBlockNum,Data.BlockChain,Data.LoadedChainList);
+    }
+
+    function DrawChannels(NodeParam,NodeNum,MinBlockNum,MaxBlockNum,BlockChain,ChainList)
+    {
+        var color=NodeParam.color;
+
+        var obj = document.getElementById("BlockChainGraph");
+        var ctx     = obj.getContext('2d');
+
+        var arrBlocks=[];
+
+        //Основная цепочка из БД
+        var CountBlock=0;
+        var LastBlock;
+        for(var i=BlockChain.length;i>=0;i--)
+        {
+            var Block=BlockChain[i];
+            if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                continue;
+
+            CountBlock++;
+            if(CalcDrawBlock(obj,ctx,MaxBlockNum,"H",0,NodeNum,Block,100,color))
+            {
+                LastBlock=Block;
+                arrBlocks.push(Block);
+            }
+            else
+            {
+                break;
+            }
+        }
+        if(LastBlock)
+        {
+            var MaxCount=3;
+            var DY=0;
+            DY+=(LastBlock.height+10)*domenlist.length;
+            DY+=(LastBlock.height+10)*MaxCount*NodeNum;
+
+            //Загружаемые цепочки из других нод
+            var CountChain=0;
+            for(var n=0;n<ChainList.length;n++)
+            {
+                var Chain=ChainList[n];
+                if(!Chain || Chain.BlockNum<MinBlockNum || Chain.BlockNum>MaxBlockNum+BLOCK_WIDTH_COUNT)
+                    continue;
+
+                CountChain++;
+
+
+                //загруженные блоки
+                var CountBlock=0;
+                var bWas=false;
+                var Block=NodeParam.MapBlockLoaded[Chain.HashMaxStr];
+                while(Block)
+                {
+                    if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                        break;
+
+                    if(CalcDrawBlock(obj,ctx,MaxBlockNum,"B",DY,Block.chainid,Block,MaxCount,color))
+                    {
+                        bWas=true;
+                        arrBlocks.push(Block);
+                    }
+                    CountBlock++;
+                    if(CountBlock>500)
+                    {
+                        GlErr="ERROR: CountBlock>500";
+                        break;
+                    }
+
+                    Block=NodeParam.MapBlockLoaded[Block.BlockDown];
+                }
+
+            }
+
+            for(var n=0;n<ChainList.length;n++)
+            {
+                var Chain=ChainList[n];
+                if(!Chain || Chain.BlockNum<MinBlockNum)
+                    continue;
+
+                //Заголовок цепочки
+                if(CalcDrawBlock(obj,ctx,MaxBlockNum,"C",DY,Chain.id,Chain,MaxCount,color))//!bWas &&
+                {
+                    arrBlocks.push(Chain);
+                }
+            }
+
+
+
+            for(var i=0;i<arrBlocks.length;i++)
+            {
+                Block=arrBlocks[i];
+                var PrevBlock=NodeParam.MapBlockLoaded[Block.BlockDown];
+                if(PrevBlock && PrevBlock.nWork===nWork && PrevBlock.Type===Block.Type)
+                {
+                    ctx.strokeStyle = "rgb(0,0,0)";//color;
+                    ctx.lineWidth=LineWidth;
+                    ctx.beginPath();
+                    ctx.moveTo(PrevBlock.x+PrevBlock.width/2, PrevBlock.y+PrevBlock.height/2);
+                    ctx.lineTo(Block.x+Block.width/2, Block.y+Block.height/2);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        arrBlocks.sort(function (a,b)
+        {
+            return a.z-b.z;
+        });
+        for(var i=0;i<arrBlocks.length;i++)
+        {
+            Block=arrBlocks[i];
+            DrawBlock(ctx,Block);
+        }
+    }
+
+
+    function CalcDrawBlock(obj,ctx,MaxBlockNum,Type,DY,Line,Block,MaxCount,colorFill)
+    {
+        if(Block.nWork===nWork)
+            return true;
+        //Block.Comment1="W="+Block.nWork;
+
+        Block.MaxBlockNum=MaxBlockNum;
+
+        var Pos=MaxBlockNum-Block.BlockNum;
+        var width=COLUMN_WIDTH-10;
+        var height=60;
+
+        var x=obj.width-((Pos+1)*(COLUMN_WIDTH));
+        if(x<0)
+        {
+            return false;
+        }
+
+        Block.nWork=nWork;
+        var y=(Line%MaxCount)*(height+25)+1+DY;
+
+        while(true)
+        {
+            var keyXY=""+x+":"+y;
+            if(!AllDrawMapXY[keyXY])
+            {
+                AllDrawMapXY[keyXY]=1;
+                break;
+            }
+            y=y+15;
+            x=x+5;
+        }
+
+        Block.x=x;
+        Block.y=y;
+        Block.width=width;
+        Block.height=height;
+        if(Type==="H")
+        {
+            Block.height=height+16;
+        }
+        else
+        if(Type==="C")
+        {
+            Block.x+=10;
+            Block.y-=12;
+        }
+        else
+        if(Type==="B")
+        {
+            Block.height-=16;
+            Block.width-=10;
+        }
+
+        Block.Type=Type;
+        Block.colorFill=colorFill;
+
+        if(!Block.z)
+        {
+            MaxZ++;
+            Block.z=MaxZ;
+        }
+
+        return true;
+    }
+
+
+    function DrawBlock(ctx,Block)//------------------------------------------------------------------------------------ DrawBlock
+    {
+        if(x<0)
+            return;
+        if(Block.nWork!==nWork)
+            return;
+
+        var x=Block.x;
+        var y=Block.y;
+        ctx.lineWidth=2;
+
+        ctx.strokeStyle="#000";
+//        if(Block.Type==="C")
+//            ctx.strokeStyle="rgb(200,200,0)";
+//        else
+        if(Block.bSave)
+            ctx.strokeStyle="rgb(10,200,10)";
+        else
+        {
+            if(Block.Prepared)
+                ctx.strokeStyle="rgb(100,100,250)";
+            else
+            if(Block.Type==="H" && !Block.Active)
+                ctx.strokeStyle="#e6bd40";
+            else
+                ctx.strokeStyle="#ca00ca";
+        }
+        //Block.Comment2=" "+(1*Block.bSave)+" "+(1*Block.Prepared)+" "+(1*Block.Active)
+
+        if(Block.Type==="B" && (Block.TreeLoaded || Block.FindBlockDB))
+            ctx.strokeStyle="green";
+        else
+        if(Block.Type==="B" && Block.AddToLoad && !Block.TreeLoaded)
+            ctx.strokeStyle="red";
+//        if(Block.Type==="C" && Block.CountWasLoad===Block.CountForLoad && Block.CountForLoad!=0)
+//            ctx.strokeStyle="green";
+//        else
+//        if(Block.Type==="C" && Block.CountWasLoad!=Block.CountForLoad && Block.CountForLoad!=0)
+//            ctx.strokeStyle="red";
+
+
+        ctx.beginPath();
+
+        ctx.fillStyle = Block.colorFill;
+        if((Block.Type==="B" || Block.Type==="C") && !Block.Main)
+            ctx.fillStyle = "#FFF";
+
+
+        ctx.fillRect(x, y, Block.width, Block.height);
+        ctx.strokeRect(x, y, Block.width, Block.height);
+        if(Block.Type==="C")
+        {
+            ctx.moveTo(Block.x+Block.width-10, Block.y+Block.height);
+            ctx.lineTo(Block.x+Block.width, Block.y+Block.height-10);
+        }
+
+
+        var header=GetHName(Block,Block.MaxBlockNum)
+
+
+        ctx.fillStyle = "#000";
+        if(Block.Type==="H" && Block.HashCountErr)
+        {
+            ctx.fillStyle="#F00";
+        }
+        ctx.font="12px sans-serif";
+        ctx.fillText(header,x+2,y+10);
+        ctx.font="10px sans-serif";
+
+        ctx.fillStyle = "#000";
+
+        ctx.fillText(""+Block.BlockNum,x+2,y+10+16);
+
+        if(Block.Type==="H")
+        {
+            ctx.fillText("TH:"+GetStrFromHash(Block.TreeHash),x+2,y+10+32);
+
+//            if(Block.Comment1)
+//                ctx.fillText(Block.Comment1,x+2,y+10+48);
+            ctx.fillText("Tr:"+Block.TrCount,x+2,y+10+48);
+
+            //ctx.fillText("P:"+Block.SumPow.toFixed(0),x+2,y+10+48+16);
+
+        }
+        else
+        if(Block.Type==="C")
+        {
+            ctx.fillText("id:"+Block.chainid,x+2,y+10+32);
+            ctx.fillText(Block.Comment2,x+2,y+10+32+16);
+        }
+        else
+        if(Block.Type==="B")
+        {
+            ctx.fillText("id:"+Block.chainid,x+2,y+10+32);
+        }
+
+
+        ctx.stroke();
+
+        AllDrawArray.push(Block);
+
+        if(Block.View)
+            UpdateBlockView(Block);
+    }
+
+    //LIB FROM INET
+    function wrapText(context, text, marginLeft, marginTop, maxWidth, lineHeight)
+    {
+        //Exmpl:wrapText(ctx, text, x, y+20, Block.width, 12);
+        var words = text.split(" ");
+        var countWords = words.length;
+        var line = "";
+
+        for (var n = 0; n < countWords; n++)
+        {
+            var testLine = line + words[n] + " ";
+            var testWidth = context.measureText(testLine).width;
+            if (testWidth > maxWidth)
+            {
+                context.fillText(line, marginLeft, marginTop);
+                line = words[n] + " ";
+                marginTop += lineHeight;
+            }
+            else {
+                line = testLine;
+            }
+        }
+        context.fillText(line, marginLeft, marginTop);
+    }
+
+
+    //MOVE DIV
+    var blockMove;
+    var delta_x = 0;
+    var delta_y = 0;
+    function InitMoveBlock()
+    {
+        window.onmouseup = clearMoveXY;
+        window.addEventListener("onmouseup", clearMoveXY, false);
+        window.addEventListener("onmousemove", moveBlock, false);
+
+        window.onmousedown = saveMoveXY;
+        window.addEventListener("onmousedown", saveMoveXY, false);
+
+    }
+    /* При нажатии кнопки мыши попадаем в эту функцию */
+    function saveMoveXY(obj_event)
+    {
+        blockMove=undefined;
+
+        /* Получаем текущие координаты курсора */
+        if (obj_event)
+        {
+            if(obj_event.srcElement && obj_event.srcElement.className.indexOf("header")>=0)
+            {
+                obj_event.preventDefault();
+                blockMove=obj_event.srcElement.parentNode;
+
+                x = obj_event.pageX;
+                y = obj_event.pageY;
+
+                /* Узнаём текущие координаты блока */
+                var x_block = blockMove.offsetLeft;
+                var y_block = blockMove.offsetTop;
+                /* Узнаём смещение */
+                delta_x = x_block - x;
+                delta_y = y_block - y;
+
+                SetMaxZIndex(blockMove)
+            }
+            if(obj_event.srcElement && obj_event.srcElement.className.indexOf("vdata")>=0)
+            {
+                //obj_event.preventDefault();
+                SetMaxZIndex(obj_event.srcElement.parentNode)
+            }
+        }
+    }
+    function clearMoveXY()
+    {
+        //window.onmousedown = undefined;
+        blockMove=undefined;
+    }
+    function moveBlock(obj_event)
+    {
+        if(!blockMove)
+            return;
+
+        /* Получаем новые координаты курсора мыши */
+        if (obj_event)
+        {
+            x = obj_event.pageX;
+            y = obj_event.pageY;
+        }
+        else
+        {
+            x = window.event.clientX;
+            y = window.event.clientY;
+            if (ie)
+            {
+                y -= 2;
+                x -= 2;
+            }
+        }
+        /* Вычисляем новые координаты блока */
+        new_x = delta_x + x;
+        new_y = delta_y + y;
+        blockMove.style.top = new_y + "px";
+        blockMove.style.left = new_x + "px";
+    }
+
+
+    //LIB
+    //LIB
+    //LIB
+    //LIB
+    function GetStrFromHash(Str)
+    {
+        if(typeof Str==="string")
+            //return Str.substr(2,4);
+            return Str.substr(0,4);
+        else
+            return "";
+    }
+
+    function getMouse(canvas,e)
+    {
+
+        var x = e.clientX - getTrueOffsetLeft(canvas);
+        if(window.pageXOffset)
+            x=x+window.pageXOffset;
+
+        var y = e.clientY - getTrueOffsetTop(canvas);
+        if(window.pageYOffset)
+            y=y+window.pageYOffset
+        var coord= {x:x,y:y};
+        return coord;
+    };
+    function getTrueOffsetLeft(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetLeft || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+    function getTrueOffsetTop(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetTop || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+
+    function random(max)
+    {
+        ret=Math.floor(Math.random()*max);
+        return ret;
+    }
+
+
+
+
+    //DIALOG
+    //DIALOG
+    //DIALOG
+
+
+    var bPause;
+    function SetPause(SetMode)
+    {
+        if(SetMode===undefined)
+        {
+            bPause=!bPause;
+        }
+        else
+        {
+            bPause=SetMode;
+        }
+        var elrun = document.getElementById("run");
+        if(bPause)
+            elrun.value="Continue";
+        else
+            elrun.value="Pause";
+    }
+
+    function SetWidth()
+    {
+        var id = document.getElementById("LineWidth");
+        LineWidth=id.value;
+    }
+
+
+    //VIEW BLOCK
+
+    var ArrViewBlock=[];
+    var MaxZIndex=10;
+    function SetMaxZIndex(Block)
+    {
+        MaxZIndex++;
+        Block.style["z-index"]=MaxZIndex;
+    }
+    function InitViewBlock()
+    {
+        window.onkeydown = cancelViewBlock;
+    }
+    function cancelViewBlock(e)
+    {
+        if(e.keyCode===27 && ArrViewBlock.length)
+        {
+            var name=ArrViewBlock[ArrViewBlock.length-1];
+            ArrViewBlock.length=ArrViewBlock.length-1;
+            CloseView(name);
+        }
+
+        if(!ArrViewBlock.length)
+            MaxZIndex=10;
+    }
+
+
+    function AddView(Str)
+    {
+        var id = document.getElementById("viewer");
+        id.innerHTML+=Str;
+    }
+    function CloseView(id)
+    {
+        var name="b"+id;
+        var parentElem = document.getElementById("viewer");
+        var child=document.getElementById(name);
+        if(child)
+            parentElem.removeChild(child)
+    }
+    function SetViewBlock(Block,event)
+    {
+        var name=Block.Type.trim()+Block.guid;
+        var coord=getMouse(window,event);
+        var x=coord.x;
+        var y=coord.y;
+        if(x<=0 && y<=0)
+            return;
+
+        var element = document.getElementById("b"+name);
+        if(!element)
+        {
+            var Str='<DIV id="b'+name+'" class="vblock"> ' +
+                '<DIV id="h'+name+'" class="header"></DIV> ' +
+                '<INPUT id="c'+name+'" type="button" class="vclose" onclick=CloseView("'+name+'") value="X"> ' +
+                '<DIV id="d'+name+'" class="vdata"></DIV> ' +
+                '</DIV>';
+            AddView(Str);
+            ArrViewBlock.push(name);
+
+            element = document.getElementById("b"+name);
+        }
+        var header=document.getElementById("h"+name);
+        var closer=document.getElementById("c"+name);
+        var data = document.getElementById("d"+name);
+
+        element.style.left=""+x+ "px";
+        element.style.top=""+y+ "px";
+        element.style.height="100px";
+        SetMaxZIndex(element);
+
+
+
+        header.style.background=Block.colorFill;
+        closer.style.background=Block.colorFill;
+        data.style.background=Block.colorFill;
+
+        UpdateBlockView(Block);
+    }
+
+    function UpdateBlockView(Block)
+    {
+        var name=Block.Type+Block.guid;
+        var header=document.getElementById("h"+name);
+        if(!header)
+            return;
+
+        var data = document.getElementById("d"+name);
+
+        Block.View=1;
+        var Str0;
+        if(Block.SumHash)
+        {
+            Str0=GetStrFromHash(Block.SumHash)+" : "+Block.Type;
+        }
+        else
+        {
+            Str0="H:"+GetStrFromHash(Block.Hash)+" : "+Block.Type;
+        }
+
+        header.innerText=Str0;
+
+
+        var Str = ""+Block.BlockNum;
+        Str+="\nSave:"+Block.bSave;
+
+
+
+        var rootinfo;
+        if(Block.Type==="C")
+        {
+            var rootid="";
+            if(Block.root)
+            {
+                rootid=""+Block.root.id;
+                if(Block.root.StopSend)
+                    rootid=rootid+" StopSend";
+                if(Block.root.GetFindDB)
+                    rootid=rootid+" FindDB";
+
+                rootinfo=Block.root.Info;
+            }
+            Str+="\nid:"+Block.id;//+"  num:"+Block.num;
+            Str+="\nrootid:"+rootid;
+            Str+="\nStopSend:"+Block.StopSend;
+            Str+="\nFindDB:"+Block.GetFindDB;
+            Str+="\nHashMaxStr:"+Block.HashMaxStr;
+        }
+        else
+        {
+            if(Block.chainid)
+                Str+="\nid:"+Block.chainid;
+            else
+            if(Block.id)
+                Str+="\nid:"+Block.id;
+
+            Str+="\nTrCount:"+Block.TrCount;
+            Str+="\nTH:"+GetStrFromHash(Block.TreeHash);
+            Str+="\nTrDataLen:"+Block.TrDataLen;
+
+
+            Str+="\nPow:"+Block.SumPow.toFixed(4);
+            if(!Block.TreeLoaded)
+                Block.TreeLoaded="";
+            if(!Block.AddToLoad)
+                Block.AddToLoad="";
+            if(!Block.LoadDB)
+                Block.LoadDB="";
+
+
+            //Str+="\nArrLength:"+Block.ArrLength;
+
+            if(Block.Type==="B")
+            {
+                Str+="\nTreeLoaded:"+Block.TreeLoaded;
+//            Str+="\nAddToLoad:"+Block.AddToLoad;
+//            Str+="\nLoadDB:"+Block.LoadDB;
+                Str+="\nMain:"+Block.Main;
+                Str+="\nBlockDown:"+Block.BlockDown;
+            }
+        }
+        Str+="\nH:"+GetStrFromHash(Block.Hash);
+
+        if(!Block.Comment1)
+            Block.Comment1="";
+        if(!Block.Comment2)
+            Block.Comment2=""
+        Str+="\n"+Block.Comment1;
+        Str+="\n"+Block.Comment2;
+
+
+
+
+//        if(Block.Err)
+//            Str+="\n"+"=ERROR=";
+        if(Block.Info)
+            Str+="\n"+Block.Info;
+        if(rootinfo)
+            Str+="\n\n--------ROOT "+Block.root.id+" max:"+Block.root.BlockNumMax+":\n"+rootinfo;
+
+
+
+
+        data.innerText=Str;
+    }
+
+
+    //обработка нажатия кнопки мышки на узле
+    function DoBlockInfo(Fx,Fy,event)
+    {
+        var Block=GetBlockByXY(Fx,Fy);
+
+        if(Block)
+        {
+            MaxZ++;
+            Block.z=MaxZ;
+
+            var obj = document.getElementById("BlockChainGraph");
+            var ctx     = obj.getContext('2d');
+            DrawBlock(ctx,Block);
+        }
+    }
+    function DoBlockInfoUp(Fx,Fy,event)
+    {
+        var Block=GetBlockByXY(Fx,Fy);
+        if(Block)
+        {
+            SetViewBlock(Block, event)
+        }
+    }
+
+    function DoDblClick(Fx,Fy, event)
+    {
+        var Block=GetBlockByXY(Fx,Fy);
+        if(Block)
+        {
+            //SetViewBlock(Block, event)
+        }
+    }
+
+
+    function GetBlockByXY(Fx,Fy)
+    {
+        //ищем блок
+        var Array=AllDrawArray;
+        for(var i=0;i<Array.length;i++)
+        {
+            var item=Array[i];
+            if(item.x<=Fx && item.x+item.width>=Fx
+            && item.y<=Fy && item.y+item.height>=Fy)
+            {
+                return item;
+            }
+        }
+        return undefined;
+    }
+
+
+
+
+    //INIT
+    var strReload="reload/";
+    var ResDataArr=[];
+    function UpdateData()
+    {
+        if(bPause)
+            return;
+
+        if(ResDataArr.length)
+        {
+            var MaxNum=0;
+            if(!SET_MAX_NUM)
+            {
+                for(var n=0;n<ResDataArr.length;n++)
+                {
+                    var Data=ResDataArr[n];
+                    if(Data && Data.CurrentBlockNum>MaxNum)
+                        MaxNum=Data.CurrentBlockNum;
+                }
+            }
+            else
+            {
+                MaxNum=SET_MAX_NUM;
+            }
+
+            nWork++;
+            PrepareDrawResult(ResDataArr,MaxNum)
+            InitDrawPaper();
+
+            var StrInfo="";
+            StrInfo+="<DIV class='nodestatus'>"
+            StrInfo+=`NN=${domenlist.length} Blocks:${MaxNum} MaxRed=<B style='color:red'>${MaxRed} ${GlErr}</B>`
+            StrInfo+=` <B><A href='/console'>Cons</A></B>`;
+            StrInfo+="</DIV>"
+
+            for(var n=0;n<ResDataArr.length;n++)
+            {
+                var Data=ResDataArr[n];
+                if(Data)
+                {
+                    var Domen=domenlist[Data.NumArr];
+                    SetResult(Data,MaxNum,Data.NumArr);
+
+                    var DataLength=Math.floor(Data.DataLength/1024);
+                    //var mem=Math.floor(Data.memoryUsage.rss/1000000);
+                    var mem=Math.floor(Data.memoryUsage.heapTotal/1000000);
+                    var color=Domen.color;
+
+
+                    StrInfo+=`<DIV class='nodestatus' style="background:${color}">`
+                    if(Domen.name!=="")
+                        StrInfo+=`<A href='${Domen.name}'>`;
+
+                    Data.DELTA_CURRENT_TIME=Math.floor(Data.DELTA_CURRENT_TIME)/1000;
+
+                    if(Domen.Hot)
+                    {
+                        StrInfo+=`<B>P:${Domen.port}</B> dt:${Data.DELTA_CURRENT_TIME}`;
+                        if(Domen.name!=="")
+                            StrInfo+="</A>";
+                        StrInfo+=` Mem: <B>${mem}</B>Mb`;// L=${DataLength}Kb
+                    }
+                    else
+                    {
+                        StrInfo+=`P:${Domen.port} dt:${Data.DELTA_CURRENT_TIME}`;
+                        if(Domen.name!=="")
+                            StrInfo+="</A>";
+                        StrInfo+=` Mem: ${mem}Mb`;// L=${DataLength}Kb
+                    }
+
+                    StrInfo+=` <B><A href='${Domen.name}/console'>Cons</A></B>`;
+
+                    StrInfo+="</DIV>"
+
+
+                }
+            }
+            SetStatus(StrInfo);
+//            var mem=Math.floor(window.performance.memory.usedJSHeapSize/1000)/1000;
+//            var memfree=Math.floor(window.performance.memory.totalJSHeapSize/1000)/1000;
+            //SetStatus("MaxNum:"+MaxNum+" memory="+mem+" Mb   free="+memfree+" Mb")
+        }
+        ResDataArr=[];
+
+        for(var i=0;i<domenlist.length;i++)
+        {
+            CallDataChain(ResDataArr,i,strReload);
+        }
+        strReload="";
+        GetDiagram();
+    }
+
+    function CallDataChain(ResDataArr,NumArr,strReload)
+    {
+        GetData(domenlist[NumArr].name+"/data-chain/"+strReload,function (Data,Str)
+        {
+            if(typeof Data==="object")
+            {
+                Data.NumArr=NumArr;
+                ResDataArr[NumArr]=Data;
+                Data.DataLength=Str.length;
+            }
+        });
+    }
+
+
+
+    //PACKETS CHARTS
+
+    function DrawPacketDiagramInfo(obj,Item)
+    {
+        var arr=Item.Arr
+        var SendNum=Item.SendNum;
+        var ctx=obj.getContext('2d');
+        var Left=50;
+        var Top=5;
+        var Button=10;
+        var Right=30;
+        var StartX=Left;
+        var StartY=obj.height-Button;
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+
+
+        //Оси координат
+        ctx.lineWidth=0.5;
+        ctx.beginPath();
+        ctx.strokeStyle = "#000";
+        ctx.moveTo(StartX-1,Top);
+        ctx.lineTo(StartX-1,StartY+1);
+        ctx.lineTo(obj.width-10,StartY+1);
+        ctx.stroke();
+
+        //Подписи
+        ctx.fillStyle = "#000";
+        ctx.fillText(SendNum,obj.width-Right-40,StartY+10);
+
+
+
+        if(arr.length<1)
+            return;
+
+        var Count=0;
+        var KX=1;
+        ctx.lineWidth=1;
+
+
+        Draw(1,"#0A0");
+        Draw(2,"#263eff");
+        function Draw(nMode,color)
+        {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            for(var i=0;i<arr.length;i++)
+            {
+                var nValue=arr[i];
+                if(nMode===1 && nValue===1 || nMode===2 && nValue>=2)
+                {
+                    var x=Math.floor((i)*KX);
+                    ctx.moveTo(x+Left,Top);
+                    ctx.lineTo(x+Left,StartY);
+                }
+                else
+                if(!nValue && i===arr.length-1)
+                {
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#A00";
+                    var x=Math.floor((i)*KX);
+                    ctx.moveTo(x+Left,Top);
+                    ctx.lineTo(x+Left,StartY);
+                }
+            }
+            ctx.stroke();
+        }
+
+        //Dop info
+        ctx.font = "12px sans-serif";
+        ctx.fillStyle = "#B00";
+        if(Item.SkipFragmentLightSend || Item.SkipFragmentHardSend)
+            ctx.fillText("Skip: "+Item.SkipFragmentLightSend+" | "+Item.SkipFragmentHardSend,obj.width/8,obj.height/2);
+        if(Item.LimitFragmentLightSend || Item.LimitFragmentHardSend)
+            ctx.fillText("Limit: "+Item.LimitFragmentLightSend+" | "+Item.LimitFragmentHardSend,2*obj.width/8,obj.height/2);
+        if(Item.FragmentOverflow)
+            ctx.fillText("Overflow: "+Item.FragmentOverflow,3*obj.width/8,obj.height/2);
+
+        ctx.fillStyle = "#000";
+        ctx.fillText("Send: "+Item.SendFragmentL+" | "+Item.SendFragmentH,4*obj.width/8,obj.height/2);
+
+
+
+    }
+
+    function DrawPacketDiagram(arr)
+    {
+
+        var obj = document.getElementById("PACKET_DIAGRAM");
+        var ctx     = obj.getContext('2d');
+        var Left=50;
+        var Top=10;
+        var Button=15;
+        var Right=30;
+        var StartX=Left;
+        var StartY=obj.height-Button;
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+
+
+        //Оси координат
+        ctx.lineWidth=0.5;
+        ctx.beginPath();
+        ctx.strokeStyle = "#000";
+        ctx.moveTo(StartX-1,Top);
+        ctx.lineTo(StartX-1,StartY+1);
+        ctx.lineTo(obj.width-10,StartY+1);
+        ctx.stroke();
+
+
+        if(arr.length<2)
+            return;
+
+        var Count=0;
+        var MaxY=0;
+        var StartI=0;
+        for(var i=0;i<arr.length;i++)
+        {
+            var stat=arr[i];
+            if(!stat)
+                continue;
+            if(StartI===0)
+                StartI=i;
+            MaxY=Math.max(MaxY,stat.length);
+        }
+        //Подписи
+        ctx.fillStyle = "#000";
+        ctx.fillText(arr.length,obj.width-Right,StartY+10);
+
+
+        var KX=2;
+        var KY=1;
+        if(MaxY>0)
+            KY=(obj.height-Top-Button)/MaxY;
+        ctx.lineWidth=1;
+
+
+        function Draw(bMode,color)
+        {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            for(var i=StartI;i<arr.length;i++)
+            {
+                var stat=arr[i];
+                if(!stat)
+                    continue;
+
+
+                for(var j=0;j<stat.length;j++)
+                {
+                   if(!!stat[j] !== !!bMode)
+                        continue;
+
+                    var x=Math.floor((i-StartI)*KX);
+                    var y=Math.floor(j*KY);
+                    ctx.moveTo(x+Left,StartY-y);
+                    ctx.lineTo(x+Left,StartY-y-KY);
+                }
+
+            }
+            ctx.stroke();
+        }
+        Draw(1,"#0A0");
+        Draw(0,"#A00");
+    }
+    function GetPacketDiagram()
+    {
+        if(document.getElementById("packets_diargams"))
+        GetData("/getpacketinfosend",function (Data,Str)
+        {
+            if(!Data || !Data.ArrStat)
+                return;
+            for(var i=0;i<Data.ArrStat.length;i++)
+            {
+                var Item=Data.ArrStat[i];
+                var Arr=Item.Arr;
+                var SendNum=Item.SendNum;
+                var obj=GetElementPacketDiagram(Item,Data.sessionid);
+                DrawPacketDiagramInfo(obj,Item);
+            }
+        });
+
+        if(document.getElementById("PACKET_DIAGRAM"))
+        GetData("/getpacketstat",function (Data,Str)
+        {
+            if(!Data || !Data.stat)
+                return;
+            DrawPacketDiagram(Data.stat);
+        });
+    }
+    function GetElementPacketDiagram(Item,cursessionid)
+    {
+        if(sessionid!==cursessionid)
+        {
+            SetNewSession(cursessionid);
+        }
+
+        var id="PACKET_DIAGRAM_"+Item.addrStr;
+        var obj = document.getElementById(id);
+        if(!obj)
+        {
+            var diargams = document.getElementById("packets_diargams");
+
+            if(diargams.innerHTML.length<10)
+                diargams.innerHTML='<BR><H3 style="text-align: center">Датаграмма подтвержденных пакетов</H3>'
+
+            //insert new
+            var Str=`<BR><canvas  width='1500' height='50' id='${id}'></canvas>${Item.ip+":"+Item.port}`;
+            diargams.innerHTML+=Str;
+            obj = document.getElementById(id);
+        }
+        return obj;
+    }
+
+    //CHARTS
+    //CHARTS
+    //CHARTS
+    function CalcMaxValue(arr,MaxValue)
+    {
+        for(var i=0;i<arr.length;i++)
+        {
+            if(arr[i]>MaxValue)
+                MaxValue=arr[i];
+        }
+        return MaxValue;
+    }
+    function DrawDiagram(Item)
+    {
+        var arr=Item.arr;
+        var name=Item.id;
+        var GreenValue=Item.value;
+        var StepTime=Item.steptime;
+        var StartServer=Item.starttime;
+        var mouseX=Item.mouseX;
+
+
+        var obj = document.getElementById(name);
+        var ctx     = obj.getContext('2d');
+        var Left=50;
+        var Top=10;
+        var Button=15;
+        var Right=30;
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+
+        var KPercent;
+        if(0)
+        if(mouseX!==undefined && arr.length)
+        {
+            KPercent=(mouseX-Left)/obj.width;
+            if(KPercent>0)
+            {
+                arr=arr.slice(arr.length*KPercent);
+            }
+        }
+
+        if(arr.length<2)
+            return;
+//        arr=arr.slice(1);
+
+        var MaxValue=1;//GreenValue;
+        var AvgValue=0;
+        for(var i=0;i<arr.length;i++)
+        {
+            if(arr[i]>MaxValue)
+                MaxValue=arr[i];
+            if(arr[i])
+                AvgValue+=arr[i];
+        }
+        //среднее значение
+        AvgValue=Math.floor(AvgValue/arr.length+0.5);
+        if(Item.MaxValue!==undefined)
+            MaxValue=Item.MaxValue;
+
+
+
+        var KX=(obj.width-Left-Right)/arr.length;
+        var KY=(obj.height-Top-Button)/MaxValue;
+
+        MaxValue=Math.floor(MaxValue+0.5);
+
+        if(KX>1)
+            ctx.lineWidth=KX;
+        else
+            ctx.lineWidth=1;
+
+
+        var StartX=Left;
+        var StartY=obj.height-Button;
+        var mouseValueX=0;
+        var mouseValue=undefined;
+        var mouseColor=undefined;
+        function DrawLines(arr,mode,color)
+        {
+            ctx.beginPath();
+            ctx.moveTo(Left,obj.height-Button);
+            ctx.strokeStyle = color;
+            for(var i=0;i<arr.length;i++)
+            {
+                var Value=arr[i];
+                if(!Value)
+                    Value=0;
+                if(mode==="green")
+                {
+                    if(Value>GreenValue)
+                        continue;
+
+                }
+                else
+                if(mode==="red")
+                {
+                    if(Value<=GreenValue)
+                        continue;
+                }
+
+                var Value1=Value;
+                if(Value1>GreenValue)
+                    Value1=GreenValue;
+
+                var VX1=Math.floor(Value1*KY);
+                var VX2=Math.floor(Value*KY);
+                if(VX1===VX2)
+                    VX1-=2;
+
+                var x=StartX+(i+1)*KX;
+                ctx.moveTo(x,StartY-VX1);
+                ctx.lineTo(x,StartY-VX2);
+
+                if(mouseX)
+                {
+                    var deltaCur=Math.abs(x-mouseX);
+                    var deltaWas=Math.abs(mouseValueX-mouseX);
+                    if(deltaCur<deltaWas)
+                    {
+                        mouseValueX=x;
+                        mouseValue=Value;
+                        mouseColor=color;
+                     }
+                }
+            }
+            ctx.stroke();
+        }
+        if(!Item.red)
+            Item.red="#A00";
+        DrawLines(arr,"red",Item.red);
+        DrawLines(arr,"green","#0A0");
+
+
+
+
+        //Оси координат
+        ctx.lineWidth=0.5;
+        ctx.beginPath();
+        ctx.strokeStyle = "#000";
+        Left--;StartX--; StartY+=2;
+        ctx.moveTo(Left,Top);
+        ctx.lineTo(StartX,StartY);
+        ctx.lineTo(obj.width-10,StartY);
+        ctx.stroke();
+
+
+
+        //вспомогательная линия
+        if(mouseX!==undefined)
+        {
+            ctx.beginPath();
+            ctx.lineWidth=0.5;
+            ctx.strokeStyle = "#00F";
+            ctx.moveTo(mouseX,Top);
+            ctx.lineTo(mouseX,StartY);
+            ctx.stroke();
+
+            if(mouseValue!==undefined)
+            {
+                ctx.fillStyle = mouseColor;
+                var Str=""+Math.floor(mouseValue+0.5);
+                ctx.fillText(Str,mouseX-3,Top-2);
+            }
+
+            if(0)
+            if(KPercent>0)
+            {
+                var StrPercent=""+Math.floor(100-100*KPercent)+"%";
+                ctx.fillStyle = "#00F";
+                ctx.fillText(StrPercent,mouseX-7,Top-2);
+            }
+        }
+
+
+        //подписи оси Y
+        ctx.fillStyle = "#000";
+        //max
+        ctx.fillText(Rigth("          "+MaxValue,8),0,Top-3);
+
+        //avg
+        if(MaxValue>0 && AvgValue>0)
+        {
+            var heigh=StartY-Top;
+            var KKY=AvgValue/MaxValue;
+            if(KKY<0.90)
+            {
+                var y=(heigh-Math.floor(KKY*heigh));
+                ctx.beginPath();
+                ctx.moveTo(Left-2,y+Top);
+                ctx.lineTo(Left+2,y+Top);
+                ctx.stroke();
+                ctx.strokeStyle = "#00F";
+                ctx.fillText(Rigth("          "+AvgValue,8),0,y+Top+4);
+            }
+        }
+
+        var CountNameX=10;
+        if(arr.length<CountNameX)
+            CountNameX=arr.length;
+        var KX3=(obj.width-Left-Right)/CountNameX;
+
+        var KDelitel=1;
+        var Step=arr.length/CountNameX;
+
+        //подписи оси X
+        if(StartServer)
+        {
+            var StartTime=Math.floor((((new Date)-StartServer)-StepTime*arr.length*1000)/1000);
+            if(StartTime<0)
+                StartTime=0;
+
+            var KDelitel=Math.floor(Step/10)*10;
+            if(KDelitel==0)
+                KDelitel=1;
+        }
+        else
+        {
+            var StartTime=(new Date)-StepTime*arr.length*1000;
+        }
+
+        for(i=0;i<=CountNameX;i++)
+        {
+            var Val;
+            if(i===CountNameX)
+            {
+                Val=arr.length*StepTime;
+                KDelitel=1;
+            }
+            else
+            if(i===0)
+                Val=0;
+            else
+                Val=i*Step*StepTime;
+            var Str;
+            if(StartServer)
+            {
+                Val=Math.floor((StartTime+Val)/KDelitel)*KDelitel;
+                Str=Val;
+            }
+            else
+            {
+                var Time=new Date(StartTime+Val*1000);
+                Str=""+Time.getHours();
+                Str+=":"+Rigth("0"+Time.getMinutes(),2);
+                Str+=":"+Rigth("0"+Time.getSeconds(),2);
+            }
+
+
+            ctx.fillText(Str,StartX+i*KX3,StartY+10);
+        }
+    }
+    function Rigth(Str,Count)
+    {
+        if(Str.length<Count)
+            return Str;
+        else
+            return Str.substr(Str.length-Count);
+    }
+
+    var DiagramArr=
+        [
+
+            {isLine:true,text:"Пакеты отправленные"},
+            {name:"SENDDATA",text:"Отправлено, кбайт",value:0,red:"#2b1e8a"},
+//            {name:"SEND_DATA_HARD",text:"Отправлено Hard, кбайт",value:0,red:"#2b1e8a"},
+//            {name:"SEND_DATA_LIGHT",text:"Отправлено Light, кбайт",value:0,red:"#2b1e8a"},
+            //{name:"SENDDATA:30000",text:"Отправлено 30000, кбайт",value:0,red:"#2b1e8a"},
+//            {name:"SENDDATA:30001",text:"Отправлено 30001, кбайт",value:0,red:"#2b1e8a"},
+//            {name:"SENDDATA:30006",text:"Отправлено 30006, кбайт",value:0,red:"#2b1e8a"},
+
+
+        //{name:"RECALCSENDSTATICTIC",text:"RECALCSENDSTATICTIC",value:0,red:"#2b1e8a"},
+
+//        {name:"MAX:NODE_TRAFFIC_LIMIT:30000",text:"NODE_TRAFFIC_LIMIT:30000, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"MAX:NODE_TRAFFIC_LIMIT:30001",text:"NODE_TRAFFIC_LIMIT:30001, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"MAX:NODE_BUF_WRITE:30000",text:"MAX:NODE_BUF_WRITE:30000, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"MAX:NODE_SEND_BUF_PACKET_COUNT:30000",text:"MAX:NODE_SEND_BUF_PACKET_COUNT:30000",value:0,red:"#2b1e8a"},
+
+
+
+//        {name:"MAX:NODE_TRAFFIC_LIMIT:30000",text:"LIMIT:30000, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"MAX:NODE_TRAFFIC_LIMIT:30001",text:"LIMIT:30001, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"MAX:NODE_TRAFFIC_LIMIT:30006",text:"LIMIT:30006, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"MAX:NODE_TRAFFIC_LIMIT:30007",text:"LIMIT:30007, кбайт",value:0,red:"#2b1e8a"},
+
+
+//        {name:"DO_LIMIT_SENDDATA:30000",text:"DO_LIMIT_SENDDATA:30000, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"DO_LIMIT_SENDDATA:30001",text:"DO_LIMIT_SENDDATA:30001, кбайт",value:0,red:"#2b1e8a"},
+//        {name:"DO_LIMIT_SENDDATA:30006",text:"DO_LIMIT_SENDDATA:30006, кбайт",value:0,red:"#2b1e8a"},
+
+
+//        {name:"MAX:NODE_SEND_BUF_PACKET_COUNT:30006",text:"MAX:NODE_SEND_BUF_PACKET_COUNT:30006",value:0,red:"#2b1e8a"},
+//        {name:"MAX:NODE_BUF_WRITE:30006",text:"MAX:NODE_BUF_WRITE:30006, кбайт",value:0,red:"#2b1e8a"},
+
+
+//        {name:"SEND_TRAFFIC_FREE",text:"SEND_TRAFFIC_FREE",value:0,red:"#2b1e8a"},
+
+//            {name:"SENDFRAGMENT_H",text:"Отправлено H-фрагментов, кбайт",value:0,red:"#20728a"},
+//            {name:"SENDFRAGMENT_L",text:"Отправлено L-фрагментов, кбайт",value:0,red:"#20728a"},
+            //{name:"MAX:SENDDATA",text:"Макс пакет, кбайт",value:0,red:"#2b1e8a"},
+//            {name:"FRAGMENT_LOST",text:"Потерянные фрагменты",value:0},
+//            {name:"FRAGMENT_OVERFLOW",text:"Переполнение массива отправленных фрагментов",value:0},
+//            {name:"SKIPFRAGMENTSEND",text:"SKIPFRAGMENTSEND",value:0},
+
+
+
+            {isLine:true,text:"Пакеты полученные"},
+            //{name:"TEST_PACKET",text:"TEST_PACKET",value:0,red:"#2b1e8a"},
+            {name:"GETDATA",text:"Получено, кбайт",value:0,red:"#2b1e8a"},
+
+//            {name:"LOADFRAGMENT",text:"Получено фрагментов",value:0,red:"#20728a"},
+//            {name:"LOADPACKET",text:"Получено пакетов",value:0,red:"#7f448a"},
+            {name:"USEPACKET",text:"Исполнено пакетов",value:0,red:"#7f448a"},
+            //{name:"MAX:BUFFE_LOAD_SIZE",text:"Буфер загрузки, кб",value:0,red:"#7f448a"},
+
+//            {name:"SKIPFRAGMENTUSE",text:"SKIPFRAGMENTUSE",value:0},
+
+
+            {name:"TIMEDOGETDATA",text:"Время получения пакетов, мс",value:100},
+            {name:"TIME_USE_PACKET",text:"Время выполнения пакета, мс",value:100},
+
+            //{name:"TRANSFER",text:"Обработка пакета TRANSFER, мс",value:90},
+            //{name:"MAX:TimeDoGetData",text:"Макс время обработки полученного пакета, мс",value:25},
+
+
+            {name:"ERRORS",text:"ERRORS",value:0,red:"#A00"},
+            {name:"SEND_ERROR",text:"Ожидание статуса сокета",value:0,red:"#500"},
+
+//
+//        {isLine:true,text:"Headers"},
+//        {name:"SEND:GETBLOCKHEADER:30001",text:"SEND:GETBLOCKHEADER:30001",value:0,red:"#2b1e8a"},
+//        {name:"GET:RETBLOCKHEADER:30001",text:"GET:RETBLOCKHEADER:30001",value:0,red:"#658a61"},
+//        {name:"SEND:GETBLOCKHEADER:30002",text:"SEND:GETBLOCKHEADER:30002",value:0,red:"#2b1e8a"},
+//        {name:"GET:RETBLOCKHEADER:30002",text:"GET:RETBLOCKHEADER:30002",value:0,red:"#658a61"},
+//
+//
+//        {isLine:true,text:"Blocks"},
+//        {name:"SEND:GETBLOCK:30001",text:"SEND:GETBLOCK:30001",value:0,red:"#2b1e8a"},
+//        {name:"GET:RETGETBLOCK:30001",text:"GET:RETGETBLOCK:30001",value:0,red:"#658a61"},
+//        {name:"SEND:GETBLOCK:30002",text:"SEND:GETBLOCK:30002",value:0,red:"#2b1e8a"},
+//        {name:"GET:RETGETBLOCK:30002",text:"GET:RETGETBLOCK:30002",value:0,red:"#658a61"},
+//        {name:"SEND:GETBLOCK:30003",text:"SEND:GETBLOCK:30003",value:0,red:"#2b1e8a"},
+//        {name:"GET:RETGETBLOCK:30003",text:"GET:RETGETBLOCK:30003",value:0,red:"#658a61"},
+
+
+            {isLine:true,text:"Блоки"},
+//            {name:"MAX:BlockConfirmation",text:"Высота неподтвержденных блоков",value:8},
+        {name:"MAX:LOADEDCHAINLIST",text:"MAX:LOADEDCHAINLIST",value:0,red:"#95d6b9"},
+//        {name:"MAX:HIGHT",text:"MAX:HIGHT",value:0,red:"#83a3d6"},
+
+//        {name:"NODE_CAN_GET:30000",text:"NODE_CAN_GET: 30000",value:0,red:"#2b1e8a"},
+//        {name:"NODE_CAN_GET:30001",text:"NODE_CAN_GET: 30001",value:0,red:"#2b1e8a"},
+//        {name:"NODE_CAN_GET:30006",text:"NODE_CAN_GET: 30006",value:0,red:"#2b1e8a"},
+
+            {name:"BLOCK_SEND",text:"Отдано блоков (план)",value:0,red:"#bea96d"},
+            {name:"SEND:RETGETBLOCK",text:"Отдано блоков (факт)",value:0,red:"#bea96d"},
+            {name:"DELETE_OLD_PACKET",text:"Удалено устаревших пакетов",value:0,red:"#bea96d"},
+
+
+            {name:"BLOCK_SEND_MEM",text:"Отдано блоков из памяти",value:0,red:"#e6e349"},
+
+//            {name:"DO_GETNEXTNODE-1",text:"DO_GETNEXTNODE-1",value:0,red:"#bea96d"},
+//            {name:"DO_GETNEXTNODE-2",text:"DO_GETNEXTNODE-2",value:0,red:"#bea96d"},
+            {name:"SEND:GETBLOCK",text:"Запрошено блоков",value:0,red:"#bea96d"},
+
+            {name:"BLOCK_LOADED",text:"Получено блоков",value:0,red:"#95d6b9"},
+            {name:"DOUBLE_RETGETBLOCK",text:"Получено блоков повторно",value:0,red:"#e6e349"},
+
+            {name:"WRITECHAIN_TO_DB_COUNT",text:"Загруженные цепочки блоков",value:0},
+//
+//
+////            {name:"WRITECHAIN_TO_DB_TIME",text:"Время обработки цепочки блоков, мс",value:90},
+//            {name:"WriteBlockDB",text:"Время записи блоков на диск, мс",value:50},
+//            {name:"MAX:WriteBlockDB",text:"Макс время записи блока на диск, мс",value:50},
+//            {name:"BlockToMemBuf",text:"Время BlockToMemBuf, мс",value:25},
+//            {name:"IsValidTransaction",text:"Время IsValidTransaction, мс",value:25},
+
+
+
+
+ //           {name:"MAX:TimeDoGetData:RETBLOCKHEADER",text:"MAX:TimeDoGetData:RETBLOCKHEADER, мс",value:25},
+ //           {name:"MAX:TimeDoGetData:RETGETBLOCK",text:"MAX:TimeDoGetData:RETGETBLOCK, мс",value:25},
+//            {name:"MAX:TimeDoGetData:TRANSFER",text:"MAX:TimeDoGetData:TRANSFER, мс",value:25},
+            //{name:"MAX:TimeDoGetData:GETBLOCK",text:"MAX:TimeDoGetData:GETBLOCK, мс",value:25},
+
+//            {isLine:true,text:"Ключи (индексы)"},
+//            {name:"MAX:CountForFlush",text:"Незаписанные на диск ключи, шт",value:1000},
+//            {name:"MAX:TimeFlush",text:"Макс время записи ключа на диск, мс",value:11},
+//            {name:"MAX:DOUBLE_FIND_KEY",text:"Коллизии хеш функции",value:32},
+//            {name:"SCAN_ROW_KEY",text:"Перебор строк ключей",value:30000},
+//            {name:"SCAN_BODY",text:"Чтение строк содержимого хешей",value:10},
+//            {name:"TimeKeyMove",text:"Время переноса ключей на следующий уровень, мс",value:50},
+//            {name:"MAX:TimeKeyMove",text:"Макс время переноса ключей на следующий уровень, мс",value:10},
+//            {isLine:true,text:"Операции над ключами"},
+//            {name:"OPERATION_KEY_DB_FIND",text:"FIND",value:0,red:"#06A"},
+//            {name:"OPERATION_KEY_DB_MOVEKEY",text:"MOVEKEY",value:0,red:"#06A"},
+//            {name:"OPERATION_KEY_DB_WRITE",text:"WRITE",value:0,red:"#06A"},
+//            {name:"OPERATION_KEY_DB_DELETE",text:"DELETE",value:0,red:"#06A"},
+
+
+        {name:"MAX:TRANSACTION_COUNT",text:"Число транзакций в блоке (макс)",value:0,red:"#02A"},
+
+
+        {isLine:true,text:"SYSTEM"},
+        {name:"MAX:MEMORY_USAGE",text:"Используемая память, Mb",value:300},
+        {name:"MAX:CPU",text:"CPU WORK, мс",value:0,red:"#06A"},
+//            {name:"MAX:CPU_USER_MODE",text:"USER MODE, мс",value:0,red:"#06A"},
+//            {name:"MAX:CPU_SYS_MODE",text:"USER SYS, мс",value:0,red:"#06A"},
+//            {name:"MAX:CPU_IDLE_MODE",text:"USER IDLE, мс",value:0,red:"#0A6"},
+
+
+        ];
+    var DiagramMap={};
+    var DiagramMapId={};
+    var LMouseOn=false;
+    function InitDiagram(MinHeight)
+    {
+        if(!MinHeight)
+            MinHeight=80;
+        var diargams = document.getElementById("diargams");
+        for(var i=0;i<DiagramArr.length;i++)
+        {
+            var Str;
+            var Item=DiagramArr[i];
+            if(Item.isLine)
+            {
+                if(Item.text)
+                    Str=`<BR><H3 style="text-align: center">${Item.text}</H3>`
+                else
+                    Str="<HR>"
+                diargams.innerHTML+=Str;
+            }
+            else
+            {
+                Item.id="DgrmId"+i;
+                DiagramMap[Item.name]=Item;
+                DiagramMapId[Item.id]=Item;
+                Str=`<BR><DIV style="text-align: center;">${Item.text}</DIV><BR><canvas  class="DIAGRAM" width='1500' height='${MinHeight}' id='${Item.id}'></canvas>`;
+                diargams.innerHTML+=Str;
+            }
+        }
+
+        window.addEventListener('mousedown',function (event)
+        {
+            SetDiagramMouseX(event,"down");
+        }, false);
+        window.addEventListener('mouseup',function (event)
+        {
+            SetDiagramMouseX(event,"up");
+        }, false);
+        window.addEventListener('onmousemove',function (event)
+        {
+            SetDiagramMouseX(event,"move");
+        }, false);
+    }
+
+    function SetDiagramMouseX(event,mode)
+    {
+        if(event.srcElement && event.srcElement.className.indexOf("DIAGRAM")>=0)
+        {
+            if(mode==="down")
+                LMouseOn=true;
+            else
+            if(mode==="up")
+                LMouseOn=false;
+
+            event.preventDefault();
+            if(LMouseOn===true)
+            {
+                var obj = event.srcElement;
+                var mouse=getMouse(obj,event);
+
+                if(event.ctrlKey===true)
+                {
+                    for(var key in DiagramMapId)
+                    {
+                        var Item=DiagramMapId[key];
+                        Item.mouseX=mouse.x;
+                        DrawDiagram(Item);
+                    }
+                }
+                else
+                {
+                    var Item=DiagramMapId[obj.id];
+                    if(Item)
+                    {
+                        Item.mouseX=mouse.x;
+                        DrawDiagram(Item);
+                    }
+                }
+            }
+        }
+    };
+
+    var sessionid;
+    function SetNewSession(cursessionid)
+    {
+        sessionid=cursessionid;
+
+        var diargams = document.getElementById("packets_diargams");
+        if(diargams)
+            diargams.innerHTML="";
+    }
+    function GetDiagram()
+    {
+        var arrNames=[];
+        for(var i=0;i<DiagramArr.length;i++)
+        {
+            var Str;
+            var Item=DiagramArr[i];
+            if(!Item.isLine)
+            {
+                arrNames.push(Item.name);
+            }
+        }
+        GetData("/arr-stats",arrNames,function (Data,Str)
+        {
+            if(!Data || !Data.length)
+                return;
+
+
+            for(var i=0;i<Data.length;i++)
+            {
+                var ItemServer=Data[i];
+                var ItemClient=DiagramMap[ItemServer.name];
+                ItemClient.arr=ItemServer.arr;
+                ItemClient.steptime=ItemServer.steptime;
+                ItemClient.starttime=ItemServer.starttime;
+
+
+                DrawDiagram(ItemClient);
+            }
+        });
+    }
+    function ResizeArr(arr)
+    {
+        var arr2=[];
+        for(var i=0;i<arr.length/2;i++)
+        {
+            arr2[i]=Math.max(arr[i*2],arr[i*2+1]);
+        }
+        return arr2;
+    }
+
+
+    function CreateDump()
+    {
+        SetStatus("---------------");
+        GetData("/CreateDump", function (Data)
+        {
+            if(Data)
+            {
+                SetStatus("result:"+result);
+            }
+        });
+    }
+
+
+</script>
+
+
+<style type="text/css">
+    #topframe
+    {
+        z-index:1000;
+        position:fixed;
+        top:0px;
+        left:0px;
+        text-align: center;
+        width:1200px; /* ширина блока */
+    }
+
+    #status
+    {
+        width:1700px; /* ширина блока */
+        height:20px; /* высота блока */
+        text-align: left;
+    }
+
+    #run
+    {
+        width:100px; /* ширина блока */
+    }
+
+    #BlockChainGraph
+    {
+        z-index:0;
+    }
+    div.vblock
+    {
+        z-index:10;
+        position: absolute;
+    }
+    div.header
+    {
+        cursor: move;
+        float:left;
+        width:175px;
+        height: 20px;
+        text-align: center;
+        border: 1px solid #000;
+        background: #DEE1AE;
+    }
+    input.vclose
+    {
+        right: 0px;
+        width:25px;
+        height: 21px;
+        background: #c6c996;
+    }
+    div.vdata
+    {
+        position: relative;
+        cursor:auto;
+        padding: 5px;
+        top:20;
+        width:190px;
+        border: 1px solid #000;
+        background2: #DEE1AE;
+        height2:150px;
+    }
+    div.nodestatus
+    {
+        position: relative;
+        float:left;
+        padding: 1px;
+        height:16px;
+        width:300px;
+        border: 1px solid #d1e3fe;
+        background: #f0f7fe;
+        text-align: center;
+    }
+
+</style>
+
+<DIV id="topframe">
+    <INPUT type="button" style="float:left" onclick="SetPause()" id="run">
+    <!--<INPUT type="button" style="float:left" onclick="CreateDump()" value="Dump">-->
+
+
+    <DIV id="status">  </DIV>
+</DIV>
+<DIV id="viewer">
+</DIV>
+
+
+<DIV id="packets_diargams">
+</DIV>
+
+<!--<BR><H3 style="text-align: center">Датаграмма полученных пакетов</H3>-->
+<!--<canvas2  width='1500' height='500' id='PACKET_DIAGRAM2'></canvas2>-->
+
+
+<DIV id="diargams">
+</DIV>
+
+
+
+
+<canvas  width='1500' height='1200' id='BlockChainGraph'></canvas>
+</body>
+</html>
+
+

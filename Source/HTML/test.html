@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<script>
+    function DrawDiagram(arr,name,GreenValue)
+    {
+        var obj = document.getElementById(name);
+        var ctx     = obj.getContext('2d');
+        var Left=50;
+        var Top=20;
+        var Button=20;
+        var Right=30;
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+
+        if(arr.length<1)
+            return;
+        var MaxValue=2*GreenValue;
+        for(var i=0;i<arr.length;i++)
+        {
+            if(arr[i]>MaxValue)
+                MaxValue=arr[i];
+        }
+
+
+        var KX=(obj.width-Left-Right)/arr.length;
+        var KY=(obj.height-Top-Button)/MaxValue;
+
+        if(KX>1)
+            ctx.lineWidth=KX;
+        else
+            ctx.lineWidth=1;
+
+
+        var StartX=Left;
+        var StartY=obj.height-Button;
+        function DrawLines(arr,mode,color)
+        {
+            ctx.beginPath();
+            ctx.moveTo(Left,obj.height-Button);
+            ctx.strokeStyle = color;
+            for(var i=0;i<arr.length;i++)
+            {
+                var Value=arr[i];
+                if(mode==="green")
+                {
+                    if(Value>GreenValue)
+                        continue;
+
+                }
+                else
+                if(mode==="red")
+                {
+                    if(Value<=GreenValue)
+                        continue;
+                }
+                var Value1;
+                if(Value>GreenValue)
+                    Value1=GreenValue;
+                else
+                    Value1=Value-1;
+
+                ctx.moveTo(StartX+(i+1)*KX,StartY-Value1*KY);
+                ctx.lineTo(StartX+(i+1)*KX,StartY-Value*KY);
+            }
+            ctx.stroke();
+        }
+        DrawLines(arr,"red","#A00");
+        DrawLines(arr,"green","#0A0");
+
+
+
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.strokeStyle = "#000";
+        Left--;StartY++;StartX--;
+        ctx.moveTo(Left,Top);
+        ctx.lineTo(StartX,StartY);
+        ctx.lineTo(obj.width-10,StartY);
+        ctx.stroke();
+
+        ctx.fillStyle = "#000";
+        ctx.fillText(MaxValue,Left-30,Top);
+
+        var CountNameX=10;
+        if(arr.length<CountNameX)
+            CountNameX=arr.length;
+        var Step=arr.length/CountNameX;
+        var KX3=(obj.width-Left-Right)/CountNameX;
+
+        var KDelitel=Math.floor(Step/5)*5;
+        if(KDelitel==0)
+            KDelitel=1;
+
+        for(i=0;i<=CountNameX;i++)
+        {
+            var Val=i*Step;
+            Val=Math.floor(Val/KDelitel)*KDelitel;
+
+            ctx.fillText(Val,StartX+i*KX3,StartY+15);
+        }
+    }
+
+
+    window.onload=function()
+    {
+        var arr=[];
+        for(var i=0;i<1700;i++)
+            arr[i]=8+Math.floor(Math.random()*16);
+        DrawDiagram(arr,"DGRM",12);
+    }
+</script>
+<body>
+
+<canvas  width='1800' height='300' id='DGRM'></canvas>
+
+
+</body>
+</html>

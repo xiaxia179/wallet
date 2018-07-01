@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Console</title>
+</head>
+
+<!--<script type="text/javascript" src="constant.js"></script>-->
+<script type="text/javascript" src="client.js"></script>
+
+<script type="text/javascript" src="sha3.js"></script>
+<script type="text/javascript" src="crypto-client.js"></script>
+<script>
+    function SetStatus(Str)
+    {
+        var id = document.getElementById("status");
+        id.innerHTML=Str;
+    }
+    function SetStatus2(Str)
+    {
+        var id = document.getElementById("status2");
+        id.innerHTML=Str;
+    }
+
+    var MaxBlockNum=0;
+    var addrArr;
+    var WasTitle;
+
+    function UpdateData()
+    {
+
+        GetData("/getnetparams/", function (Data)
+        {
+            if(Data)
+            {
+                if(Data.CurBlockNum>MaxBlockNum)
+                    MaxBlockNum=Data.CurBlockNum;
+                addrArr=Data.addrArr.data;
+                //SetStatus("addrArr="+addrArr)
+                if(!WasTitle)
+                {
+                    WasTitle=1;
+                    document.title+=":"+Data.port;
+                }
+            }
+        });
+    }
+
+
+
+    function SendToServer()
+    {
+        SaveValues();
+
+        var Value = document.getElementById("idText").value;
+        var Type = document.getElementById("idSend").value;
+        if(Type==="TRCode")
+        {
+            SendTRCode(Value);
+        }
+        else
+        if(Type==="HEX")
+        {
+            SendHEXTransaction(Value);
+        }
+        else
+        {
+            SendDirectCode(Value);
+        }
+
+    }
+
+    function SendDirectCode(Value)
+    {
+        SetStatus("");
+        GetData("/SendDirectCode",Value, function (Data)
+        {
+            if(Data)
+            {
+                SetStatus("Result:"+Data.text);
+            }
+        });
+    }
+    function SendHEXTransaction(Value)
+    {
+        var Body=GetArrFromHex(Value);
+        Body.length+=12;
+        SendTransaction(Body);
+    }
+
+    function SendTRCode(Value)
+    {
+        var DeltaBlockNum = parseInt(document.getElementById("idDeltaBlockNum").value);
+        //var arrValue=toUTF8Array(Value);
+        var Body=[];
+        WriteByte(Body,5)
+        WriteUint(Body,DeltaBlockNum+MaxBlockNum);
+        WriteStr(Body,Value);
+        ToResult(DeltaBlockNum+MaxBlockNum);
+
+//        for(var i=0;i<arrValue.length;i++)
+//            Body[Body.length]=arrValue[i];
+
+
+        var StrHex=GetHexFromArr(Body);
+        GetData("/GetSignFromHEX/",StrHex, function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                var SignArr=GetArrFromHex(Data.Sign);
+                for(var i=0;i<SignArr.length;i++)
+                {
+                    Body[Body.length]=SignArr[i];
+                }
+
+
+                var StrHex=GetStrFromAddr(Body);
+                ToResult(StrHex);
+
+                Body.length+=12;
+                SendTransaction(Body);
+            }
+        });
+    }
+
+    function ToResult(Str)
+    {
+        document.getElementById("result").value=Str;
+    }
+
+    //***********************************************
+
+
+    var glTrSendNum=0;
+    function SendTransaction(Body)
+    {
+        var SumPow = document.getElementById("idPow").value;
+
+        glTrSendNum++;
+        SetStatus("Prepare to sending...");
+
+        CreateNonceAndSend(1,0);
+        function CreateNonceAndSend(bCreateNonce,startnonce)
+        {
+            var CurTrNum=glTrSendNum;
+            var nonce=startnonce;
+            if(bCreateNonce)
+                nonce=CreateHashBodyPOWInnerMinPower(Body,MaxBlockNum,SumPow)
+
+            var StrHex=GetHexFromArr(Body);
+            SetStatus2(StrHex.substr(0,100));
+
+            GetData("/SendTransactionHex/"+StrHex, function (Data)
+            {
+                if(Data)
+                {
+                    var key=GetHexFromArr(shaarr(Body));
+                    SetStatus("Send '"+key.substr(0,8)+"' to block: "+MaxBlockNum+" result:"+Data.text);
+
+                    if(Data.text==="Not add")
+                    {
+                        CreateNonceAndSend(1,nonce+1);
+                    }
+                    else
+                    if(Data.text==="Bad time")
+                    {
+                        SetStatus("Next send...");
+                        setTimeout(function ()
+                        {
+                            if(CurTrNum===glTrSendNum)
+                                CreateNonceAndSend(0,nonce);
+                        },100);
+                    }
+                    else
+                    {
+
+                    }
+                }
+            });
+        }
+    }
+
+
+    function CheckCtrlEnter(e,F)
+    {
+        SaveValues();
+
+        if(e.ctrlKey && e.keyCode===13)
+        {
+            SendToServer();
+        }
+        //SetStatus("keyCode="+e.keyCode)
+    }
+
+
+
+    window.onload=function()
+    {
+
+
+        setInterval(UpdateData,100);
+
+        window.onkeydown = CheckCtrlEnter;
+
+        LoadValues();
+    }
+
+    function LoadValues()
+    {
+        if(!localStorage["WasSave2"])
+            return;
+        document.getElementById("idText").value=localStorage["idText"];
+        document.getElementById("idSend").value=localStorage["idSend"];
+        document.getElementById("idDeltaBlockNum").value=localStorage["idDeltaBlockNum"];
+    }
+    function SaveValues()
+    {
+        localStorage["WasSave2"]=1;
+        localStorage["idText"]=document.getElementById("idText").value;
+        localStorage["idSend"]=document.getElementById("idSend").value;
+        localStorage["idDeltaBlockNum"]=document.getElementById("idDeltaBlockNum").value;
+
+    }
+
+
+
+</script>
+
+<style type="text/css">
+
+</style>
+<body>
+<h3>CONSOLE</h3>
+
+<DIV id="status2"></DIV><BR>
+<DIV id="status"> ... </DIV><BR>
+
+
+New codes:
+<select size="1" id="idSend" onkeyup="SaveValues()" onchange="SaveValues()">
+    <option value="DirectCode">Direct code</option>
+    <option value="TRCode">Transaction code</option>
+    <option value="HEX">HEX Transaction</option>
+</select>
+
+POW:<INPUT type="number" id="idPow" value="10">Delta BlockNum:<INPUT type="number" id="idDeltaBlockNum" value="100">
+
+<BR><BR>
+<textarea id="idText" cols="120" rows="20"> </textarea>
+<BR>
+<INPUT type="button" onclick="SendToServer()" class="buttons" value="Send">
+<BR>
+HEX:
+<BR>
+</textarea>
+<textarea rows="8" cols="120"  name="result" id="result">
+   </textarea>
+
+
+</body>
+</html>

@@ -1,0 +1,1179 @@
+<!doctype html>
+<html>
+<head>
+    <title>FRACTAL NETWORK</title>
+    <meta charset='utf-8' />
+</head>
+
+<style type="text/css">
+    #NetGraph2 {position:absolute; top:120px; left:0px; z-index:0;}
+    #Tree {position:absolute; top:100px; left:900px; z-index:50;}
+
+
+    table
+    {
+        border-collapse: collapse;
+    }
+    .info th,  td {
+        border: 1px solid #000;
+        padding: 5px;
+    }
+    .info td{
+        width: 122px;
+        text-align: right;
+    }
+    .info td:nth-child(1) {
+        width: 220px;
+    }
+
+
+</style>
+
+
+<body>
+<INPUT style="float:left" type="hidden" onclick="HashTree()" value="HashTree" >
+<INPUT style="float:left" type="hidden" onclick="RunAllToMerkl()" value="AllToMerkl" >
+<INPUT style="float:left" type="button" onclick="CreateAll()" value="CreateAll" >
+<INPUT style="float:left" type="hidden" onclick="NodeReDraw()" value="NodeReDraw" >
+<INPUT type="hidden" onclick="FindHash()" value="FindHash" >
+<INPUT type="button" onclick="ExecTransfer()" value="ExecTransfer" >
+Level:<INPUT type="Number" value="0" id="Level" onclick="CheckAllTransfer()">
+<INPUT type="button" onclick="CheckAllTransfer()" value="CheckAllTransfer" >
+<INPUT type="button" onclick="Test01()" value="Test01" >
+Line:<INPUT type="Number" value="-1" id="Line" onchange="Draw()" onclick="Draw()">
+<INPUT type="button" onclick="AddLine(-1)" value="  -  " >
+<INPUT type="button" onclick="AddLine(1)" value="  +  " >
+Channel:<INPUT type="Number" value="0" id="Channel" onchange="Draw()" onclick="Draw()">
+
+
+
+<DIV id="status">Non connected</DIV>
+<DIV id="info"></DIV><DIV id="debug"></DIV><DIV id="result"></DIV>
+<DIV id="result2"></DIV>
+<DIV id="result3"></DIV>
+
+
+
+<canvas height='500' width='1000' id='NetGraph'>Canvas</canvas>
+<canvas height='500' width='1000' id='Tree'>Canvas</canvas>
+
+<table id="send_info">
+    <tr>
+        <th>To</th>
+        <th>Value</th>
+    </tr>
+</table>
+
+
+<script>
+    function AddLine(delta)
+    {
+        var id = document.getElementById("Line");
+        id.value = Math.floor(id.value) + delta;
+        Draw()
+    }
+
+    //Инфо
+    function SetStatus(Str)
+    {
+        var id = document.getElementById("status");
+        id.innerText=Str;
+    }
+    function SetDebug(Str)
+    {
+        var id = document.getElementById("debug");
+        id.innerText=Str;
+    }
+    function SetInfo(Str)
+    {
+        var id = document.getElementById("info");
+        id.innerText=Str;
+    }
+    function SetResult(Str,name)
+    {
+        name = name || "result"
+        var id = document.getElementById(name);
+        id.innerText=Str;
+    }
+
+    var WaveCount=0;
+    var NodesData;
+    var NodesSpec;
+    var NodesInfo;
+    var CurrentNode;
+    var PrevCurrentNode;
+    var CurrentNodeAddr="58565A978CEBA259D3DAD9C5DDF4AA942A37C9A83476CC83A9047921CFA91104";
+
+    //Получение данных для отрисовки
+    function ReDraw()
+    {
+        SetStatus("Connecting...");
+
+        GetData("/nodes", function (Data)
+        {
+            if(Data!==undefined)
+            {
+                var bRedraw=true;
+                if(NodesData!==undefined)
+                if(NodesData.hash==Data.hash)
+                {
+                    SetStatus("OK");
+                    bRedraw=false;
+                }
+
+                if(bRedraw===true || WaveCount>0)
+                {
+                    Draw(Data);
+
+                    if(!CurrentNode && CurrentNodeAddr!=="")
+                    {
+                        CurrentNode=NodesMap[CurrentNodeAddr];
+                        CurrentNodeAddr="";
+                    }
+                }
+            }
+
+            setTimeout(ReDraw, 200);
+        });
+
+    };
+
+    var LastNodesData=[];
+    //Получение данных текущей ноды
+    function ReGetInfo()
+    {
+        if(CurrentNode)
+        {
+            Draw(NodesData);
+
+            //DrawNodeChilds(node1,"rgba(0,250,250, 0.5)");
+            //DrawNodeChilds(node2,"rgba(150,0,150, 0.5)");
+            //return;
+
+
+            if(LastNodesData.length>0)
+                DrawNode(LastNodesData[LastNodesData.length-1],"rgba(250,0,50, 1.0)");
+            if(LastNodesData.length==2)
+            {
+                DrawNode(LastNodesData[0],"rgba(0,50,250, 1.0)");
+                DrawCommonLines(LastNodesData[0],LastNodesData[1]);
+            }
+        }
+        else
+        {
+            LastNodesData.length=0;
+            PrevCurrentNode=undefined;
+
+        }
+
+
+        if(CurrentNode)
+        {
+            GetData("/exec/GetThis/"+CurrentNode.addr, function (Data)
+            {
+                if(Data!==undefined)
+                {
+                    //SetInfo("HashMap:"+JSON.stringify(Data.HashMap));
+
+                    //Data=Data.name;
+                    if(PrevCurrentNode!=CurrentNode)
+                        LastNodesData.push(Data);
+                    else
+                        LastNodesData[LastNodesData.length-1]=Data;
+
+                    if(LastNodesData.length>2)
+                        LastNodesData.splice(0,1);
+                    PrevCurrentNode=CurrentNode;
+
+                    FindHash();
+
+
+                    //SetInfo("LastNodesData:"+JSON.stringify(LastNodesData));
+                }
+
+                setTimeout(ReGetInfo, 200);
+            })
+        }
+        else
+        {
+            //SetInfo("");
+            FindHash();
+            setTimeout(ReGetInfo, 200);
+        }
+
+
+    };
+
+    //Sends history
+    function FillCurrentNodeGridInfo()
+    {
+        if(!CurrentNode)
+            return;
+        var node=CurrentNode;
+
+
+        var htmlTable=document.getElementById("send_info");
+
+        for(var i=1;i<htmlTable.rows.length;i++)
+            htmlTable.rows[i].bWas=false;
+
+        if(!htmlTable.rowmap)
+            htmlTable.rowmap={};
+
+        for(var i=0;i<node.LOG.length;i++)
+        {
+//            var nodeTo=NodesMap[Addr2];
+//            if(!nodeTo)
+//                continue;
+
+            var item=node.LOG[i];
+            var Addr=item.To;
+            var Hash=item.Sign;
+
+            var row=htmlTable.rowmap[Hash];
+            if(!row)
+            {
+                row=htmlTable.insertRow(1);
+                row.insertCell(0);
+                row.insertCell(1);
+                htmlTable.rowmap[Hash]=row;
+
+                row.cells[0].Hash=Hash;
+                row.cells[0].innerText=Addr;
+                row.cells[1].innerText=JSON.stringify(item.Data);
+            }
+            row.bWas=true;
+        }
+
+        for(var i=1;i<htmlTable.rows.length;i++)
+            if(!htmlTable.rows[i].bWas)
+            {
+                var Hash=htmlTable.rows[i].cells[0].Hash;
+                delete htmlTable.rowmap[Hash];
+                htmlTable.deleteRow(i);
+                i--;
+            }
+
+    }
+
+    function FillCurrentNodeGridInfo00()
+    {
+        if(!CurrentNode)
+            return;
+
+
+        var htmlTable=document.getElementById("send_info");
+//        while(htmlTable.rows.length > 1){
+//            htmlTable.deleteRow(1);
+//        }
+
+        for(var i=1;i<htmlTable.rows.length;i++)
+            htmlTable.rows[i].bWas=false;
+
+        if(!htmlTable.rowmap)
+            htmlTable.rowmap={};
+
+        var NetSendMap=NodesData.NetSendMap;
+
+        var mapTo=NetSendMap[CurrentNode.addr];
+        for(var Addr2 in mapTo)
+        {
+            var nodeTo=NodesMap[Addr2];
+            if(!nodeTo)
+                continue;
+
+            var value=mapTo[Addr2];
+            var row=htmlTable.rowmap[Addr2];
+            if(!row)
+            {
+                row=htmlTable.insertRow(1);
+                row.insertCell(0);
+                row.insertCell(1);
+                htmlTable.rowmap[Addr2]=row;
+            }
+
+            row.cells[0].innerText=Addr2;
+            row.cells[1].innerText=value.data;
+            row.bWas=true;
+        }
+
+        for(var i=1;i<htmlTable.rows.length;i++)
+            if(!htmlTable.rows[i].bWas)
+            {
+                var Addr2=htmlTable.rows[i].cells[0].innerText;
+                delete htmlTable.rowmap[Addr2];
+                htmlTable.deleteRow(i);
+                i--;
+            }
+
+    }
+
+
+    //волны (пакеты)
+    var maxT=40;
+    var WaveStageNumber=0;
+    var NodesWave={};
+    function AddWave(node1,node2,value)
+    {
+        var hash=value.hash;
+        var item=NodesWave[hash];
+        if(!item)
+        {
+            WaveCount++;
+            item={
+                    //Data:value.Data,
+                    t:0,
+                    dx:node1.x,
+                    dy:node1.y,
+                    kx:(node2.x-node1.x)/maxT,
+                    ky:(node2.y-node1.y)/maxT
+                };
+            NodesWave[hash]=item;
+        }
+        item.stage=WaveStageNumber;
+    }
+
+    function NextStepWaves()
+    {
+        for(var hash in NodesWave)
+        {
+            var item=NodesWave[hash];
+            if(item.t<maxT)
+            {
+                item.t++;
+                item.x=item.kx*item.t+item.dx;
+                item.y=item.ky*item.t+item.dy;
+            }
+            if(item.t+10>maxT && item.stage+10<WaveStageNumber)
+            {
+                delete NodesWave[hash];
+                WaveCount--;
+            }
+        }
+        
+    }
+    function DrawWaves()
+    {
+        var obj = document.getElementById("NetGraph");
+        var ctx     = obj.getContext('2d');
+
+        for(var hash in NodesWave)
+        {
+            var item=NodesWave[hash];
+
+            var r=2;
+            if(item.t*2>maxT)
+                r=1;
+
+            ctx.beginPath();
+            ctx.arc(item.x, item.y, r, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+
+    }
+
+    //Отрисовка узлов сети
+    var NodesMap={};
+    function Draw(Data)
+    {
+        WaveStageNumber++;
+        NodesData = Data || NodesData;
+
+        SetStatus("Runing...");
+
+        var obj = document.getElementById("NetGraph");
+        var ctx     = obj.getContext('2d');
+
+        var Array=NodesData.Array;
+
+        //корректировка холста по данным
+        var maxX=0;
+        var maxY=0;
+        var maxR=0;
+        for(var i=0;i<Array.length;i++)
+        {
+            var node=Array[i];
+            if(node.x>maxX)
+                maxX=node.x;
+            if(node.y>maxY)
+                maxY=node.y;
+            if(node.r>maxR)
+                maxR=node.r;
+        }
+        maxX=maxX+2*maxR+50;
+        maxY=maxY+2+maxR;
+        if(obj.width<maxX)
+            obj.width=maxX;
+        if(obj.height <maxY)
+            obj.height =maxY;
+
+
+        ctx.fillStyle = "rgba(250,250, 250, 1)";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+
+        ctx.font="10px sans-serif";
+        ctx.fillStyle = "rgba(0,0,250, 1)";
+        ctx.strokeStyle="rgba(0,0,250, 1)";
+
+
+        var id = document.getElementById("Line");
+        var LineLevel=id.value;
+
+        var CountDebug=0;
+        for(var i=0;i<Array.length;i++)
+        {
+            var node=Array[i];
+            var x=node.x;
+            var y=node.y;
+            var r=node.r;
+
+
+
+            NodesMap[node.addr]=node;
+            var name;
+            if(node.Debug!=="")
+            {
+                //name=node.Debug;
+                name=node.name;
+                ctx.fillStyle = "rgba(200,0,0, 1)";
+                ctx.strokeStyle="rgba(200,0,0, 1)";
+                CountDebug++;
+            }
+            else
+            {
+                name=node.name;
+                ctx.fillStyle = "rgba(0,0,250, 1)";
+                ctx.strokeStyle="rgba(0,0,250, 1)";
+            }
+            //name=node.name+"="+node.DataCount;
+            if(node.Visantia)
+            {
+                ctx.fillStyle = "rgba(250,0,250, 1)";
+                ctx.strokeStyle="rgba(250,0,250, 1)";
+            }
+            //else
+            if(node.VisantiaDetected)
+            {
+                //ctx.fillStyle = "rgba(250,50,0, 1)";
+                ctx.strokeStyle="rgba(250,50,0, 1)";
+            }
+
+
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+
+            var arr=GetLevelNodes(node);
+            for(var j=0;j<arr.length;j++)
+            {
+                if(arr[j])
+                {
+                    var len=arr[j].length;
+                    if(len>0)
+                    {
+                        ctx.moveTo(x+r+2, y-r+j);
+                        ctx.lineTo(x+r+2+len, y-r+j);
+                    }
+                }
+            }
+            ctx.stroke();
+            ctx.fillText(name,x-r+1,y-r-2);
+            //ctx.fillText(name,x-r+1,y+r-2);
+
+            if(LineLevel>=0)
+            {
+//                if(CurrentNode)
+//                    if(CurrentNode!==node)
+//                        continue;
+                if(!CurrentNode)
+                    DrawChildLines(ctx,node,LineLevel);
+            }
+        }
+        SetDebug("CountRun="+CountDebug+" DoItemList="+NodesData.DoItemList+" max="+NodesData.DoItemListMax);
+
+
+        if(CurrentNode)
+        {
+            DrawChildLines(ctx,CurrentNode,LineLevel,true,{});
+        }
+
+
+        ctx.strokeStyle="rgba(0,0,150, 0.1)";
+        if(0)
+        for(var i=0;i<Array.length;i++)
+        {
+            var node=Array[i];
+            var x=node.x;
+            var y=node.y;
+            var r=node.r;
+
+            ctx.beginPath();
+
+            var Childs=node.Childs;
+
+            for(var j=0;j<Childs.length;j++)
+            {
+                ctx.moveTo(x, y);
+                ctx.lineTo(Childs[j].x, Childs[j].y);
+            }
+
+            ctx.stroke();
+        }
+
+
+
+        ctx.strokeStyle="rgba(0,250,250, 0.5)";
+        var NetSendMap=NodesData.NetSendMap;
+        for(var Addr in NetSendMap)
+        {
+            var nodeFrom=NodesMap[Addr];
+            if(!nodeFrom)
+                continue;
+
+            var mapTo=NetSendMap[Addr];
+            for(var Addr2 in mapTo)
+            {
+                var nodeTo=NodesMap[Addr2];
+                if(!nodeTo)
+                    continue;
+
+                AddWave(nodeFrom,nodeTo,mapTo[Addr2]);
+            }
+        }
+
+        NextStepWaves();
+        DrawWaves();
+
+        FillCurrentNodeGridInfo();
+
+
+
+    }
+
+
+    //Отрисовка одной ноды
+    function DrawNode(node,strArcStyle)
+    {
+        if(!node)
+            return;
+
+        DrawNodeChilds(node,strArcStyle);
+
+        var ctx     = document.getElementById("NetGraph").getContext('2d');
+
+        //var node=CurrentNode;
+        var x=node.x;
+        var y=node.y;
+        var r=node.r;
+
+        ctx.strokeStyle=strArcStyle;
+        ctx.beginPath();
+        ctx.arc(x, y, r+2, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+
+    function DrawCommonLines(node1,node2)
+    {
+        return;
+
+        if(node1.addr===node2.addr)
+            return;
+
+
+        var ctx     = document.getElementById("NetGraph").getContext('2d');
+        ctx.strokeStyle="rgba(0,0,150, 0.5)";
+
+
+        node1.NodesMap[node1.addr]=1;
+        node2.NodesMap[node2.addr]=1;
+        for(var Addr in node2.NodesMap)
+        {
+            if(node1.NodesMap[Addr])
+            {
+                var nodeChild=NodesMap[Addr];
+                if(!nodeChild)
+                    continue;
+
+                ctx.strokeStyle="rgba(0,250,250, 0.5)";
+                ctx.beginPath();
+                ctx.moveTo(node1.x, node1.y);
+                ctx.lineTo(nodeChild.x, nodeChild.y);
+                ctx.stroke();
+
+                ctx.strokeStyle="rgba(150,0,150, 0.5)";
+                ctx.beginPath();
+                ctx.moveTo(node2.x, node2.y);
+                ctx.lineTo(nodeChild.x, nodeChild.y);
+                ctx.stroke();
+
+            }
+        }
+    }
+
+
+    function DrawNodeChilds(node,strArcStyle)
+    {
+        return;
+
+        if(!node)
+            return;
+
+        var arr=GetLevelNodes(node);
+        if(arr.length===0)
+            return;
+
+        var ctx     = document.getElementById("NetGraph").getContext('2d');
+
+        //var node=CurrentNode;
+        var x=node.x;
+        var y=node.y;
+        var r=node.r;
+
+        ctx.strokeStyle=strArcStyle;
+        ctx.beginPath();
+        ctx.arc(x, y, r+2, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.strokeStyle="rgba(0,0,150, 0.25)";
+
+        for(var j=0;j<arr.length;j++)
+        {
+            DrawChildLines(ctx,node,j);
+        }
+    }
+
+    var idChannel = document.getElementById("Channel");
+
+    function GetLevelNodes(node)
+    {
+        var Channel=idChannel.value;
+        if(Channel>=0)
+        {
+            if(!node.Channel || !node.Channel[Channel])
+                return [];
+            return node.Channel[Channel];
+        }
+        else
+        {
+            return node.LevelNodes;
+        }
+    }
+
+    function DrawChildLines(ctx,node,level,bRecursive,MapDraw)
+    {
+        var arr=GetLevelNodes(node)[level];
+
+        if(arr)
+        for(var k=0;k<arr.length;k++)
+        {
+            var Addr=arr[k];
+            var nodeChild=NodesMap[Addr];
+            if(!nodeChild)
+                continue;
+
+            ctx.beginPath();
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(nodeChild.x, nodeChild.y);
+            ctx.stroke();
+
+            if(bRecursive && !MapDraw[Addr])
+            {
+                MapDraw[Addr]=1;
+                DrawChildLines(ctx,nodeChild,level,bRecursive,MapDraw);
+            }
+        }
+
+    }
+
+    //обработка нажатия кнопки мышки на узле
+    function DoNodeInfo(Fx,Fy)
+    {
+        SetStatus("...");
+        CurrentNode=GetNodeByXY(Fx,Fy);
+        Draw(NodesData);
+     }
+    function DoNodeTransaction(Fx,Fy)
+    {
+        var node=GetNodeByXY(Fx,Fy);
+        CurrentNode=node;
+        if(node!==undefined)
+        {
+            //prompt("Addr", node.addr);
+            //return;
+
+
+            let time=new Date();
+            var str="From "+time.toISOString();
+
+            GetData("/create/"+node.addr+"/"+str, function (Data)
+            {
+                if(Data!==undefined)
+                {
+                    //NodesSpec=Data.array;
+                    //NodesInfo=Data.info;
+                    //SetInfo(""+JSON.stringify(Data.info));
+
+                    Draw(NodesData);
+                }
+            });
+        }
+    }
+
+
+
+    //MERKL
+    //MERKL
+    //MERKL
+    var FindArray={};
+    function DrawMerkl(Merkl)
+    {
+        const MAX_COUNT_BLOCK=60;
+        const width=80;
+        const height=20;
+        const height2=70;
+        var obj = document.getElementById("Tree");
+        var ctx     = obj.getContext('2d');
+        ctx.fillStyle = "rgba(250,250, 250, 1)";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+
+        if(!Merkl)
+            return;
+
+        //RecalHashMerklHex2(Merkl);
+
+        var arr=[];
+        for(let Addr in Merkl)
+            arr.push(Addr);
+
+        SetResult("LENGTH:"+arr.length,"result3");
+
+        if(arr.length===0)
+            return;
+
+        arr.sort(function (addr1,addr2)
+        {
+            if(addr2.length===addr1.length)
+            {
+                if(addr2>addr1)
+                    return 1;
+                else
+                    return -1;
+
+            }
+            return addr2.length-addr1.length;
+        });
+
+
+        var mapItemsByValue={};
+        var mapItems={};
+        var arrCurItems=[];
+        for(var a=0;a<arr.length;a++)
+        {
+            var Addr=arr[a];
+            var Level=Addr.length;
+            var Value=Merkl[Addr];
+
+
+            if(arrCurItems[Level]===undefined)
+                arrCurItems[Level]=[];
+
+            var node={};
+            node.addr=Addr;
+            mapItems[Addr]=node;
+            arrCurItems[Level].push(node);
+
+            node.name=Value.substr(0,12);
+            node.value=Value;
+
+            mapItemsByValue[Value]=node;
+        }
+
+        var maxLen=0;
+        for(var Level=0;Level<arrCurItems.length;Level++)
+        {
+            if(arrCurItems[Level]===undefined)
+                continue;
+
+            if(arrCurItems[Level].length>MAX_COUNT_BLOCK)
+                arrCurItems[Level].length=MAX_COUNT_BLOCK;
+
+            if(arrCurItems[Level].length>maxLen)
+                maxLen=arrCurItems[Level].length;
+        }
+
+        var width2 = maxLen * (width)+50;
+        if(width2<1200)
+            width2=1200;
+        obj.width = width2;
+        obj.height = arr[0].length * (height2)+50;
+
+        ctx.font="10px sans-serif";
+        ctx.fillStyle = "rgba(0,0,250, 1)";
+        ctx.strokeStyle="rgba(0,0,250, 1)";
+        ctx.beginPath();
+        for(var Level=0;Level<arrCurItems.length;Level++)
+        {
+            if(arrCurItems[Level]===undefined)
+                continue;
+
+            var delta=width2/(1+arrCurItems[Level].length);
+
+            for(var i=0;i<arrCurItems[Level].length;i++)
+            {
+                var node=arrCurItems[Level][i];
+                node.x=delta*(i+1);
+                node.y=Level*height2+10;
+
+                ctx.strokeRect(node.x,node.y,width-10,height);
+                ctx.fillText(node.name,node.x+2,node.y+14);
+
+                //parent
+                var addrParent=node.addr.substr(0,node.addr.length-1);
+                var nodeParent=mapItems[addrParent];
+                if(nodeParent && nodeParent!==node)
+                {
+                    ctx.moveTo(node.x+width/2,node.y);
+                    ctx.lineTo(nodeParent.x+width/2,nodeParent.y+height);
+                }
+            }
+        }
+        ctx.stroke();
+
+        //return;
+
+
+
+        ctx.fillStyle = "rgba(10,250,0, 1)";
+        ctx.strokeStyle="rgba(0,200,0, 1)";
+        ctx.beginPath();
+        for(var Addr in mapItems)
+        {
+            var node=mapItems[Addr];
+            if(node.value[0]==="+")
+                node.value=node.value.substr(1);
+            if(FindArray[node.value])
+            {
+                ctx.strokeRect(node.x,node.y,width-10,height);
+                //ctx.fillText(node.name,node.x+2,node.y+14);
+            }
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(0,250,100, 1)";
+        ctx.strokeStyle="rgba(0,250,100, 1)";
+
+        if(LastNodesData.length==2)
+        {
+            let node1=LastNodesData[0];
+            var AddrValue=node1.addr;
+            while(true)
+            {
+                if(AddrValue)
+                    if(AddrValue.substr(0)=="+")
+                        AddrValue=AddrValue.substr(1);
+
+//                if(FindArray[AddrValue])
+//                {
+//                    //SetResult("FIND !!! : "+AddrValue);
+//                    var node=mapItemsByValue[AddrValue];
+//                    SetResult("FIND !!! : "+AddrValue.substr(0,12));
+//                    ctx.strokeRect(node.x-1,node.y-1,width-8,height+2);
+//                    ctx.fillText(node.name,node.x+2,node.y+14);
+//                    break;
+//                }
+
+                var node=mapItemsByValue[AddrValue];
+                if(node)
+                {
+                    var addrParent=node.addr.substr(0,node.addr.length-1);
+                    var nodeParent=mapItems[addrParent];
+                    if(nodeParent && nodeParent!==node)
+                    {
+                        AddrValue=nodeParent.Value;
+                        continue;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+
+
+    //LIB
+    //LIB
+    //LIB
+    function GetNodeByXY(Fx,Fy)
+    {
+        //ищем ноду
+
+        var Array=NodesData.Array;
+        for(var i=0;i<Array.length;i++)
+        {
+            var node=Array[i];
+            var x=node.x;
+            var y=node.y;
+            var r=node.r;
+
+            let dx=x-Fx;
+            let dy=y-Fy;
+            let d=Math.sqrt(dx*dx+dy*dy);
+            if(d<=1+r)//нашли ноду
+            {
+                return node;
+            }
+        }
+        return undefined;
+    }
+
+
+
+    function GetData(Method, Func)
+    {
+        var serv=new XMLHttpRequest();
+        serv.open("GET", Method, true);
+        serv.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        serv.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT");
+        serv.onreadystatechange = function()
+        {
+            if (serv.readyState == 4)
+            {
+                if(serv.status == 200)
+                {
+                    if(Func)
+                        Func(JSON.parse(serv.responseText));
+                }
+                else
+                {
+                    if(Func)
+                        Func(undefined);
+                }
+            }
+        }
+
+        try
+        {
+            serv.send("");
+        }
+        catch (e)
+        {
+            console.log(e);
+        }
+    };
+
+
+    function getMouse(canvas,e)
+    {
+
+        var x = e.clientX - getTrueOffsetLeft(canvas);
+        if(window.pageXOffset)
+            x=x+window.pageXOffset;
+
+        var y = e.clientY - getTrueOffsetTop(canvas);
+        if(window.pageYOffset)
+            y=y+window.pageYOffset
+        var coord= {x:x,y:y};
+        return coord;
+    };
+    function getTrueOffsetLeft(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetLeft || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+    function getTrueOffsetTop(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetTop || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+
+
+
+
+
+
+    //Init
+    //Init
+    //Init
+
+    window.onload=function()
+    {
+        var obj = document.getElementById("NetGraph");
+        obj .addEventListener('mousedown', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+            //DoNodeTransaction(mouse.x,mouse.y);
+            DoNodeInfo(mouse.x,mouse.y);
+            //alert("mousePressed x="+mouse.x+"  y="+mouse.y);
+        }, false);
+
+
+        //if(0)
+        obj .addEventListener('dblclick', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+
+            //DoNodeInfo(mouse.x,mouse.y);
+            DoNodeTransaction(mouse.x,mouse.y);
+
+
+        }, false);
+
+        ReDraw();
+        ReGetInfo();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //BUTTONS
+    function CreateAll()
+    {
+        SetStatus("create all");
+        GetData("/createall");
+    }
+
+
+    function HashTree()
+    {
+        if(CurrentNode!=undefined)
+            GetData("/exec/ExecHashTree/"+CurrentNode.addr);
+    }
+    function ExecTransfer()
+    {
+        NodesWave={};
+        WaveCount=0;
+
+       GetData("/execglobal/ExecTransfer");
+    }
+
+    function RunAllToMerkl()
+    {
+        GetData("/execglobal/AllToMerkl");
+    }
+
+
+
+    function Check()
+    {
+        SetResult("");
+        if(LastNodesData.length===2)
+        {
+            var FindCount=0;
+            var node1=LastNodesData[0];
+            var node2=LastNodesData[1];
+            var count1=0;
+            for(var Hash in node1.HashMapProof)
+            {
+                count1++;
+                if(node2.HashMap[Hash])
+                {
+                    FindCount++;
+                }
+            }
+            var count2=0;
+            for(var Hash in node2.HashMap)
+                count2++;
+
+            SetResult("FindCount ["+count1+"-"+count2+"]  "+node1.name+" in "+node2.name+" = "+FindCount);
+        }
+    }
+
+    function FindHash()
+    {
+        if(CurrentNode!=undefined && LastNodesData.length===2)
+        {
+            //SetResult("");
+            var node1=CurrentNode;
+            var node2=LastNodesData[0];
+            if(node1.addr!==node2.addr)
+            GetData("/exec/FindHash/"+node1.addr+"/"+node2.addr,function (Data)
+            {
+                FindArray=Data;
+                var Count=0;
+                for(var Addr in FindArray)
+                {
+                    Count++;
+                }
+                if(FindArray[node1.addr] && FindArray[node2.addr])
+                    Count=""+Count+" !!";
+
+                SetResult("FIND:"+Count);
+                GetData("/exec/GetViewMerkl/"+node1.addr,function (Data)
+                {
+                    DrawMerkl(Data);
+                });
+            });
+        }
+        else
+        {
+            if(CurrentNode)
+            GetData("/exec/GetViewMerkl/"+CurrentNode.addr,function (Data)
+            {
+                DrawMerkl(Data);
+            });
+        }
+    }
+
+
+    function NodeReDraw()
+    {
+        GetData("/execGlobal/NodeReDraw",function (Data)
+        {
+            SetResult("Result:"+JSON.stringify(Data));
+        });
+    }
+
+    function CheckAllTransfer()
+    {
+        var id = document.getElementById("Level");
+        GetData("/execGlobal/CheckAllTransfer/"+id.value,function (Data)
+        {
+            SetResult("Result:"+JSON.stringify(Data),"result2");
+        });
+    }
+
+
+
+
+    function Test01()
+    {
+        //5fb42794401b13374b5e3856f724ff7f0a3d3d3f9220b2e2f9248723e758dfeb
+        
+    }
+
+</script>
+</body>
+</html>
+

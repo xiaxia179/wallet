@@ -1,0 +1,1867 @@
+<!DOCTYPE HTML>
+
+<html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TEREONUS</title>
+</head>
+
+
+
+<script>
+    window.RUN_CLIENT=1;
+    window.RUN_SERVER=0;
+    if(typeof global === 'object')
+    {
+        global.RUN_CLIENT=1;
+        global.RUN_SERVER=0;
+    }
+</script>
+
+<script type="text/javascript" src="../HTML/JS/client.js"></script>
+
+<script type="text/javascript" src="../HTML/JS/sha3.js"></script>
+<script type="text/javascript" src="../HTML/JS/crypto-client.js"></script>
+
+
+<script>
+    var MiningAccount=0;
+    var min_power_pow_acc_create;
+    var WalletStatus;
+    var BLOCK_PROCESSING_LENGTH=8;
+    var AvgSumPowBit=12;
+    var PubKeyStr;
+    var PrivKeyStr;
+    var MapAccounts={};
+    var MapCheckTransaction={};
+    var MapSendTransaction={};
+
+    var CurTabName;
+    var TabArr=["TabAccounts","TabHistory","TabSend","TabExplorer"];
+    var SaveIdArr=["idAccount","idTo","idSumTER","idSumCENT","idDescription","idSelStyle"];
+    var LoadMapAfter={};
+
+
+    var MapCurrency={};
+    MapCurrency[0]="TER";
+
+    var MaxAccID=0;
+    var MaxBlockNum=0;
+    var StartDateBlock=0;
+
+
+    var CurrentTR={};
+
+    function  TestTest()
+    {
+        GetData("/TestTest/133445",function (Data)
+        {
+            UpdatesData();
+        });
+    }
+</script>
+
+<script>
+    /*User action User action User action User action User action User action User action User action User action */
+
+    //CONFIG
+    //CONFIG
+    //CONFIG
+    function IsPrivateMode()
+    {
+        if(PrivKeyStr && PrivKeyStr.length===64)
+            return true;
+        else
+            return false;
+    }
+
+    function MiningSets()
+    {
+        var name="edit_mining_set";
+        if(IsVisibleBlock(name))
+        {
+            SetVisibleBlock(name,false);
+        }
+        else
+        {
+            SetVisibleBlock(name,true);
+            document.getElementById("idMiningAccount").value=MiningAccount;
+            document.getElementById("idMiningAccount").focus();
+        }
+    }
+    function SaveMiningSet(Value)
+    {
+        SetVisibleBlock("edit_mining_set",false)
+
+        if(Value)
+        {
+            MiningAccount=Value;
+        }
+        else
+        {
+            MiningAccount=parseInt(document.getElementById("idMiningAccount").value);
+        }
+        GetData("/SetMining/"+MiningAccount,function (Data)
+        {
+
+        });
+
+
+    }
+    function CancalMiningSet()
+    {
+        var name="edit_mining_set";
+        SetVisibleBlock(name,false)
+    }
+
+
+
+    function NewPrivateKey()
+    {
+        var arr = new Uint8Array(32);
+        window.crypto.getRandomValues(arr);
+        var Str=GetStrFromAddr(arr);
+
+        document.getElementById("idKeyNew").value=Str;
+        SetVisibleEditKeys(1);
+
+        var Select=document.getElementById("idTypeKey");
+        Select.value="private";
+    }
+    function EditPrivateKey()
+    {
+        if(!IsVisibleBlock("edit_keys"))
+        {
+            var Select=document.getElementById("idTypeKey");
+            if(IsPrivateMode())
+            {
+                document.getElementById("idKeyNew").value=PrivKeyStr;
+                Select.value="private";
+            }
+            else
+            {
+                document.getElementById("idKeyNew").value=PubKeyStr;
+                Select.value="public";
+            }
+
+
+
+            SetVisibleEditKeys(1);
+        }
+        else
+        {
+            CancelSavePrivateKey();
+        }
+    }
+
+    function SavePrivateKey()
+    {
+        var Select=document.getElementById("idTypeKey");
+        var Str=document.getElementById("idKeyNew").value;
+        Str=Str.trim();
+        if(Str.length!==64 && Select.value==="private")
+        {
+            SetStatus("Error: Length must 64 HEX chars. (Length="+Str.length+")");
+            return;
+        }
+        else
+        if(Str.length!==66 && Select.value!=="private")
+        {
+            SetStatus("Error: Length must 66 HEX chars. (Length="+Str.length+")");
+            return;
+        }
+
+        if(Select.value==="private" && PrivKeyStr!==Str)
+            ToLogServer("Changed key: "+PrivKeyStr);
+        else
+        if(Select.value==="public" && PubKeyStr!==Str)
+            ToLogServer("Changed key: "+PubKeyStr);
+
+        GetData("/SetWalletKey/"+Str, function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                if(Select.value==="private")
+                    SelectStyle("styleBlue");
+                else
+                if(Select.value==="public")
+                    SelectStyle("styleGreen");
+
+                SetVisibleEditKeys(0);
+                UpdatesData();
+            }
+        });
+    }
+    function CancelSavePrivateKey()
+    {
+        SetVisibleEditKeys(0);
+    }
+
+    function SetVisibleEditKeys(bSet)
+    {
+        SetVisibleBlock("edit_keys",bSet);
+        if(bSet)
+            document.getElementById("idKeyNew").focus();
+    }
+
+
+    function SetVisibleBlock(name,bSet)
+    {
+
+        var Item=document.getElementById(name);
+        if(bSet)
+        {
+            Item.style.display = 'block';
+        }
+        else
+        {
+            Item.style.display = 'none';
+        }
+        return Item;
+    }
+
+    function IsVisibleBlock(name)
+    {
+        var Item=document.getElementById(name);
+        if(Item.style.display === 'block')
+            return true;
+        else
+            return false;
+
+    }
+
+    //ACCOUNTS
+    //ACCOUNTS
+    //ACCOUNTS
+    function FindMyAccounts()
+    {
+        GetData("/FindMyAccounts",function (Data)
+        {
+           UpdatesData();
+        });
+
+    }
+
+    function NewAccount()
+    {
+        var name="edit_create_acc";
+        if(IsVisibleBlock(name))
+        {
+            SetVisibleBlock(name,false);
+        }
+        else
+        {
+            SetVisibleBlock(name,true);
+            document.getElementById("idAccDescription").focus();
+
+            var Select=document.getElementById("idAccount");
+            if(Select.options.length)
+            {
+                document.getElementById("idAutoSetMining").checked=false;
+            }
+
+        }
+    }
+    function CancelCreateAccount()
+    {
+        var name="edit_create_acc";
+        SetVisibleBlock(name,false)
+    }
+
+    var WasCreateAccountInfo;
+    function CreateAccount()
+    {
+        var Description=document.getElementById("idAccDescription").value;
+        var Adviser=document.getElementById("idAdviser").value;
+
+        WasCreateAccountInfo=PubKeyStr;
+
+        var PubKey=PubKeyStr;
+        var TR=
+            {
+                Type:100,
+                Currency:0,
+                PubKey:PubKey,
+                Description:Description,
+                RefID:Adviser,
+            };
+        var Body=[];
+        WriteByte(Body,TR.Type);
+        WriteUint(Body,TR.Currency);
+        WriteArr(Body,GetArrFromHex(PubKey),33);
+        WriteStr(Body,Description,40);
+        WriteUint(Body,TR.RefID);
+        Body.length+=7;
+        Body.length+=12;
+
+
+        TR.AutoSetMining=document.getElementById("idAutoSetMining").checked;
+        SendTransaction(Body,min_power_pow_acc_create,TR);
+
+        CancelCreateAccount();
+        document.getElementById("idAccDescription").value="";
+    }
+    function CheckLengthAccDesription(name,Length)
+    {
+        var Str=document.getElementById(name).value.substr(0,Length+1);
+        var arr=toUTF8Array(Str);
+        var Len=Length-arr.length;
+        if(Len<0)
+            SetError("Bad length");
+        else
+            SetStatus("Lost: "+Len+" bytes");
+    }
+
+    //RECEIVE
+
+
+
+    //SEND
+    //SEND
+    //SEND
+    function ClearTransaction()
+    {
+        var arr=["idAccount","idTo","idSumTER","idSumCENT","idDescription"];
+        for(var i=0;i<arr.length;i++)
+        {
+            var name=arr[i];
+            var Item=document.getElementById(name);
+            Item.value="";
+        }
+        SaveValues();
+        CreateTransaction();
+    }
+
+    function StartEditTransactionJSON()
+    {
+        var Item=document.getElementById("idTransaction");
+        Item.className="bold";
+    }
+
+    function EditJSONTransaction()
+    {
+        var name="edit_transaction";
+
+        var Item=document.getElementById("idTransaction");
+        if(IsVisibleBlock(name))
+        {
+            SetVisibleBlock(name,false)
+            Item.className="";
+        }
+        else
+        {
+            CreateTransaction();
+            SetVisibleBlock(name,true)
+            Item.className="";
+        }
+    }
+
+    function SelectTypeKey()
+    {
+        var Select=document.getElementById("idTypeKey");
+        var Item=document.getElementById("idKeyNew");
+        if(Select.value==="public" && Item.value===PrivKeyStr)
+            Item.value="";
+        else
+        if(Select.value==="private" && Item.value===PubKeyStr)
+            Item.value="";
+    }
+
+
+    function CurTransactionToForm(bForce)
+    {
+        var Item=document.getElementById("idTransaction");
+        if(Item.className==="" || bForce)
+            Item.value=JSON.stringify(CurrentTR,"",4);
+    }
+
+    function CheckNameAccTo()
+    {
+        var ToID = ParseNum(document.getElementById("idTo").value);
+        if(!MapAccounts[ToID] || (MapAccounts[ToID].MustUpdate && MapAccounts[ToID].MustUpdate<=MaxBlockNum))
+        {
+            GetData("/GetAccount/"+ToID,function (Data)
+            {
+                if(Data && Data.result===1 && Data.Item)
+                {
+                    MapAccounts[Data.Item.Num]=Data.Item;
+                    SetNameAccTo();
+                }
+            });
+        }
+        SetNameAccTo();
+    }
+
+    function SetNameAccTo()
+    {
+        var Str="";
+        var ToID = ParseNum(document.getElementById("idTo").value);
+        var Item=MapAccounts[ToID];
+        var element=document.getElementById("idNameTo");
+        element.innerText=GetAccountText(Item,ToID);
+        if(Item && Item.MyAccount)
+            element.className="bold";
+        else
+            element.className="";
+    }
+
+    function CreateTransaction(F)
+    {
+        CheckNameAccTo();
+        CheckSending();
+
+        var FromID = ParseNum(document.getElementById("idAccount").value);
+        var ToID = ParseNum(document.getElementById("idTo").value);
+        var SumTer = ParseNum(document.getElementById("idSumTER").value);
+        var SumCent = ParseNum(document.getElementById("idSumCENT").value);
+        var Description = document.getElementById("idDescription").value.substr(0,200);
+
+
+        var OperationID=0;
+        var Item=MapAccounts[FromID];
+        if(Item)
+        {
+            OperationID=Item.Value.OperationID;
+        }
+
+
+
+        var TR=
+            {
+                Type:105,
+                Currency:0,
+                FromID:FromID,
+                OperationID:OperationID,
+                To:[{ID:ToID,SumTER:SumTer,SumCENT:SumCent}],
+                Description:Description,
+                Sign:CurrentTR.Sign,
+
+            };
+
+
+
+        if(JSON.stringify(TR)===JSON.stringify(CurrentTR))
+        {
+            if(F)
+                F(CurrentTR);
+            return;
+        }
+
+        CurrentTR=TR;
+
+
+        GetData("/GetSignTransaction/",CurrentTR, function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                CurrentTR.Sign=Data.Sign;
+                CurTransactionToForm();
+                if(F)
+                    F(CurrentTR);
+            }
+        });
+
+    }
+
+    function CheckSending(bToStatus)
+    {
+        var CanSend=IsPrivateMode();
+        var StrButton="Send";
+        var StrButtonSign="Sign JSON";
+        if(!CanSend)
+        {
+            StrButton=" ";
+            StrButtonSign=" ";
+        }
+
+        if(CanSend)
+        {
+            var FromID = ParseNum(document.getElementById("idAccount").value);
+            var Item=MapAccounts[FromID];
+            if(Item && Item.NextSendTime && Item.NextSendTime>MaxBlockNum)
+            {
+                if(bToStatus)
+                    SetStatus("Transaction was sending. Wait... ("+Item.LastTransactionText+")");
+
+                CanSend=false;
+                StrButton="Wait...";
+            }
+        }
+
+        document.getElementById("idSendButton").disabled=(!CanSend);
+        document.getElementById("idSendButton").value=StrButton;
+
+        document.getElementById("idSignJSON").disabled=(!CanSend);
+        document.getElementById("idSignJSON").value=StrButtonSign;
+
+        return CanSend;
+    }
+    function SendMoney()
+    {
+        var ToID = ParseNum(document.getElementById("idTo").value);
+        if(ToID<=0)
+        {
+            SetError("Pay to required!");
+            return;
+        }
+
+        CheckSending(true);
+        if(document.getElementById("idSendButton").disabled)
+            return;
+
+        CreateTransaction(SendMoneyTR);
+    }
+
+    function GetTransactionFromJSON()
+    {
+        var Str=document.getElementById("idTransaction").value;
+        try
+        {
+            var TR=JSON.parse(Str);
+        }
+        catch (e)
+        {
+            SetStatus(e);
+            return undefined;
+        }
+        return TR;
+    }
+    function SendMoneyJSON()
+    {
+        var TR=GetTransactionFromJSON();
+        if(!TR)
+            return;
+
+        SendMoneyTR(TR);
+    }
+    function SignJSON(F)
+    {
+        if(document.getElementById("idSignJSON").disabled)
+            return;
+
+        var TR=GetTransactionFromJSON();
+        if(!TR)
+            return;
+
+        CurrentTR=TR;
+
+        GetData("/GetSignTransaction/",CurrentTR, function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                CurrentTR.Sign=Data.Sign;
+                CurTransactionToForm(true);
+                if(F)
+                    F();
+            }
+        });
+    }
+    function SignAndSendFromJSON()
+    {
+        SignJSON(SendMoneyJSON);
+    }
+
+    function GetTransactionText(TR,key)
+    {
+        var Str;
+        if(TR)
+        {
+            if(TR.Type===100)
+            {
+                Str="New account "+TR.Description.substr(0,20);
+            }
+            else
+            if(TR.Type===105)
+            {
+                var MapItem={};
+                var ValueTotal={SumTER:0,SumCENT:0};
+
+                Str=""+TR.FromID+"/"+TR.OperationID+" to ";
+                for(var i=0;i<TR.To.length;i++)
+                {
+                    var Item=TR.To[i];
+
+                    if(Item.ID===TR.FromID || MapItem[Item.ID])
+                        continue;
+                    MapItem[Item.ID]=1;
+
+                    ADD(ValueTotal,Item);
+                    if(i===0)
+                        Str+="[";
+                    if(Str.length<16)
+                    {
+                        if(i>0)
+                            Str+=",";
+                        Str+=Item.ID;
+                    }
+                    else
+                    if(Str.substr(Str.length-1)!==".")
+                        Str+="...";
+                }
+                Str+="] "+SUM_TO_STRING(ValueTotal,true);
+                Str+=" "+TR.Description.substr(0,20);
+            }
+
+        }
+        else
+        {
+            if(key)
+                Str=key;
+            else
+                Str="";
+        }
+        return Str;
+    }
+
+    function SendMoneyTR(TR)
+    {
+        var Body=[];
+        WriteByte(Body,TR.Type)
+        WriteUint(Body,TR.Currency)
+        WriteUint(Body,TR.FromID)
+        WriteUint32(Body,TR.To.length);
+        for(var i=0;i<TR.To.length;i++)
+        {
+            //To:[{ID:uint,SumTER:uint,SumCENT:uint32}],
+            var Item=TR.To[i];
+            WriteUint(Body,Item.ID);
+            WriteUint(Body,Item.SumTER);
+            WriteUint32(Body,Item.SumCENT);
+
+            if(MapAccounts[Item.ID])
+                MapAccounts[Item.ID].MustUpdate=MaxBlockNum+10;
+        }
+
+        WriteStr(Body,TR.Description);
+        WriteUint(Body,TR.OperationID);
+
+
+        var SignArr=GetArrFromHex(TR.Sign);
+        for(var i=0;i<SignArr.length;i++)
+        {
+            Body[Body.length]=SignArr[i];
+        }
+
+
+        Body.length+=12;
+
+        SendTransaction(Body,AvgSumPowBit,TR,true);
+    }
+
+
+
+    //EXPLORER
+    function ViewGrid(serverpath,nameid,revert,bTotal)
+    {
+        GetData(serverpath, function (Data)
+        {
+            if(!Data || !Data.result)
+                return;
+            SetGridData(Data.arr,nameid,revert,bTotal);
+        });
+
+    }
+
+
+</script>
+
+
+
+
+<script>
+
+    /*Get data from server Get data from server Get data from server Get data from server Get data from server */
+    function UpdatesConfigData()
+    {
+        GetData("/GetWalletInfo", function (Data)
+        {
+            SetConfigData(Data);
+        });
+    }
+    function UpdatesAccountsData()
+    {
+        GetData("/GetWalletAccounts", function (Data)
+        {
+            SetAccountsData(Data);
+        });
+    }
+
+    function UpdatesData()
+    {
+        //UpdatesConfigData();
+        UpdatesAccountsData();
+
+//        if(CurTabName==="TabHistory")
+//            ViewGrid("/GetAct/0/1000/+","grid_receive",1);
+//
+//        if(CurTabName==="TabSend")
+//            ViewGrid("/GetAct/0/1000/-","grid_act_send",1);
+        if(CurTabName==="TabHistory")
+            ViewGrid("/GetAct/0/100/","grid_receive",1);
+
+
+        CheckNameAccTo();
+        CheckSending();
+    }
+
+
+
+    function GetAccountText(Item,Num)
+    {
+        if(Item)
+        {
+            var text=Item.Description;
+            if(!text || text.length===0)
+                text=Num;
+            else
+                text=""+Num+". "+text;
+            var StrSum=SUM_TO_STRING(Item.Value,true);
+            text+=" ("+StrSum+")";
+            return text;
+        }
+        else
+        {
+            return Num;
+        }
+    }
+    function SetAccountsData(Data)
+    {
+        if(!Data || !Data.result)
+            return;
+        var arr=Data.ArrAcc;
+
+        if(arr.length===0 && WasCreateAccountInfo!==PubKeyStr && WalletStatus==="OK")
+        {
+            SelectTab('TabAccounts');
+            SetVisibleBlock("edit_create_acc",false);
+            NewAccount();
+        }
+
+        //select list
+        var Select=document.getElementById("idAccount");
+        if(arr.length!==Select.options.length)
+        {
+            Select.options.length=arr.length;
+        }
+
+        SetGridData(arr,"grid_accounts");
+        for(var i=0;arr && i<arr.length;i++)
+        {
+            var Item=arr[i];
+            Item.MyAccount=true;
+
+            var Num=ParseNum(Item.Num);
+            if(!MapAccounts[Num])
+                MapAccounts[Num]={};
+            CopyObjKeys(MapAccounts[Num],Item);
+
+
+            var option=Select.options[i];
+            option.text=GetAccountText(Item,Num);
+            option.value=Num;
+        }
+
+        var CurentValue=LoadMapAfter["idAccount"];
+        if(CurentValue)
+        {
+            Select.value=CurentValue;
+            delete LoadMapAfter["idAccount"];
+        }
+    }
+
+    function SetConfigData(Data)
+    {
+        if(!Data || !Data.result)
+            return;
+
+        document.title="TEREONUS 1."+Data.VersionNum;
+
+        if(Data.RelayMode || !Data.CurBlockNum || !Data.BlockNumDB || Data.CurBlockNum>Data.BlockNumDB+BLOCK_PROCESSING_LENGTH*2)
+        {
+            var StrMode="";
+            var MaxNum=Data.CurBlockNum-BLOCK_PROCESSING_LENGTH;
+            if(MaxNum>0)
+            {
+                var Percent=Math.trunc(1000*Data.BlockNumDB/MaxNum)/10;
+                if(Percent<0)
+                    Percent=0;
+                StrMode=" "+Percent+"% "+" ("+Data.BlockNumDB+"/"+MaxNum+")";
+            }
+
+            SetStatus("<H1 align='center' style='color:red'>Waiting for synchronization "+StrMode+"</H1>");
+            WalletStatus="WAIT";
+        }
+        else
+        if(WalletStatus==="WAIT")
+        {
+            WalletStatus="OK";
+            SetStatus("<H1 align='center'>Synchronization complete</H1>");
+        }
+
+        MiningAccount=Data.MiningAccount;
+        MaxAccID=Data.MaxAccID;
+        MaxBlockNum=Data.CurBlockNum;
+        StartDateBlock=Data.StartDateBlock;
+
+
+        min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE;
+        PubKeyStr=Data.PublicKey;
+        PrivKeyStr=Data.PrivateKey;
+
+
+        SetArrLog(Data.ArrLog);
+
+        if(document.getElementById("idPubKey").innerText!==PubKeyStr)
+            document.getElementById("idPubKey").innerText=PubKeyStr;
+        document.getElementById("idTo").max=MaxAccID;
+        document.getElementById("idAdviser").max=MaxAccID;
+
+        SetVisibleBlock("idDevelopService",Data.IsDevelopAccount);
+
+        if(Data.NeedRestart)
+        {
+            SetStatus("<H1 align='center' style='color:blue'>Wallet updating complete. Please restart program.</H1>");
+
+            //if(global.nw) nw.Window.get().reload();
+        }
+    }
+
+    function SetArrLog(arr)
+    {
+        var Str="";
+        for(var i=arr.length-1;i>=0;i--)
+        {
+            var Item=arr[i];
+
+            var tr_text=GetTransactionText(MapSendTransaction[Item.key],Item.key.substr(0,16));
+            var info=Item.text;
+            if(tr_text)
+                info+=" ("+tr_text+")";
+
+            if(Item.final)
+            {
+                var TR=MapSendTransaction[Item.key];
+                if(TR && TR.AutoSetMining)
+                {
+                    var Select=document.getElementById("idAccount");
+                    if(Select.options.length)
+                    {
+                        TR.AutoSetMining=0;
+                        SaveMiningSet(Select.options[Select.options.length-1].value)
+                    }
+                }
+
+                var Account=MapCheckTransaction[Item.key];
+                if(Account)
+                {
+                    delete MapCheckTransaction[Item.key];
+                    //delete MapSendTransaction[Item.key];
+                    Account.NextSendTime=0;
+                    SetStatus(info);
+                }
+            }
+
+            Str=Str+info+"\n";
+        }
+        SetStatusFromServer(Str);
+        CheckSending();
+    }
+
+
+</script>
+
+
+
+<script>
+
+
+    //LIB
+    function ConfirmationFromBlock(BlockNum)
+    {
+        var Length=MaxBlockNum-8-BlockNum;
+        if(Length>0)
+        {
+            if(Length<=100)
+                return Length;
+            else
+            {
+                return ">"+Math.floor(Length/100)*100;
+            }
+        }
+        else
+            return "";
+    }
+    function DateFromBlock(BlockNum)
+    {
+        var Str;
+        if(StartDateBlock)
+        {
+            var now=new Date(StartDateBlock+BlockNum*1000);
+            Str=now.toISOString();
+            Str=Str.substr(0,Str.indexOf("."));
+            Str=Str.replace("T"," ");
+        }
+        else
+            Str="";
+        return Str;
+    }
+
+
+
+    var glWorkNum=0;
+    function SetGridData(arr,id_name,revert,btotal)
+    {
+        var htmlTable=document.getElementById(id_name);
+        if(!htmlTable.ItemsMap)
+            htmlTable.ItemsMap={};
+        var map=htmlTable.ItemsMap;
+
+        glWorkNum++;
+        var ValueTotal={SumTER:0,SumCENT:0};
+
+
+        var row0=htmlTable.rows[0];
+        var colcount=row0.cells.length;
+        for(var i=0;arr && i<arr.length;i++)
+        {
+            var Item=arr[i];
+            var ID=(Item.Num);
+
+            var row=map[ID];
+            if(!row)
+            {
+                htmlTable.RowCount++;
+                if(revert)
+                    row=htmlTable.insertRow(1);
+                else
+                    row=htmlTable.insertRow(-1);
+                map[ID]=row;
+                for(var n=0;n<colcount;n++)
+                {
+                    var cell0=row0.cells[n];
+                    var cell=row.insertCell(n);
+                    cell.className  = cell0.className;
+                }
+            }
+            row.Work=glWorkNum;
+            for(var n=0;n<colcount;n++)
+            {
+                var cell0=row0.cells[n];
+                var cell=row.cells[n];
+                var formula=cell0.id;
+                var text=eval(formula);
+                if(cell.innerText!==text)
+                    cell.innerText=text;
+            }
+
+            if(btotal)
+                ADD(ValueTotal,Item.Value);
+        }
+
+        //delete old
+        for(var key in map)
+        {
+            var row=map[key];
+            if(row.Work!==glWorkNum)
+            {
+                htmlTable.deleteRow(row.rowIndex);
+                delete map[key];
+            }
+        }
+        if(btotal)
+        {
+            var id = document.getElementById("idTotalSum");
+            id.innerText="Total: "+SUM_TO_STRING(ValueTotal,1);
+
+        }
+
+    }
+
+    function ClearTable(htmlTable)
+    {
+        if(htmlTable.ItemsMap)
+        {
+            for(var key in htmlTable.ItemsMap)
+            {
+                var item=htmlTable.ItemsMap[key];
+                htmlTable.deleteRow(item.rowIndex);
+            }
+        }
+        htmlTable.ItemsMap={};
+        htmlTable.RowCount=0;
+    }
+
+    function ToLogServer(Str)
+    {
+        GetData("/ToLogServer",Str, function (Data)
+        {
+            UpdatesData();
+        });
+
+    }
+    function SetStatusFromServer(Str)
+    {
+        var id = document.getElementById("idStatusServer");
+        if(id.innerText!==Str)
+            id.innerText=Str;
+    }
+    function SetStatus(Str)
+    {
+        var id = document.getElementById("idStatus");
+        id.innerHTML=Str;
+    }
+    function SetError(Str)
+    {
+        SetStatus("<H3 align='left' style='color:red'>"+Str+"</H3>");
+    }
+
+
+    //TRANSACTON
+    var glTrSendNum=0;
+    function SendTransaction(Body,SumPow,TR,BlockSend)
+    {
+        glTrSendNum++;
+        SetStatus("Prepare to sending...");
+
+        CreateNonceAndSend(1,0);
+        function CreateNonceAndSend(bCreateNonce,startnonce)
+        {
+            var CurTrNum=glTrSendNum;
+            var nonce=startnonce;
+            if(bCreateNonce)
+                nonce=CreateHashBodyPOWInnerMinPower(Body,MaxBlockNum,SumPow)
+
+            var StrHex=GetHexFromArr(Body);
+
+            GetData("/SendTransactionHex/"+StrHex, function (Data)
+            {
+                if(Data)
+                {
+                    var key=GetHexFromArr(shaarr(Body));
+                    SetStatus("Send '"+key.substr(0,8)+"' to block: "+MaxBlockNum+" result:"+Data.text);
+
+                    if(Data.text==="Not add")
+                    {
+                        CreateNonceAndSend(1,nonce+1);
+                    }
+                    else
+                    if(Data.text==="Bad time")
+                    {
+                        SetStatus("Next send...");
+                        setTimeout(function ()
+                        {
+                            if(CurTrNum===glTrSendNum)
+                                CreateNonceAndSend(0,nonce);
+                        },100);
+                    }
+                    else
+                    {
+                        var key=GetHexFromArr(shaarr(Body));
+                        MapSendTransaction[key]=TR;
+
+                        if(BlockSend)
+                        {
+                            var FromID = ParseNum(document.getElementById("idAccount").value);
+                            var Item=MapAccounts[FromID];
+                            if(Item)
+                            {
+                                Item.LastTransactionText=GetTransactionText(TR);
+                                Item.NextSendTime=MaxBlockNum+10;
+
+                                MapCheckTransaction[key]=Item;
+                                CheckSending();
+                                //Item.CheckTransaction=GetHexFromArr(shaarr(Body));
+                                //SetStatus("Block TR: "+Item.CheckTransaction);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+
+    //EVENTS
+    //EVENTS
+    //EVENTS
+    function SetVisibleTab()
+    {
+        if(!CurTabName)
+            CurTabName=TabArr[0];
+
+        var str;
+        for (var i=0;i<TabArr.length;i++)
+        {
+            var name=TabArr[i];
+            var Item=document.getElementById(name);
+            if(!Item)
+                continue;
+            if(CurTabName===name)
+            {
+                Item.style.display = 'block';
+                str="current bt bttab"
+            }
+            else
+            {
+                Item.style.display = 'none';
+                str="bttab bt"
+            }
+
+            var ItemM=document.getElementById("M"+name);
+            if(ItemM)
+                ItemM.className=str;
+        }
+    }
+    function SelectTab(name)
+    {
+        CurTabName=name;
+        SetVisibleTab();
+    }
+
+    function CheckCtrlEnterAndESC(e,F)
+    {
+        SaveValues();
+
+        if(e.ctrlKey && e.keyCode===13)
+        {
+
+            if(CurTabName==="TabAccounts" && IsVisibleBlock("edit_keys"))
+                SavePrivateKey();
+            else
+            if(CurTabName==="TabAccounts" && IsVisibleBlock("edit_create_acc"))
+                CreateAccount();
+            else
+            if(CurTabName==="TabAccounts" && IsVisibleBlock("edit_mining_set"))
+                SaveMiningSet();
+            else
+            if(CurTabName==="TabSend")
+            {
+                if(IsVisibleBlock("edit_transaction"))
+                    SignAndSendFromJSON();
+                else
+                    SendMoney();
+
+            }
+
+        }
+        else
+        if(e.keyCode===27)
+        {
+
+            if(CurTabName==="TabAccounts" && IsVisibleBlock("edit_keys"))
+                CancelSavePrivateKey();
+            else
+            if(CurTabName==="TabAccounts" && IsVisibleBlock("edit_create_acc"))
+                CancelCreateAccount();
+            else
+            if(CurTabName==="TabAccounts" && IsVisibleBlock("edit_mining_set"))
+                CancalMiningSet();
+            else
+            if(CurTabName==="TabSend" && IsVisibleBlock("edit_transaction"))
+                SetVisibleBlock("edit_transaction",false)
+
+        }
+
+    }
+
+    function LoadValues()
+    {
+        if(localStorage["VerSave"]!=="1")
+            return;
+        CurTabName=localStorage["CurTabName"];
+        for(var i=0;i<SaveIdArr.length;i++)
+        {
+            var name=SaveIdArr[i];
+            var Item=document.getElementById(name);
+
+            if(Item.nodeName==="SELECT")
+            {
+                LoadMapAfter[name]=localStorage.getItem(name);
+            }
+//            else
+//            {
+//                Item.value=localStorage.getItem(name);
+//            }
+            Item.value=localStorage.getItem(name);
+            //Item.checked
+        }
+    }
+    function SaveValues()
+    {
+        localStorage["VerSave"]="1";
+        localStorage["CurTabName"]=CurTabName;
+        for(var i=0;i<SaveIdArr.length;i++)
+        {
+            var name=SaveIdArr[i];
+            var Item=document.getElementById(name);
+            window.localStorage.setItem(name,Item.value);
+            //Item.checked
+        }
+    }
+
+    //INIT
+    //INIT
+    //INIT
+    function SelectStyle(value)
+    {
+        var Select=document.getElementById("idSelStyle");
+        if(value)
+            Select.value=value;
+
+        if(!Select.value)
+            Select.value=Select.options[0].value;
+        document.body.className=Select.value;
+    }
+    window.onload=function()
+    {
+        UpdatesData();
+        setInterval(UpdatesData,1000);
+
+        setInterval(UpdatesConfigData,200);
+
+        LoadValues();
+        SelectStyle();
+        SelectTypeKey();
+
+        window.onkeydown = CheckCtrlEnterAndESC;
+        setInterval(SaveValues,2000);
+
+
+        SetVisibleTab();
+        setTimeout(CheckNameAccTo,50);
+
+    }
+
+
+</script>
+
+<script>
+    function CreateCheckPoint()
+    {
+        GetData("/SetCheckPoint/",function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                SetStatus(Data.text);
+            }
+        });
+    }
+    function SetNewCodeVersion()
+    {
+        var VersionNum=document.getElementById("idVersionNum").value;
+        GetData("/SetNewCodeVersion/"+VersionNum,function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                SetStatus(Data.text);
+            }
+        });
+    }
+
+    function OnRestartNode()
+    {
+        GetData("/RestartNode");
+
+    }
+
+
+</script>
+
+<style type="text/css">
+    /*Списки*/
+    table
+    {
+        border-collapse: collapse;
+        width:100%;
+        max-width: 800px
+    }
+    .grid th, .grid td
+    {
+        border: 1px solid #264378;
+        padding: 4px;
+    }
+    .grid td
+    {
+        width: 60px;
+        text-align: right;
+    }
+
+    td.sum
+    {
+        text-align: right;
+        width: 150px;
+        font-weight: 700;
+    }
+    td.num
+    {
+        text-align: right;
+        width: 50px;
+    }
+
+    td.cur
+    {
+        text-align: left;
+        width: 50px;
+    }
+
+    td.txt
+    {
+        text-align: left;
+        width: 100px;
+    }
+    td.desc
+    {
+        text-align: left;
+        width: 300px;
+    }
+    td.name
+    {
+        text-align: center;
+        width: 300px;
+    }
+
+    td.date
+    {
+        text-align: left;
+        width: 400px;
+        font-size: small
+    }
+
+</style>
+
+<style type="text/css">
+    /*TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader*/
+    .bttab
+    {
+        border: 2px solid black;
+        padding: 0px;
+        width: 100%;
+        height: 30px;
+        margin: 0px;
+        font-weight: 700;
+    }
+    .current
+    {
+        border: 0px solid black;
+    }
+
+
+    /*SEND SEND SEND SEND SEND SEND SEND SEND SEND SEND */
+
+    table.form_input
+    {
+       border-collapse: collapse;
+       width: 600px;
+    }
+    .form_input td
+    {
+        width: 20%;
+    }
+    .form_input td:nth-child(2)
+    {
+        width: 80%;
+    }
+
+    .form_input input, .form_input select
+    {
+        width: 98%;
+        text-align: right;
+    }
+
+    .form_input textarea
+    {
+        width: 98%;
+        text-align: left;
+    }
+    .form_input .bsend
+    {
+        width: 33%;
+        height: 30px;
+        text-align: center;
+        float: left;
+    }
+    .short_input input
+    {
+        width: 120px;
+    }
+
+
+    /*CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG*/
+    /*Просмотр ключей*/
+    table.keys
+    {
+        border-collapse: collapse;
+        width: 800px;
+    }
+    /*Редактирование приватного ключа*/
+    #grid_edit_key .bt
+    {
+        width: 80px;
+        height: 30px;
+        line-height: 20px;
+        margin: 10px;
+        text-align: center;
+    }
+    #idTypeKey,#idShortNameText
+    {
+        width: 250px;
+        height: 20px;
+        text-align: left;
+    }
+
+    /*Редактирование new acc description*/
+    #grid_edit_newacc .bt
+    {
+        width: 80px;
+        height: 30px;
+        line-height: 20px;
+        margin: 10px;
+        text-align: center;
+    }
+    #idAutoSetMining
+    {
+        width: 16px;
+        height: 16px;
+        text-align: left;
+        float: left;
+    }
+
+
+    /*idStatus Log operations*/
+    #idStatus
+    {
+        width:100%;
+        max-width: 800px;
+        text-align: left;
+        color:#4F7340;
+    }
+    #idStatusServer
+    {
+        width:100%;
+        max-width: 800px;
+        text-align: left;
+
+        border: 1px solid black;
+        height: 100px;
+        padding: 1px;
+        margin: 0px;
+    }
+
+    #idTransaction
+    {
+        width:100%;
+        max-width: 800px;
+        text-align: left;
+        color:#204410;
+    }
+
+    /*Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons*/
+
+    /*User action*/
+    .btdoit
+    {
+        width: 150px;
+        height: 30px;
+        line-height: 20px;
+        margin: 10px;
+    }
+
+
+    /*All buttons*/
+    .bt
+    {
+        background: transparent;
+        font-weight: 600;
+    }
+</style>
+
+
+<style type="text/css">
+    .bold
+    {
+        font-weight: 600;
+    }
+</style>
+
+<style type="text/css">
+    body.styleBrown .bt
+    {
+        background: #86754A;
+        color: #F5E5BB;
+    }
+    body.styleBrown
+    {
+        background: #F5E5BB;
+    }
+
+    body.styleBrown table.grid
+    {
+        background:#F5F0E3;
+    }
+
+    body.styleBrown .bttab
+    {
+        background: #86754A;
+        color:white;
+    }
+    body.styleBrown .bttab:hover
+    {
+        background: #F5E5BB;
+        color: #503F13;
+    }
+
+    body.styleBrown .current
+    {
+        background: #503F13;
+        color:white;
+    }
+    body.styleBrown .current:hover
+    {
+        background: #503F13;
+        color:white;
+    }
+
+    body.styleBrown input,textarea,select
+    {
+        background:white;
+        color: black;
+    }
+</style>
+<style type="text/css">
+    body.styleGreen .bt
+    {
+        background: #4F7340;
+        color: #CBF4BA;
+    }
+    body.styleGreen
+    {
+        background: #CBF4BA;
+    }
+
+    body.styleGreen table.grid
+    {
+        background:#E7F4E1;
+    }
+
+    body.styleGreen .bttab
+    {
+        background: #4F7340;
+        color:white;
+    }
+    body.styleGreen .bttab:hover
+    {
+        background: #CBF4BA;
+        color: #204410;
+    }
+
+    body.styleGreen .current
+    {
+        background: #204410;
+        color:white;
+    }
+    body.styleGreen .current:hover
+    {
+        background: #204410;
+        color:white;
+    }
+
+
+    body.styleGreen input,textarea,select
+    {
+        background:white;
+        color: black;
+    }
+</style>
+<style type="text/css">
+    body.styleBlue .bt
+    {
+        background: #354259;
+        color: #BED0F2;
+    }
+    body.styleBlue
+    {
+        background: #BED0F2;
+    }
+
+    body.styleBlue table.grid
+    {
+        background:#E1E7F2;
+    }
+
+    body.styleBlue .bttab
+    {
+        background: #354259;
+        color:white;
+    }
+    body.styleBlue .bttab:hover
+    {
+        background: #BED0F2;
+        color: #0D1B35;
+    }
+
+    body.styleBlue .current
+    {
+        background: #0D1B35;
+        color:white;
+    }
+    body.styleBlue .current:hover
+    {
+        background: #0D1B35;
+        color:white;
+    }
+
+    body.styleBlue input,textarea,select
+    {
+        background:white;
+        color: black;
+    }
+</style>
+
+
+
+<body>
+
+<table id="TabHeader" onclick="SelectTab">
+    <tr>
+        <th><INPUT id="MTabAccounts" type="button" onclick="SelectTab('TabAccounts')" class="bttab bt" value="CONFIG"></th>
+        <th><INPUT id="MTabSend" type="button" onclick="SelectTab('TabSend')" class="bttab bt" value="SEND"></th>
+        <th><INPUT id="MTabHistory" type="button" onclick="SelectTab('TabHistory')" class="bttab bt" value="HISTORY"></th>
+        <th><INPUT id="MTabExplorer" type="button" onclick="SelectTab('TabExplorer')" class="bttab bt" value="EXPLORER"></th>
+    </tr>
+</table>
+<DIV id="idStatus">&nbsp;</DIV><BR>
+<DIV id="TabAccounts" style="display: block">
+
+    Public key:<B><DIV id="idPubKey"></DIV></B>
+    <BR>
+    <INPUT type="button" onclick="NewAccount()" class="btdoit bt" value="New account...">
+    <INPUT type="button" onclick="EditPrivateKey()" class="btdoit bt" value="Edit Key..." id="idEditPrivKey">
+    <INPUT type="button" onclick="NewPrivateKey()" class="btdoit bt" value="New PrivateKey...">
+    <INPUT type="button" onclick="MiningSets()" class="btdoit bt" value="Mining Sets...">
+    Style:
+    <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
+        <option value="styleBrown">Brown</option>
+        <option value="styleBlue">Blue</option>
+        <option value="styleGreen">Green</option>
+    </select>
+
+    <DIV id="edit_mining_set" style="display: none">
+        <table class="form_input keys" id="grid_edit_newacc">
+            <tr>
+                <td><DIV>Mining account:</DIV></td><td><INPUT type="number" id="idMiningAccount" min=0 max=1000000000000 value="0"></td>
+            </tr>
+
+            <tr>
+                <td></td>
+                <td><INPUT type="button" onclick="SaveMiningSet()" class="bt" value="Save">
+                    <INPUT type="button" onclick="CancalMiningSet()" class="bt" value="Cancel"></td>
+            </tr>
+        </table>
+    </DIV>
+
+
+    <DIV id="edit_keys" style="display: none">
+        <table class="form_input keys" id="grid_edit_key">
+            <tr>
+                <td>
+                    <select size="1" id="idTypeKey" onkeyup="SelectTypeKey();SaveValues()" onchange="SelectTypeKey();SaveValues()">
+                        <option value="private">Private key</option>
+                        <option value="public">Public key (sign from another wallet)</option>
+                    </select>
+                </td><td><INPUT type="string" id="idKeyNew" value=""></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><INPUT type="button" onclick="SavePrivateKey()" class="bt" value="Save">
+                    <INPUT type="button" onclick="CancelSavePrivateKey()" class="bt" value="Cancel"></td>
+            </tr>
+        </table>
+    </DIV>
+
+
+
+
+    <DIV id="edit_create_acc" style="display: none">
+        <table class="form_input keys" id="grid_edit_newacc">
+            <tr>
+                <td><DIV>Short public name:</DIV></td><td><INPUT type="string" maxlength="40" id="idAccDescription" onkeyup="CheckLengthAccDesription('idAccDescription',40)" value=""></td>
+            </tr>
+
+            <tr>
+                <td><DIV>Adviser:</DIV></td><td><INPUT type="number" id="idAdviser" min=0 max=1000000000000 value="0"></td>
+            </tr>
+            <tr>
+                <td></td><td><INPUT type="checkbox" checked id="idAutoSetMining">Mining on this account</td>
+            </tr>
+
+            <tr>
+                <td></td>
+                <td><INPUT type="button" onclick="CreateAccount()" class="bt" value="Create">
+                    <INPUT type="button" onclick="CancelCreateAccount()" class="bt" value="Cancel"></td>
+            </tr>
+
+        </table>
+    </DIV>
+
+
+    <BR>
+    <table id="grid_accounts" class="grid">
+        <tr>
+            <th id="Item.Num" class="num">ID</th>
+            <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
+            <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+            <th id="Item.Description" class="name">Account name</th>
+            <!--<th id="Item.PubKey.substr(0,12)+'...'">PubKey</th>-->
+            <th id="Item.Value.OperationID" class="num">Operation</th>
+            <th id="Item.RefID" class="num">Adviser</th>
+
+        </tr>
+    </table>
+
+    <DIV id="idDevelopService" style="display: none">
+        <H3>Developer service:</H3>
+
+        <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit bt" value="Create check point">
+        <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit bt" value="Set new code version:">
+        <INPUT type="string" id="idVersionNum" maxlength="6" value="1">
+
+        <BR>
+        <BR>
+
+    </DIV>
+
+</DIV>
+
+<DIV id="TabHistory" style="display: none">
+    <table id="grid_receive" class="grid">
+        <tr>
+            <th id="Item.Direct">Direct</th>
+            <th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>
+            <th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>
+            <th id="SUM_TO_STRING(Item)" class="sum">Amount</th>
+            <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+            <th id="Item.Description"class="desc">Description</th>
+            <th id="Item.FromID" class="num">From</th>
+            <th id="GetStrID(Item.ToID)" class="num">To</th>
+            <th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>
+            <th id="Item.BlockNum" class="num">Block</th>
+        </tr>
+
+    </table>
+</DIV>
+
+
+
+<DIV id="TabSend" style="display: none">
+
+<table class="form_input">
+    <tr>
+        <td>From account</td>
+        <td>
+
+        <select size="1" id="idAccount" onkeyup="CreateTransaction()" onchange="CreateTransaction()">
+        </select>
+
+        <!--<INPUT type="number" list="tri" id="idAccount" value="" onkeyup="CreateTransaction()" onchange="CreateTransaction()"-->
+        <!--placeholder="Your account (required)">-->
+    </td>
+    </tr>
+    <tr><td>&nbsp;</td><td><DIV id="idNameTo" class="bold"></DIV></td></tr>
+    <tr>
+        <td>Pay to</td><td><INPUT style="float: left" type="number" id="idTo" min=1 max=1000000000000 value="" onkeyup="CreateTransaction()" onchange="CreateTransaction()"
+        placeholder="Payee (required)" autofocus></td>
+    </tr>
+    <tr>
+        <td>Amount</td>
+        <td>
+            <DIV class="short_input">
+                <INPUT type="number" id="idSumTER" value="" min=0 max=1000000000 onkeyup="CreateTransaction()" onchange="CreateTransaction()"><B>.</B>
+                <INPUT type="number" id="idSumCENT" value="" min=0 max=999999999 onkeyup="CreateTransaction()" onchange="CreateTransaction()"> <B>TER</B>
+            </DIV>
+        </td>
+    </tr>
+    <tr>
+        <td>Description (optional)</td><td><textarea id="idDescription" rows="4" onkeyup="CheckLengthAccDesription('idDescription',200);CreateTransaction()" onchange="CreateTransaction()"></textarea></td>
+    </tr>
+    <tr>
+        <td>
+        </td>
+        <td>
+        <INPUT type="button" onclick="ClearTransaction()" class="bsend bt" value="Clear">
+        <INPUT type="button" onclick="EditJSONTransaction()" class="bsend bt" value="Edit JSON">
+        <INPUT type="button" onclick="SendMoney()" class="bsend bt" value="Send" id="idSendButton">
+        </td>
+    </tr>
+</table>
+    <DIV id="edit_transaction" style="display: none">
+        <textarea id="idTransaction" rows="18" onkeyup="StartEditTransactionJSON()" onchange="StartEditTransactionJSON()"></textarea>
+        <BR>
+        <INPUT type="button" onclick="SignJSON()" class="btdoit bt" value="Sign JSON" id="idSignJSON">
+        <INPUT type="button" onclick="SendMoneyJSON()" class="btdoit bt" value="Send from JSON">
+    </DIV>
+
+
+<!--History:-->
+<!--<table id="grid_act_send" class="grid">-->
+    <!--<tr>-->
+        <!--<th id="Item.Direct">Direct</th>-->
+        <!--<th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>-->
+        <!--<th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>-->
+        <!--<th id="SUM_TO_STRING(Item)" class="sum">Amount</th>-->
+        <!--<th id="MapCurrency[Item.Currency]" class="cur">Currency</th>-->
+        <!--<th id="Item.Description"class="desc">Description</th>-->
+        <!--<th id="Item.FromID" class="num">From</th>-->
+        <!--<th id="Item.ToID" class="num">To</th>-->
+        <!--<th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>-->
+        <!--<th id="Item.BlockNum" class="num">Block</th>-->
+    <!--</tr>-->
+<!--</table>-->
+
+</DIV>
+
+
+
+
+<DIV id="TabExplorer" style="display: none">
+
+    <INPUT type="button" onclick="ViewGrid('/GetAccountsAll/0/100','grid_accounts_all',0,1)" class="btdoit bt" value="View All Account"><BR>
+    <table id="grid_accounts_all" class="grid">
+        <tr>
+            <th id="Item.Num" class="num">ID</th>
+            <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
+            <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+            <th id="Item.Description"class="name">Account name</th>
+            <th id="Item.PubKey.substr(0,66)">PubKey</th>
+            <th id="Item.Value.OperationID" class="num">Operation</th>
+            <th id="Item.BlockNumCreate" class="num">Block Num</th>
+        </tr>
+    </table>
+    <B><DIV id="idTotalSum"></DIV></B>
+
+
+    <INPUT type="button" onclick="ViewGrid('/GetActsAll/0/100','grid_acts_all')" class="btdoit bt" value="View All Acts"><BR>
+    <table id="grid_acts_all" class="grid">
+        <tr>
+            <th id="Item.Num" class="num">Num</th>
+            <th id="Item.ID" class="num">Account</th>
+            <th id="Item.Mode">Mode</th>
+            <th id="Item.BlockNum">Block</th>
+
+            <th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>
+            <th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>
+            <th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>
+        </tr>
+    </table>
+
+</DIV>
+
+Logs:
+<DIV id="idStatusServer"></DIV><BR>
+
+
+<!--<INPUT type="button" onclick="OnRestartNode()" class="btdoit bt" value="Restart" id="idRestart">-->
+
+</body>
+
+</html>

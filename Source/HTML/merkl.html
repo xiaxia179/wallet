@@ -1,0 +1,331 @@
+<!doctype html>
+<html>
+<head>
+    <title>MERKL HASH</title>
+    <meta charset='utf-8' />
+</head>
+<body>
+
+<INPUT style="float:left" type="button" onclick="ClearTree()" value="ClearTree" >
+<INPUT style="float:left" type="button" onclick="TestRecalcMerkl()" value="TestRecalcMerkl" >
+<INPUT style="float:left" type="button" onclick="CreateHashTest()" value="CreateHashTest" >
+<INPUT type="button" onclick="GetTestTop()" value="GetTestTop" >
+<INPUT type="button" onclick="GetViewMerkl()" value="GetViewMerkl" >
+
+<INPUT type="button" onclick="FindHash()" value="FindHash" >
+
+
+<INPUT style="float:left" type="button" onclick="AddHash()" value="AddHash" >
+
+<INPUT type="text" id="HashValue">
+<INPUT type="text" id="AddrNode">
+
+
+
+<DIV id="result"></DIV>
+
+
+<canvas height='800' width='1600' id='Tree'>Обновите браузер</canvas>
+
+
+
+<script>
+    var FindArray={};
+
+    //Инфо
+    function SetResult(Str)
+    {
+        var id = document.getElementById("result");
+        id.innerText=Str;
+    }
+
+    //LIB
+
+    function GetData(Method, Func)
+    {
+        var serv=new XMLHttpRequest();
+        serv.open("GET", Method, true);
+        serv.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        serv.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT");
+        serv.onreadystatechange = function()
+        {
+            if (serv.readyState == 4)
+            {
+                if(serv.status == 200)
+                {
+                    if(Func)
+                        Func(JSON.parse(serv.responseText));
+                }
+                else
+                {
+                    if(Func)
+                        Func(undefined);
+                }
+            }
+        }
+
+        serv.send("");
+    };
+
+
+    function getMouse(canvas,e)
+    {
+
+        var x = e.clientX - getTrueOffsetLeft(canvas);
+        if(window.pageXOffset)
+            x=x+window.pageXOffset;
+
+        var y = e.clientY - getTrueOffsetTop(canvas);
+        if(window.pageYOffset)
+            y=y+window.pageYOffset
+        var coord= {x:x,y:y};
+        return coord;
+    };
+    function getTrueOffsetLeft(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetLeft || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+    function getTrueOffsetTop(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetTop || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+
+    var Merkl={};
+    function Draw(Tree)
+    {
+        if(Tree)
+            Merkl=Tree;
+
+        const MAX_COUNT_BLOCK=60;
+        const width=80;
+        const height=20;
+        const height2=70;
+        var obj = document.getElementById("Tree");
+        var ctx     = obj.getContext('2d');
+        ctx.fillStyle = "rgba(250,250, 250, 1)";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+
+
+        var arr=[];
+        for(let Addr in Merkl)
+            arr.push(Addr);
+
+        if(arr.length==0)
+            return;
+
+        arr.sort(function (addr1,addr2)
+        {
+            if(addr2.length==addr1.length)
+            {
+                if(addr2>addr1)
+                    return 1;
+                else
+                    return -1;
+
+            }
+            return addr2.length-addr1.length;
+        });
+
+
+        var mapItems={};
+        var arrCurItems=[];
+        for(var a=0;a<arr.length;a++)
+        {
+            var Addr=arr[a];
+            var Level=Addr.length;
+            var Value=Merkl[Addr];
+
+
+            if(arrCurItems[Level]===undefined)
+                arrCurItems[Level]=[];
+
+            var node={};
+            node.addr=Addr;
+            mapItems[Addr]=node;
+            arrCurItems[Level].push(node);
+
+            node.name=Value.substr(0,12);
+            node.value=Value;
+        }
+
+        var maxLen=0;
+        for(var Level=0;Level<arrCurItems.length;Level++)
+        {
+            if(arrCurItems[Level]===undefined)
+                continue;
+
+            if(arrCurItems[Level].length>MAX_COUNT_BLOCK)
+                arrCurItems[Level].length=MAX_COUNT_BLOCK;
+
+            if(arrCurItems[Level].length>maxLen)
+                maxLen=arrCurItems[Level].length;
+        }
+
+        var width2 = maxLen * (width)+50;
+        if(width2<1200)
+            width2=1200;
+        obj.width = width2;
+        obj.height = arr[0].length * (height2)+50;
+
+        ctx.font="10px sans-serif";
+        ctx.fillStyle = "rgba(0,0,250, 1)";
+        ctx.strokeStyle="rgba(0,0,250, 1)";
+        ctx.beginPath();
+        for(var Level=0;Level<arrCurItems.length;Level++)
+        {
+            if(arrCurItems[Level]===undefined)
+                continue;
+
+            var delta=width2/(1+arrCurItems[Level].length);
+
+            for(var i=0;i<arrCurItems[Level].length;i++)
+            {
+                var node=arrCurItems[Level][i];
+                node.x=delta*(i+1);
+                node.y=Level*height2+10;
+
+                ctx.strokeRect(node.x,node.y,width-10,height);
+                ctx.fillText(node.name,node.x+2,node.y+14);
+
+                //parent
+                var addrParent=node.addr.substr(0,node.addr.length-1);
+                var nodeParent=mapItems[addrParent];
+                if(nodeParent && nodeParent!==node)
+                {
+                    ctx.moveTo(node.x+width/2,node.y);
+                    ctx.lineTo(nodeParent.x+width/2,nodeParent.y+height);
+                }
+            }
+        }
+        ctx.stroke();
+
+
+        ctx.fillStyle = "rgba(250,0,0, 1)";
+        ctx.strokeStyle="rgba(250,0,0, 1)";
+        ctx.beginPath();
+        for(var Addr in mapItems)
+        {
+            var node=mapItems[Addr];
+            if(FindArray[node.value])
+            {
+                ctx.strokeRect(node.x,node.y,width-10,height);
+                ctx.fillText(node.name,node.x+2,node.y+14);
+            }
+        }
+        ctx.stroke();
+
+    }
+
+
+
+
+
+    function PrintMerkl()
+    {
+        GetData("/execGlobal/GetTestMerkl/",function (Data)
+        {
+            //SetResult("Result:"+JSON.stringify(Data));
+            Draw(Data);
+        });
+    }
+
+    function AddHash()
+    {
+        var id = document.getElementById("HashValue");
+        //alert(id.value);
+
+        GetData("/execGlobal/AddTestMerkl/"+id.value,function (Data)
+        {
+            Draw(Data);
+        });
+    }
+
+    function CreateHashTest()
+    {
+        for(var i=0;i<32;i++)
+            GetData("/execGlobal/AddTestMerkl/"+i);
+
+        GetData("/execGlobal/AddTestMerkl/"+100,function (Data)
+        {
+            Draw(Data);
+        });
+
+    }
+
+
+    function ClearTree()
+    {
+        GetData("/execGlobal/ClearTestMerkl/",function (Data)
+        {
+            Draw(Data);
+        });
+    }
+
+
+    function TestRecalcMerkl()
+    {
+        GetData("/execGlobal/TestRecalcMerkl/",function (Data)
+        {
+            Draw(Data);
+        });
+    }
+
+    function GetTestTop()
+    {
+        var id = document.getElementById("HashValue");
+        GetData("/execGlobal/GetTestTop/"+id.value,function (Data)
+        {
+            Draw(Data);
+        });
+    }
+
+
+    function GetViewMerkl()
+    {
+        var id = document.getElementById("HashValue");
+        GetData("/exec/GetViewMerkl/"+id.value,function (Data)
+        {
+            Draw(Data);
+        });
+    }
+
+    function FindHash()
+    {
+        var id = document.getElementById("HashValue");
+        var idAddr = document.getElementById("AddrNode");
+        GetData("/exec/FindHash/"+id.value+"/"+idAddr.value,function (Data)
+        {
+            FindArray=Data;
+            var Count=0;
+            for(var Addr in Data)
+            {
+                Count++;
+            }
+            SetResult("FIND:"+Count);
+            //SetResult("Result:"+JSON.stringify(Data));
+            GetViewMerkl();
+        });
+}
+
+
+
+    window.onload=PrintMerkl;
+
+</script>
+</body>
+</html>
+

@@ -1,0 +1,32 @@
+{
+  "name": "Tereonus",
+  "version": "1.0.0",
+  "description": "Tereonus wallet",
+  "main": "run-nw.js",
+  "main2": "run-electron.js",
+  "scripts": 
+  {
+    "start": "./node_modules/.bin/electron ."
+  },
+  "repository": "https://github.com/blockriver/wallet",
+  "keywords": [
+    "wallet",
+    "cryptowallet",
+    "quick",
+    "messenger",
+    "cryptocurrency",
+    "cryptomessenger"
+  ],
+  "author": "progr76@gmail.com",
+  "license": "TERA",
+  "devDependencies": {
+    "electron": "^2.0.0"
+  },
+  "dependencies": {
+    "bintrees": "^1.0.2",
+    "ntp-client": "^0.5.3",
+    "secp256k1": "^3.5.0",
+    "stun": "^1.1.0",
+    "zip": "^1.2.0"
+  }
+}

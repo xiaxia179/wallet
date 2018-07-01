@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RND TEST!</title>
+</head>
+
+<body>
+<script src="node_modules\js-sha3\src\sha3.js">
+</script>
+
+<script>
+
+    var RandomValue=123;
+    function MyRND(max)
+    {
+        RandomValue=(RandomValue*63018038201+123)%489133282872437279;
+        let ret=1.0*RandomValue/489133282872437279;
+        if(max!==undefined)
+            ret=Math.floor(ret*max);
+
+        return ret;
+    }
+
+    var RandomValueHash=1;
+    var RandomValueHashGet=0;
+    function MyHashRND(max)
+    {
+        RandomValueHash++;
+        var array=sha3_array_256(""+RandomValueHash);
+        var Value=(array[0]<<16)+(array[1]<<8)+array[2];
+
+        var ret=Math.floor(Value/(1<<24)*max);
+
+        return ret;
+    }
+    function MathRND(max)
+    {
+        ret=Math.floor(Math.random()*max);
+        return ret;
+    }
+
+    function SetInfo(Str)
+    {
+        var id = document.getElementById("info");
+        id.innerText=Str;
+    }
+
+    function DrawTest(mode)
+    {
+        var obj = document.getElementById("Holst");
+        var ctx     = obj.getContext('2d');
+
+        var width=obj.width;
+        var height=obj.height;
+        var Count=width*height/4;
+
+        ctx.fillStyle = "rgba(250,250, 250, 1)";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.font="10px sans-serif";
+        ctx.fillStyle = "rgba(0,0,250, 1)";
+        ctx.strokeStyle="rgba(0,0,250, 1)";
+
+
+        var id = document.getElementById("Size");
+        var sizeRND=id.value;//width;
+
+        //var array = new Uint16Array(sizeRND);
+        var array = new Uint32Array(sizeRND);
+
+        ctx.beginPath();
+
+        var ErrCount=0;
+        var DoublePoints=new Uint8Array(width*height);
+
+        function Plot(x,y)
+        {
+            x=x & 0xFFFFFFFF;
+            y=y & 0xFFFFFFFF;
+
+            var a=y*width+x;
+            if(DoublePoints[a])
+            {
+                ErrCount++;
+            }
+            else
+            {
+                DoublePoints[a]=1;
+            }
+
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y+1);
+        }
+
+        if(mode==="My")
+            for(var j=0;j<Count;j++)
+            {
+                var x,y;
+                x=MyRND(width);
+                y=MyRND(height);
+
+                Plot(x,y);
+             }
+
+    else
+        if(mode==="Hash")
+            for(var j=0;j<Count;j++)
+            {
+                var x,y;
+                x=MyHashRND(width);
+                y=MyHashRND(height);
+
+                Plot(x,y);
+            }
+        else
+        if(mode==="Math")
+            for(var j=0;j<Count;j++)
+            {
+                var x,y;
+                x=MathRND(width);
+                y=MathRND(height);
+
+                Plot(x,y);
+            }
+        else
+        {
+            var L=sizeRND;
+            for(var j=0;j<Count;j++)
+            {
+                if(L>=sizeRND)
+                {
+                    window.crypto.getRandomValues(array);
+                    L=0;
+                }
+                var x=array[L]%width;
+                var y=(array[L]/width)%height;
+
+                Plot(x,y);
+                L++;
+            }
+        }
+
+        SetInfo("Error count:"+ErrCount);
+
+
+        ctx.stroke();
+    }
+
+    window.onload=function()
+    {
+        DrawTest('My');
+    }
+
+</script>
+<DIV id="info"></DIV><DIV id="debug"></DIV><DIV id="result"></DIV>
+Size:<INPUT type="Number" value="100" id="Size">
+<INPUT type="button" onclick="DrawTest()" value="Test Crypto" >
+<INPUT type="button" onclick="DrawTest('My')" value="Test-My" >
+<INPUT type="button" onclick="DrawTest('Hash')" value="Test-Hash" >
+<INPUT type="button" onclick="DrawTest('Math')" value="Test-Math" >
+<canvas height='500' width='500' id='Holst'>Canvas</canvas>
+
+</body>
+</html>
