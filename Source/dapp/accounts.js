@@ -214,6 +214,9 @@ class CApp extends require("./dapp")
 
     DoCoinBaseTR(Block)
     {
+        if(Block.BlockNum<24*3600)//only on next day of launch network
+            return;
+
         var SysData=this.ReadValue(0);
         var SysBalance=SysData.Value.SumTER;
         const REF_PERIOD=1000*1000;

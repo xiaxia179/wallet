@@ -54,6 +54,7 @@ if(cluster.isMaster)
         ToLog(err.stack);
     });
 
+    if(0)
     process.on('uncaughtException', function (err)
     {
         if(process.send)
@@ -61,7 +62,8 @@ if(cluster.isMaster)
 
         TO_ERROR_LOG("APP",666,err);
         ToLog(err.stack);
-        if(err.code==="ENOTFOUND")
+        if(err.code==="ENOTFOUND"
+        ||err.code==="ECONNRESET")
         {
             //
         }
@@ -144,6 +146,7 @@ function FindAddrAll()
     for(var n=0;n<FindList.length;n++)
     {
         var item=FindList[n];
+        item.FindList=true;
         if(!item.CountSend)
             item.CountSend=0;
         if(item.CountSend>100)

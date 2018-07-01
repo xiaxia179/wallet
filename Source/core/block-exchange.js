@@ -11,8 +11,9 @@ const RBTree = require('bintrees').RBTree;
 //TestTest(); process.exit(0); return;
 
 
-//const FIRST_TIME_BLOCK=1521143567440 - 100*1000;
-global.FIRST_TIME_BLOCK=0;
+//global.FIRST_TIME_BLOCK=0;
+global.CAN_START=false;
+
 
 
 global.CONSENSUS_TIK_TIME=CONSENSUS_PERIOD_TIME/10;//ms
@@ -73,7 +74,7 @@ module.exports = class CConsensus extends require("./block-loader")
     {
         if(glStopNode)
             return;
-        if(!FIRST_TIME_BLOCK)
+        if(!CAN_START)
             return;
 
         this.DoBlockChain();
@@ -391,7 +392,7 @@ module.exports = class CConsensus extends require("./block-loader")
     {
         if(glStopNode)
             return;
-        if(!FIRST_TIME_BLOCK)
+        if(!CAN_START)
             return;
 
         if(this.StartMode)
@@ -1590,7 +1591,7 @@ module.exports = class CConsensus extends require("./block-loader")
 
 global.GetCurrentBlockNumByTime=function GetCurrentBlockNumByTime()
 {
-    if(!FIRST_TIME_BLOCK)
+    if(!CAN_START)
         return 0;
 
     var CurTimeNum=GetCurrentTime()-FIRST_TIME_BLOCK-CONSENSUS_PERIOD_TIME/2;

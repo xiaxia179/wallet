@@ -1,1 +1,0 @@
-"D:\NW-RUN\nwjs\nw.exe" .

@@ -56,8 +56,8 @@ global.MIN_POWER_POW_ACC_CREATE=16;
 
 
 //Работа с памятью:
-global.BLOCK_COUNT_IN_MEMORY=40;
-global.HISTORY_BLOCK_COUNT=40;
+global.BLOCK_COUNT_IN_MEMORY=240;
+global.HISTORY_BLOCK_COUNT=240;
 global.MAX_STAT_PERIOD=3*3600;
 global.MAX_SIZE_LOG=200*1024*1024;
 //global.INTERVAL_FOR_DUMP_MEM=0;
@@ -74,7 +74,7 @@ global.USE_CHECK_KEY_DB=0;
 
 
 //константы соединения:
-const NETWORK="TEREONUS-R";//10
+const NETWORK="TERA-R1";//10
 global.DEF_MAJOR_VERSION="0001";//4
 
 global.DEF_NETWORK=NETWORK+"-"+DEF_MAJOR_VERSION;//15
@@ -83,7 +83,8 @@ global.DEF_CLIENT="TERA-CORE";//16
 global.START_IP="test.com";
 
 global.START_NETWORK_DATE=1530446400000;//(new Date(2018, 6, 1, 12, 0, 0, 0))-0;
-global.START_BLOCK_RUN=0;//!!!!!!!!!!!!!!!!!!!!!!!!!
+global.FIRST_TIME_BLOCK=START_NETWORK_DATE;
+global.START_BLOCK_RUN=0;
 global.CREATE_NUM_START=123;
 
 if(global.HTTP_PORT_NUMBER===undefined)

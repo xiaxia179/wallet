@@ -578,7 +578,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 this.TaskNodeIndex++;
                 Node=arr[this.TaskNodeIndex % arr.length];
             }
-            if(Node.White)
+            if(Node.White && Node.CanHot)
             {
                 if(BlockNum!==undefined && Node.INFO && BlockNum>Node.INFO.BlockNumDB)
                 {
@@ -640,7 +640,7 @@ module.exports = class CBlock extends require("./db/block-db")
         var Foward=Data.Foward;
         if(Foward)
         {
-            var BlockDB=this.GetBlock(Data.BlockNum,false);
+            var BlockDB=this.ReadBlockHeaderDB(Data.BlockNum);
             if(BlockDB && BlockDB.SumHash && CompareArr(BlockDB.SumHash,LoadHash)===0)
             {
                 StartNum=Data.BlockNum-BLOCK_PROCESSING_LENGTH2;
@@ -649,6 +649,10 @@ module.exports = class CBlock extends require("./db/block-db")
                 BlockNum=StartNum+COUNT_BLOCKS_FOR_LOAD+BLOCK_PROCESSING_LENGTH2;
                 if(BlockNum>this.BlockNumDB)
                     BlockNum=this.BlockNumDB;
+            }
+            else
+            {
+                StartNum=undefined;
             }
             //ToLog("FOWARD: Data.BlockNum="+Data.BlockNum+"  this.BlockNumDB="+this.BlockNumDB)
         }
@@ -665,7 +669,7 @@ module.exports = class CBlock extends require("./db/block-db")
             Count+=BLOCK_PROCESSING_LENGTH2;
 
 
-            var BlockDB=this.GetBlock(BlockNum,false);
+            var BlockDB=this.ReadBlockHeaderDB(BlockNum);
             if(BlockDB && (BlockDB.Prepared && (!IsSum) && BlockDB.Hash && CompareArr(BlockDB.Hash,LoadHash)===0
                     || BlockDB.bSave && IsSum && BlockDB.SumHash && CompareArr(BlockDB.SumHash,LoadHash)===0))
             {
@@ -2008,6 +2012,7 @@ module.exports = class CBlock extends require("./db/block-db")
         ToLog("SumHash="+GetHexFromAddres(Block.SumHash));
         ToLog("Comment:"+Block.Comment1+"   "+Block.Comment2);
         console.trace();
+        process.exit();
     }
 
 

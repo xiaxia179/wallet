@@ -14,7 +14,7 @@ global.PERIOD_FOR_RECONNECT=3600*1000;//ms
 //const PERIOD_FOR_RECONNECT=10*1000;//ms
 
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
-global.CODE_VERSION={VersionNum:0,Hash:[],Sign:[],StartLoadVersionNum:0};
+global.CODE_VERSION={VersionNum:5,Hash:[],Sign:[],StartLoadVersionNum:0};
 
 
 var MAX_PING_FOR_CONNECT=50;//ms
@@ -66,6 +66,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     StartConnect(ip,port)
     {
+
         var Node=this.FindRunNodeContext(undefined,ip,port)
 
         if(!Node.ConnectStart)
@@ -75,7 +76,8 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(Delta>=Node.NextConnectDelta)
         {
             // ToLog("Node.Socket="+Node.Socket)
-            if(Node.Socket && (SocketStatus(Node.Socket)===1 || SocketStatus(Node.Socket)===2))
+            //if(Node.Socket && (SocketStatus(Node.Socket)===1 || SocketStatus(Node.Socket)===2))
+            if(Node.DoubleConnection || Node.Socket && SocketStatus(Node.Socket))
             {
 
             }
@@ -229,52 +231,57 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
         //Check point
-        if(global.FIRST_TIME_BLOCK)
+        if(!CREATE_ON_START)
+        if(Data.CheckPoint.BlockNum && Data.CheckPoint.BlockNum>CHECK_POINT.BlockNum)
         {
-            if(Data.CheckPoint.BlockNum && Data.CheckPoint.BlockNum>CHECK_POINT.BlockNum)
+            var SignArr=arr2(Data.CheckPoint.Hash,GetArrFromValue(Data.CheckPoint.BlockNum));
+            if(CheckDevelopSign(SignArr,Data.CheckPoint.Sign))
             {
-                var SignArr=arr2(Data.CheckPoint.Hash,GetArrFromValue(Data.CheckPoint.BlockNum));
-                if(CheckDevelopSign(SignArr,Data.CheckPoint.Sign))
-                {
-                    ToLog("Get new CheckPoint");
+                ToLog("Get new CheckPoint");
 
-                    global.CHECK_POINT=Data.CheckPoint;
-                    var Block=this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
-                    if(Block && CompareArr(Block.Hash,CHECK_POINT.Hash)!==0)
-                    {
-                        //reload chains
-                        this.BlockNumDB=CHECK_POINT.BlockNum-1;
-                        this.TruncateBlockDB(this.BlockNumDB);
-                        this.StartLoadHistory(Node);
-                    }
-                }
-                else
+                global.CHECK_POINT=Data.CheckPoint;
+                var Block=this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
+                if(Block && CompareArr(Block.Hash,CHECK_POINT.Hash)!==0)
                 {
-                    ToLog("Error Sign CheckPoint");
-                    this.AddCheckErrCount(Node,1,"Error Sign CheckPoint");
+                    //reload chains
+                    this.BlockNumDB=CHECK_POINT.BlockNum-1;
+                    this.TruncateBlockDB(this.BlockNumDB);
+                    this.StartLoadHistory(Node);
                 }
             }
-
-
-            if(!CODE_VERSION.StartLoadVersionNum)
-                CODE_VERSION.StartLoadVersionNum=0;
-            if(Data.CodeVersion.VersionNum && Data.CodeVersion.VersionNum>CODE_VERSION.VersionNum
-                && Data.CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+            else
             {
-                var SignArr=arr2(Data.CodeVersion.Hash,GetArrFromValue(Data.CodeVersion.VersionNum));
-                if(CheckDevelopSign(SignArr,Data.CodeVersion.Sign))
-                {
-                    ToLog("Get new CodeVersion");
-                    this.StartLoadCode(Node,Data.CodeVersion);
-                }
-                else
-                {
-                    ToLog("Error Sign CodeVersion");
-                    this.AddCheckErrCount(Node,1,"Error Sign CodeVersion");
-                }
+                ToLog("Error Sign CheckPoint");
+                this.AddCheckErrCount(Node,1,"Error Sign CheckPoint");
             }
-
         }
+
+        if(Node.INFO.CodeVersion.VersionNum!==CODE_VERSION.VersionNum)
+            ToLog("ERR VersionNum="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
+
+
+        if(!CODE_VERSION.StartLoadVersionNum)
+            CODE_VERSION.StartLoadVersionNum=0;
+        if(Data.CodeVersion.VersionNum && Data.CodeVersion.VersionNum>CODE_VERSION.VersionNum
+            && Data.CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+        {
+            var SignArr=arr2(Data.CodeVersion.Hash,GetArrFromValue(Data.CodeVersion.VersionNum));
+            if(CheckDevelopSign(SignArr,Data.CodeVersion.Sign))
+            {
+                ToLog("Get new CodeVersion");
+                this.StartLoadCode(Node,Data.CodeVersion);
+            }
+            else
+            {
+                ToLog("Error Sign CodeVersion");
+                this.AddCheckErrCount(Node,1,"Error Sign CodeVersion");
+            }
+        }
+
+        if(Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum)
+            Node.CanHot=true;
+
+
 
         if(DeltaTime<MAX_PING_FOR_CONNECT)
         {
@@ -301,21 +308,16 @@ module.exports = class CConnect extends require("./transfer-msg")
             this.CorrectTime();
         }
 
-        //Стартовый блок - удалить код после запуска
-        if(!global.FIRST_TIME_BLOCK)
-        if(!WORK_MODE && Times && Data.FIRST_TIME_BLOCK && Times.Count>=1 && Times.AvgDelta<=200)
+        if(!global.CAN_START)
+        if(!WORK_MODE && Times && Times.Count>=1 && Times.AvgDelta<=200)
         {
-            var start=Data.FIRST_TIME_BLOCK;
-            if(start && start!==global.FIRST_TIME_BLOCK)
+            global.CAN_START=true;
+            ToLog("*************************************************************************** CAN_START")
+            if(Node.INFO.BlockNumDB>this.BlockNumDB+COUNT_HISTORY_BLOCKS_FOR_LOAD/2)
             {
-                //ToLog("SET FIRST_TIME_BLOCK="+Data.FIRST_TIME_BLOCK)
-                this.SetFirstTimeBlock(start);//+DELTA_CURRENT_TIME
-                if(Node.INFO.BlockNumDB>this.BlockNumDB+COUNT_HISTORY_BLOCKS_FOR_LOAD/2)
-                {
-                    if(!this.WasStartLoadHistory)
-                        this.StartLoadHistory(Node);
-                    this.WasStartLoadHistory=1;
-                }
+                if(!this.WasStartLoadHistory)
+                    this.StartLoadHistory(Node);
+                this.WasStartLoadHistory=1;
             }
         }
 
@@ -340,14 +342,14 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     DISCONNECT(Info,CurTime)
     {
-        ToLog("FROM "+Info.Node.ip+":"+Info.Node.port+" DISCONNECT: "+Info.Data);
+        ToLog("FROM "+NodeInfo(Info.Node)+" DISCONNECT: "+Info.Data);
         this.DeleteNodeFromWhite(Info.Node);
         this.DeleteNodeFromHot(Info.Node);
     }
     DISCONNECTHOT(Info,CurTime)
     {
         this.DeleteNodeFromHot(Info.Node);
-        ToLog("FROM "+Info.Node.ip+":"+Info.Node.port+" DISCONNECTHOT: "+Info.Data);
+        ToLog("FROM "+NodeInfo(Info.Node)+" DISCONNECTHOT: "+Info.Data);
     }
 
     DeleteNodeFromHot(Node)
@@ -357,6 +359,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         Node.Stage++;
 
         Node.Hot=false;
+        Node.CanHot=false;
         for(var i=0;i<this.LevelNodes.length;i++)
         {
             var arr=this.LevelNodes[i];
@@ -494,7 +497,6 @@ module.exports = class CConnect extends require("./transfer-msg")
         var Value=
             {
                 addrStr:this.addrStr,
-                //addrArr:this.addrArr,
                 ip:this.ip,
                 port:START_PORT_NUMBER,
                 webport:HTTP_PORT_NUMBER,
@@ -596,7 +598,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
 
-        if(Node.White)
+        if(Node.White && Node.CanHot)
         this.Send(Node,
             {
                 "Method":"ADDLEVELCONNECT",
@@ -622,7 +624,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             Count=arr.length;
 
 
-        if(Count>=MAX_CONNECT_CHILD)// || (Count>1 && random(Level+5)!==0))
+        if(!Info.Node.CanHot || Count>=MAX_CONNECT_CHILD)// || (Count>1 && random(Level+5)!==0))
         {
             ret={result:0,Count:Count};
         }
@@ -805,7 +807,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                     Node.LastTime=CurTime;
 
                 var DeltaTime=CurTime-Node.LastTime;
-                if(!Node.Hot || DeltaTime>MAX_WAIT_PERIOD_FOR_HOT)
+                if(!Node.Hot  || !Node.CanHot || DeltaTime>MAX_WAIT_PERIOD_FOR_HOT)
                 {
                     //ToLog("Node.Hot="+Node.Hot+" DeltaTime="+DeltaTime);
                     this.DeleteNodeFromHot(Node);
@@ -867,7 +869,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 var Delta=CurTime-Node.LastTime;
                 if(Delta>MAX_WAIT_PERIOD_FOR_WHITE)
                 {
-                    ToLog("Delete node from White by timer: "+Node.port)
+                    ToLog("Delete node from White by timer: "+NodeInfo(Node))
                     this.DeleteNodeFromWhite(Node);
                 }
             }
@@ -922,6 +924,7 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         if(this.LoadHistoryMode)
             return;
+
 
         //отсоедняем все дочерние узлы, имеющие более одного соединения
         var Level=AddrLevelArr(this.addrArr,Node.addrArr);
