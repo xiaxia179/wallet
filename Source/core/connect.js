@@ -75,8 +75,11 @@ module.exports = class CConnect extends require("./transfer-msg")
             Node.ConnectStart=0;
         var Delta=(new Date)-Node.ConnectStart;
 
-        if(Node.ReconnectFromServer)
+        if(Node.ReconnectFromServer===1)
+        {
+            Node.ReconnectFromServer=2;
             Node.CreateConnect();
+        }
         else
         if(Delta>=Node.NextConnectDelta)
         {
