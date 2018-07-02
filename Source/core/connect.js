@@ -14,7 +14,7 @@ global.PERIOD_FOR_RECONNECT=3600*1000;//ms
 //const PERIOD_FOR_RECONNECT=10*1000;//ms
 
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
-global.CODE_VERSION={VersionNum:9,Hash:[],Sign:[],StartLoadVersionNum:0};
+global.CODE_VERSION={VersionNum:10,Hash:[],Sign:[],StartLoadVersionNum:0};
 
 
 var MAX_PING_FOR_CONNECT=150;//ms
