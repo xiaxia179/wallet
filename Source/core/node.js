@@ -22,7 +22,7 @@ module.exports = class CNode
         this.addrStr=addrStr;
         this.ip=ip;
         this.port=port;
-        this.webport=0;
+        this.UserConnect=0;
 
         if(LastTime)
         {
@@ -31,11 +31,11 @@ module.exports = class CNode
         }
 
         this.TryConnectCount=0;
-        //this.InternetIP=0;
+        this.DirectIP=0;
         this.FromIP=undefined;
         this.FromPort=undefined;
 
-        this.White=false;
+        this.Active=false;
         this.Hot=false;
         this.Stage=0;
         this.CanHot=false;
@@ -108,7 +108,7 @@ module.exports = class CNode
         this.Flood=
             {
                 Count:1,
-                MaxCount:MAX_CONNECTION_WHITE,
+                MaxCount:MAX_CONNECTION_ACTIVE,
                 Time:GetCurrentTime(0)
             };
 
@@ -121,6 +121,11 @@ module.exports = class CNode
             return SocketStatus(this.Socket);
         else
             return 0;
+    }
+
+    CalcIPType()
+    {
+        this.DirectIP=this.IsInternetIP();
     }
     IsInternetIP()
     {
@@ -148,7 +153,7 @@ module.exports = class CNode
         if(NODE.ConnectStatus())
         {
             if(NODE.ConnectStatus()===100)
-                SERVER.AddNodeToWhite(NODE);
+                SERVER.AddNodeToActive(NODE);
             return;
         }
 
@@ -252,6 +257,7 @@ module.exports = class CNode
                     var Res=NODE.SendPOWClient(SOCKET,Buf.Data);
                     if(Res)
                     {
+                        NODE.DirectIP=1;
                         return;//ok
                     }
                 }
@@ -265,8 +271,17 @@ module.exports = class CNode
                 if(Buf)
                 {
                     var Str=Buf.Data;
+                    if(Str==="WAIT_CONNECT_FROM_SERVER")
+                    {
+                        ToLog("**********************OK POW CLIENT connect to server: "+NodeInfo(this)+" : WAIT_CONNECT_FROM_SERVER")
+                        //SetSocketStatus(SOCKET,0);
+                        CloseSocket(SOCKET,"WAIT_CONNECT_FROM_SERVER");
+                        NODE.WaitConnectFromServer=1;
+                    }
+                    else
                     if(Str==="OK")
                     {
+                        NODE.NextConnectDelta=1000;
                         SetSocketStatus(SOCKET,100);
                         ToLog("**********************OK POW CLIENT connect to server: "+NodeInfo(this))
                         this.NextConnectDelta=1000;
@@ -278,8 +293,8 @@ module.exports = class CNode
                         }
                         else
                         {
-                            if(!NODE.White)
-                                SERVER.AddNodeToWhite(NODE);
+                            if(!NODE.Active)
+                                SERVER.AddNodeToActive(NODE);
                         }
 
                         return;//ok
@@ -360,6 +375,23 @@ module.exports = class CNode
     SendPOWClient(Socket,data)
     {
         var Node=this;
+
+        if(Node.ReconnectFromServer)//Connect from ticket
+        {
+            Node.ReconnectFromServer=0;
+
+            var Pow=this.GetPOWClientData(0);
+            Pow.Reconnect=1;
+
+            var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1200,{});
+            var BufAll=SERVER.GetBufFromData("POW_CONNECT7",BufWrite,1);
+            Socket.write(BufAll);
+            return 1;
+        }
+
+
+
+
         try
         {
             var Buf=BufLib.GetObjectFromBuffer(data,FORMAT_POW_TO_CLIENT,{});
@@ -370,22 +402,34 @@ module.exports = class CNode
             return 0;
         }
 
+        var addrStr=GetHexFromAddres(Buf.addrArr);
+        if(Node.addrStrTemp)
+        {
+            ToLog("Set Addr = "+addrStr+"  for: "+NodeInfo(Node));
+            Node.addrStr=addrStr;
+            SERVER.CheckNodeMap(Node);
+        }
+
+
         if(Buf.MIN_POWER_POW>1+MIN_POWER_POW_HANDSHAKE)
         {
             ToLog("BIG MIN_POWER_POW - NOT CONNECTING")
             return 0;
         }
 
-        var TestNode=SERVER.GrayMap[Buf.addrArr];
+        var TestNode=SERVER.NodesMap[addrStr];
         if(TestNode && TestNode!==Node)
         {
+
             if(SocketStatus(TestNode.Socket))
             {
+                ToLog("DoubleConnection find for: "+NodeInfo(Node));
                 Node.DoubleConnection=true;
                 return 0;
             }
             else
             {
+                ToLog("DoubleConnection find for: "+NodeInfo(TestNode));
                 TestNode.DoubleConnection=true;
             }
         }
@@ -400,6 +444,24 @@ module.exports = class CNode
         var nonce=CreateNoncePOWExternMinPower(Hash,0,Buf.MIN_POWER_POW);
 
 
+        var Pow=this.GetPOWClientData(nonce)
+
+
+        if(Socket!==this.Socket)//Reconnect
+        {
+            Pow.Reconnect=1;
+            Pow.SendBytes=this.Socket.SendBytes;
+            SetSocketStatus(this.Socket,200);
+        }
+        var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1200,{});
+        var BufAll=SERVER.GetBufFromData("POW_CONNECT6",BufWrite,1);
+        Socket.write(BufAll);
+        return 1;
+    }
+
+    GetPOWClientData(nonce)
+    {
+        var Node=this;
         var Pow={};
 
         Pow.DEF_NETWORK=DEF_NETWORK;
@@ -411,24 +473,9 @@ module.exports = class CNode
         Pow.FromIP=SERVER.ip;
         Pow.FromPort=SERVER.port;
         Pow.nonce=nonce;
-
-        if(Socket!==this.Socket)//Reconnect
-        {
-            Pow.Reconnect=1;
-            Pow.SendBytes=this.Socket.SendBytes;
-            SetSocketStatus(this.Socket,200);
-        }
-        else
-        {
-            Pow.Reconnect=0;
-            Pow.SendBytes=0;
-        }
-
-        var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1000,{});
-
-        var BufAll=SERVER.GetBufFromData("POW_CONNECT6",BufWrite,1);
-        Socket.write(BufAll);
-        return 1;
+        Pow.Reconnect=0;
+        Pow.SendBytes=0;
+        return Pow;
     }
 
 

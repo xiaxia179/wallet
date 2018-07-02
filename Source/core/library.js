@@ -133,7 +133,7 @@ global.WriteUint32ToArr=function (arr,Num)
 
 global.DelDir=function (Path)
 {
-    if(Path.substr(Path.length-1,1)==="\\")
+    if(Path.substr(Path.length-1,1)==="/")
         Path=Path.substr(0,Path.length-1);
 
     if(fs.existsSync(Path))
@@ -143,7 +143,7 @@ global.DelDir=function (Path)
 
         for(var i=0;i<arr.length;i++)
         {
-            var name=Path+"\\"+arr[i];
+            var name=Path+"/"+arr[i];
             if (fs.statSync(name).isDirectory())
             {
                 DelDir(name);
@@ -430,10 +430,11 @@ global.CompareItemTimePow=function(a,b)
 
 
 
-var const_name_arr=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY","NUM_CODE_COPY"];
+var const_name_arr=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NUM_CODE_COPY","NET_WORK_MODE"];
 global.DELTA_CURRENT_TIME=0;
 global.NUM_CODE_COPY=0;
-global.SERVER_PRIVATE_KEY=undefined;
+global.SERVER_PRIVATE_KEY_HEX=undefined;
+global.NET_WORK_MODE=undefined;
 
 
 global.LOAD_CONST=function ()
@@ -461,10 +462,8 @@ function SaveConst()
     for(var i=0;i<const_name_arr.length;i++)
     {
         var key=const_name_arr[i];
-        constants[key]=global[key];
-
-        if(constants[key]===undefined)
-            throw "constants[key]===undefined  key="+key;
+        if(global[key]!==undefined)
+            constants[key]=global[key];
     }
     SaveParams(GetDataPath("const.lst"),constants);
     WasStartSaveConst=false;

@@ -30,7 +30,7 @@ function UpdateCodeFiles(StartNum)
     {
         var Num=arr2[i];
         var Name="wallet-"+Num+".zip";
-        var Path=fname+"\\"+Name;
+        var Path=fname+"/"+Name;
 
         ToLog("Check file:"+Name);
 
@@ -70,8 +70,7 @@ function UnpackCodeFile(fname)
     reader.forEach(function (entry)
     {
         var Name=entry.getName();
-        //var Path=GetDataPath("Code\\"+Name);
-        var Path=global.CODE_PATH+"\\"+Name;
+        var Path=GetCodePath(Name);
 
         if (entry.isFile())
         {

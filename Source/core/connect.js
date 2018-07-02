@@ -14,15 +14,15 @@ global.PERIOD_FOR_RECONNECT=3600*1000;//ms
 //const PERIOD_FOR_RECONNECT=10*1000;//ms
 
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
-global.CODE_VERSION={VersionNum:5,Hash:[],Sign:[],StartLoadVersionNum:0};
+global.CODE_VERSION={VersionNum:8,Hash:[],Sign:[],StartLoadVersionNum:0};
 
 
-var MAX_PING_FOR_CONNECT=50;//ms
+var MAX_PING_FOR_CONNECT=150;//ms
 var TIME_AUTOSORT_GRAY_LIST=5000;//ms
 var MAX_TIME_CORRECT=10000*1000;//ms TODO сделать настраиваемым, т.е. чем больше времени запущена программа, тем меньше изменение времени. Если более часа и уже была выполнена синхронизация, то макс изменение 250 мс
 
 global.MAX_WAIT_PERIOD_FOR_HOT=2*CONSENSUS_PERIOD_TIME;
-global.MAX_WAIT_PERIOD_FOR_WHITE=10*CONSENSUS_PERIOD_TIME;
+global.MAX_WAIT_PERIOD_FOR_ACTIVE=10*CONSENSUS_PERIOD_TIME;
 
 module.exports = class CConnect extends require("./transfer-msg")
 {
@@ -32,15 +32,16 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
 
-        this.WasGraySort=false;
+        this.WasNodesSort=false;
         //this.ReadyConsensus=false;
 
         this.LevelNodes=[];
         this.LevelNodesCount=0;
 
-        this.GrayArr=[];
-        this.GrayMap={};//addr->node (1:1) //by addr string
-        this.GrayIPMap={};
+        this.NodesArr=[];
+        this.NodesMap={};//addr->node (1:1) //by addr string
+        this.NodesIPMap={};
+        this.WasNodesSort=true;
 
 
 
@@ -55,7 +56,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             setInterval(this.StartCheckConnect.bind(this),1000);
             setInterval(this.StartGetLevelsHotConnects.bind(this),5000);
 
-            setInterval(this.DeleteNodeFromWhiteByTimer.bind(this),5000);
+            setInterval(this.DeleteNodeFromActiveByTimer.bind(this),5000);
 
             setInterval(this.StartReconnect.bind(this),60*1000);
             //setInterval(this.StartReconnect.bind(this),1*1000);
@@ -66,13 +67,17 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     StartConnect(ip,port)
     {
+        if(!ip)
+            return undefined;
 
         var Node=this.FindRunNodeContext(undefined,ip,port)
-
         if(!Node.ConnectStart)
             Node.ConnectStart=0;
         var Delta=(new Date)-Node.ConnectStart;
 
+        if(Node.ReconnectFromServer)
+            Node.CreateConnect();
+        else
         if(Delta>=Node.NextConnectDelta)
         {
             // ToLog("Node.Socket="+Node.Socket)
@@ -99,12 +104,12 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(addrArr!==undefined)
         {
             addrStr=GetHexFromAddres(addrArr);
-            Node=this.GrayMap[addrStr];
+            Node=this.NodesMap[addrStr];
         }
         if(!Node)
         {
             var key=""+ip+":"+port;
-            Node=this.GrayIPMap[key];
+            Node=this.NodesIPMap[key];
             if(!Node)
             {
                 if(addrArr!==undefined)
@@ -140,12 +145,12 @@ module.exports = class CConnect extends require("./transfer-msg")
             return;
 
         var arr=SERVER.GetActualNodes();
-        //for(var Key in this.GrayMap)
+        //for(var Key in this.NodesMap)
         for(var i=0;i<arr.length;i++)
         {
-            //var Node=this.GrayMap[Key];
+            //var Node=this.NodesMap[Key];
             var Node=arr[i];
-            if(Node.White && this.addrStr!==Node.addrStr)
+            if(Node.Active && this.addrStr!==Node.addrStr)
             {
 
                 var Context={"StartTime":GetCurrentTime(0)};
@@ -157,8 +162,6 @@ module.exports = class CConnect extends require("./transfer-msg")
                     }
                 );
                 Node.DeltaTime=undefined;
-
-
             }
         }
     }
@@ -171,6 +174,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 Time:(GetCurrentTime()-0),
                 BlockNumDB:this.BlockNumDB,
                 LoadHistoryMode:this.LoadHistoryMode,
+                CanStart:global.CAN_START,
                 CheckPoint:CHECK_POINT,
                 CodeVersion:CODE_VERSION,
             };
@@ -185,6 +189,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 Time:uint,\
                 BlockNumDB:uint,\
                 LoadHistoryMode:byte,\
+                CanStart:byte,\
                 CheckPoint:{BlockNum:uint,Hash:hash,Sign:arr64},\
                 CodeVersion:{VersionNum:uint,Hash:hash,Sign:arr64},\
                 }"
@@ -199,7 +204,6 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         var Data=this.DataFromF(Info);
 
-        //Info.Node.Version=Info.Version;
         Info.Node.VERSIONMAX=Data.VERSIONMAX;
         this.SendF(Info.Node,
             {
@@ -225,6 +229,9 @@ module.exports = class CConnect extends require("./transfer-msg")
         Node.INFO=Data;
         if(Data.LoadHistoryMode)
             Node.Hot=false;
+        if(!Data.CanStart)
+            Node.Hot=false;
+
         Node.LastTime=GetCurrentTime();
 
 
@@ -256,8 +263,6 @@ module.exports = class CConnect extends require("./transfer-msg")
             }
         }
 
-        if(Node.INFO.CodeVersion.VersionNum!==CODE_VERSION.VersionNum)
-            ToLog("ERR VersionNum="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
 
 
         if(!CODE_VERSION.StartLoadVersionNum)
@@ -279,7 +284,15 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
 
         if(Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum)
+        {
             Node.CanHot=true;
+        }
+        else
+        if(Data.CodeVersion.VersionNum<CODE_VERSION.VersionNum)
+        {
+            Node.CanHot=false;
+            ToLog("ERR VersionNum="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
+        }
 
 
 
@@ -307,12 +320,17 @@ module.exports = class CConnect extends require("./transfer-msg")
 
             this.CorrectTime();
         }
+        else
+        {
+            if(!global.CAN_START)
+                ToLog("DeltaTime="+DeltaTime+">"+MAX_PING_FOR_CONNECT+" ms")
+        }
 
         if(!global.CAN_START)
-        if(!WORK_MODE && Times && Times.Count>=1 && Times.AvgDelta<=200)
+        if(Times && Times.Count>=1 && Times.AvgDelta<=200)
         {
-            global.CAN_START=true;
             ToLog("*************************************************************************** CAN_START")
+            global.CAN_START=true;
             if(Node.INFO.BlockNumDB>this.BlockNumDB+COUNT_HISTORY_BLOCKS_FOR_LOAD/2)
             {
                 if(!this.WasStartLoadHistory)
@@ -320,7 +338,6 @@ module.exports = class CConnect extends require("./transfer-msg")
                 this.WasStartLoadHistory=1;
             }
         }
-
     }
 
 
@@ -337,13 +354,13 @@ module.exports = class CConnect extends require("./transfer-msg")
                 "Data":StrError
             },STR_TYPE
         );
-        //this.DeleteNodeFromWhite(Node);
+        //this.DeleteNodeFromActive(Node);
     }
 
     DISCONNECT(Info,CurTime)
     {
         ToLog("FROM "+NodeInfo(Info.Node)+" DISCONNECT: "+Info.Data);
-        this.DeleteNodeFromWhite(Info.Node);
+        this.DeleteNodeFromActive(Info.Node);
         this.DeleteNodeFromHot(Info.Node);
     }
     DISCONNECTHOT(Info,CurTime)
@@ -410,7 +427,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             {
                 "Method":"RETGETNODES",
                 "Context":Info.Context,
-                "Data":{arr:this.GetPartOfArray(Info.Node)}
+                "Data":{arr:this.GetDirectNodesArray(false)}
             },MAX_NODES_RETURN*150+300
         );
     }
@@ -421,7 +438,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                             addrStr:str64,\
                             ip:str30,\
                             port:uint16,\
-                            webport:uint16,\
+                            UserConnect:uint16,\
                             LastTime:uint,\
                             DeltaTime:uint\
                         }\
@@ -437,7 +454,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         {
             for(var i=0;i<arr.length;i++)
             {
-                this.AddNodeToGray(arr[i]);
+                this.AddToArrNodes(arr[i],true);
             }
         }
         //ToLog("RETGETNODES length="+arr.length);
@@ -447,43 +464,68 @@ module.exports = class CConnect extends require("./transfer-msg")
     GetNewNode(addrStr,ip,port)
     {
         var Node=new CNode(addrStr,ip,port);
-        this.AddNodeToGray(Node);
+        this.AddToArrNodes(Node);
 
 
 
         return Node;
     }
 
-    //Получение части массива
-    GetPartOfArray(Node)
+    IsCanConnect(Node)
     {
-        this.GrayArrSort();
+        if(Node.addrStr===this.addrStr
+            || Node.IsBan
+            || !Node.DirectIP
+            || Node.TryConnectCount>=2
+            || Node.Self
+            || Node.DoubleConnection)
+            return false;
 
-        let ret=[];
-        var len=Math.min(this.GrayArr.length,MAX_NODES_RETURN);
+        if(Node.ip===this.ip &&Node.port===this.port)
+            return false;
+
+        return true;
+    }
+
+    GetDirectNodesArray(bAll)
+    {
+        var ret=[];
+        var len=this.NodesArr.length;
+        var UseRandom=0;
+        if(len>MAX_NODES_RETURN && !bAll)
+        {
+            UseRandom=1;
+            len=MAX_NODES_RETURN;
+        }
         var mapWasAdd={};
 
         for(var i=0;i<len;i++)
         {
-            var Item=this.GrayArr[random(this.GrayArr.length)];
-            if(mapWasAdd[Item.addrStr])
+            var Item;
+            if(UseRandom)
             {
-                continue;
+                Item=this.NodesArr[random(this.NodesArr.length)];
+                if(mapWasAdd[Item.addrStr])
+                {
+                    continue;
+                }
+                mapWasAdd[Item.addrStr]=1;
             }
-            mapWasAdd[Item.addrStr]=1;
+            else
+            {
+                Item=this.NodesArr[i];
+            }
 
-            if(Item.IsBan)
-                continue;
-            if(Item.TryConnectCount>=5)
+
+            if(!this.IsCanConnect(Item))
                 continue;
 
             var Value=
             {
                 addrStr:Item.addrStr,
-                //addrArr:Item.addrArr,
                 ip:Item.ip,
                 port:Item.port,
-                webport:Item.webport,
+                UserConnect:Item.UserConnect,
                 LastTime:Item.LastTime,
                 DeltaTime:Item.DeltaTime
             };
@@ -491,32 +533,38 @@ module.exports = class CConnect extends require("./transfer-msg")
             ret.push(Value);
         }
 
-        return ret;
 
-        var CurTime=GetCurrentTime();
+        var UserConnect=0;
+        if(global.NET_WORK_MODE && NET_WORK_MODE.UseIncomeGrayIP)
+            UserConnect=1;
+
         var Value=
             {
                 addrStr:this.addrStr,
                 ip:this.ip,
-                port:START_PORT_NUMBER,
-                webport:HTTP_PORT_NUMBER,
-                LastTime:CurTime,
+                port:this.port,
+                UserConnect:UserConnect,
+                LastTime:0,
                 DeltaTime:0
             };
         ret.push(Value);
 
         return ret;
     }
-    AddNodeToGray(Item)
+
+    AddToArrNodes(Item,DirectIP)
     {
         if(Item.addrStr==="" || Item.addrStr===this.addrStr)
             return;
+        var Node;
         var key=Item.ip+":"+Item.port;
-        var Node=this.GrayIPMap[key];
-        if(Node)
-            return Node;
+        Node=this.NodesMap[Item.addrStr];
+        if(!Node)
+        {
+            Node=this.NodesIPMap[key];
+        }
 
-        if(!this.GrayMap[Item.addrStr])
+        if(!Node)
         {
 
             if(Item instanceof CNode)
@@ -527,28 +575,24 @@ module.exports = class CConnect extends require("./transfer-msg")
 
             //добавляем новые поля
             Node.Stage=1;
-            Node.id=this.GrayArr.length;
+            Node.id=this.NodesArr.length;
             Node.addrArr=GetAddresFromHex(Node.addrStr);
             //Node.addrStr2=AddrTo2(Node.addrStr);
 
 
-            this.GrayMap[Node.addrStr]=Node;
-            this.GrayArr.push(Node)
+            this.NodesMap[Node.addrStr]=Node;
+            this.NodesArr.push(Node)
 
             //ToLog("NEW: "+Node.ip+":"+Node.port)
 
-            ADD_TO_STAT("AddToGray");
-            if(this.WasGraySort)
-                setTimeout(this.GrayArrSort.bind(this),TIME_AUTOSORT_GRAY_LIST);
-            this.WasGraySort=false;
+            ADD_TO_STAT("AddToNodes");
+            this.NodesArrSortStart();
         }
-        else
-        {
-            Node=this.GrayMap[Item.addrStr];
-            Node.webport=Item.webport;
-        }
+        Node.DirectIP=DirectIP;
+        Node.UserConnect=Item.UserConnect;
 
-        this.GrayIPMap[key]=Node;
+        this.NodesMap[Node.addrStr]=Node;
+        this.NodesIPMap[key]=Node;
 
         if(Node.addrArr && CompareArr(Node.addrArr,this.addrArr)===0)
         {
@@ -559,19 +603,31 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         return Node;
     }
-    GrayArrSort()
-    {
-        if(!this.WasGraySort)
-        {
-            this.WasGraySort=true;
 
-            this.GrayArr.sort(function (a,b)
+    NodesArrSortStart()
+    {
+        if(this.WasNodesSort)
+            setTimeout(this.NodesArrSort.bind(this),TIME_AUTOSORT_GRAY_LIST);
+        this.WasNodesSort=false;
+    }
+
+    NodesArrSort()
+    {
+        if(!this.WasNodesSort)
+        {
+            this.WasNodesSort=true;
+
+            this.NodesArr.sort(function (a,b)
             {
-                if(a.White!==b.White)
-                    return b.White-a.White;
+                if(a.Active!==b.Active)
+                    return b.Active-a.Active;
 
                 return a.LastTime-b.LastTime;
-            })
+            });
+
+
+
+            SaveParams(GetDataPath("nodes.lst"),this.GetDirectNodesArray(true))
         }
     }
 
@@ -584,21 +640,21 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     StartAddLevelConnect(Node)
     {
-        if(this.LoadHistoryMode)
+        if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
         // if(!Node.Stage)
         //     Node.Stage=0;
         Node.Stage++;
 
-        if(Node.Stage>1000 && Node.White)
+        if(Node.Stage>1000 && Node.Active)
         {
-            this.DeleteNodeFromWhite(Node);
+            this.DeleteNodeFromActive(Node);
         }
 
 
 
-        if(Node.White && Node.CanHot)
+        if(Node.Active && Node.CanHot)
         this.Send(Node,
             {
                 "Method":"ADDLEVELCONNECT",
@@ -612,7 +668,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         var ret;
         var Count;
 
-        if(this.LoadHistoryMode)
+        if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
         var Level=AddrLevelArr(this.addrArr,Info.Node.addrArr);
@@ -672,15 +728,15 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         if(glStopNode)
             return;
-        if(this.LoadHistoryMode)
+        if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
 
         var CurTime=GetCurrentTime();
-        for(var n=0;n<this.GrayArr.length;n++)
+        for(var n=0;n<this.NodesArr.length;n++)
         {
-            var Node=this.GrayArr[n];
-            if(!Node.White || Node.addrStr===this.addrStr)
+            var Node=this.NodesArr[n];
+            if(!Node.Active || Node.addrStr===this.addrStr)
                 continue;
 
             this.Send(Node,
@@ -694,7 +750,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     GETHOTLEVELS(Info,CurTime)
     {
-        if(this.LoadHistoryMode)
+        if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
         var ArrSend=[];
@@ -741,7 +797,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                             addrStr:str64,\
                             ip:str30,\
                             port:uint16,\
-                            webport:uint16,\
+                            UserConnect:uint16,\
                             LastTime:uint,\
                             DeltaTime:uint\
                         }]\
@@ -762,7 +818,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             for(var n=0;arr && n<arr.length;n++)
             {
                 var Node=arr[n];
-                arr[n]=this.AddNodeToGray(Node);
+                arr[n]=this.AddToArrNodes(Node);
             }
         }
     }
@@ -789,7 +845,7 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         if(glStopNode)
             return;
-        if(this.LoadHistoryMode)
+        if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
 
@@ -854,7 +910,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
     }
-    DeleteNodeFromWhiteByTimer()
+    DeleteNodeFromActiveByTimer()
     {
         if(glStopNode)
             return;
@@ -867,10 +923,10 @@ module.exports = class CConnect extends require("./transfer-msg")
             var Node=arr[i];
             {
                 var Delta=CurTime-Node.LastTime;
-                if(Delta>MAX_WAIT_PERIOD_FOR_WHITE)
+                if(Delta>MAX_WAIT_PERIOD_FOR_ACTIVE)
                 {
-                    ToLog("Delete node from White by timer: "+NodeInfo(Node))
-                    this.DeleteNodeFromWhite(Node);
+                    ToLog("Delete node from Active by timer: "+NodeInfo(Node))
+                    this.DeleteNodeFromActive(Node);
                 }
             }
         }
@@ -880,10 +936,10 @@ module.exports = class CConnect extends require("./transfer-msg")
     CalcLevels()
     {
         var Levels=[];
-        for(let n=0;n<this.GrayArr.length;n++)
+        for(let n=0;n<this.NodesArr.length;n++)
         {
-            let Child=this.GrayArr[n];
-            if(Child.addrStr===this.addrStr || Child.IsBan || Child.Hot)
+            let Child=this.NodesArr[n];
+            if(!this.IsCanConnect(Child) || Child.Hot)
                 continue;
 
             var Level=AddrLevelArr(this.addrArr,Child.addrArr);
@@ -922,7 +978,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     AddLevelConnect(Node)
     {
-        if(this.LoadHistoryMode)
+        if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
 
@@ -986,9 +1042,9 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     FindPair(L)
     {
-        for(let n=0;n<this.GrayArr.length;n++)
+        for(let n=0;n<this.NodesArr.length;n++)
         {
-            let Node=this.GrayArr[n];
+            let Node=this.NodesArr[n];
             if(Node.addrStr===this.addrStr)
                 continue;
 
@@ -1039,7 +1095,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     GetHotTimeNodes()
     {
-        if(this.LoadHistoryMode)
+        if(this.LoadHistoryMode || !global.CAN_START)
             return this.GetActualNodes();
 
         var ArrNodes=[];
@@ -1166,10 +1222,20 @@ module.exports = class CConnect extends require("./transfer-msg")
         Node.Prioritet=Prioritet;
     }
 
-    AddNodeToWhite(Node)
+    CheckNodeMap(Node)
+    {
+        if(Node.addrStrTemp && Node.addrStrTemp!==Node.addrStr)
+        {
+            delete this.NodesMap[Node.addrStrTemp];
+            this.NodesMap[Node.addrStr]=Node;
+            Node.addrStrTemp=undefined;
+        }
+    }
+
+    AddNodeToActive(Node)
     {
         // if(!Node.addrArr)
-        //     throw "AddNodeToWhite !Node.addrArr"
+        //     throw "AddNodeToActive !Node.addrArr"
 
         if(Node.addrArr)
         {
@@ -1178,83 +1244,46 @@ module.exports = class CConnect extends require("./transfer-msg")
                 return;
             }
 
-            if(Node.addrStrTemp && Node.addrStrTemp!==Node.addrStr)
-            {
-                delete this.GrayMap[Node.addrStrTemp];
-                this.GrayMap[Node.addrStr]=Node;
-                Node.addrStrTemp=undefined;
-            }
+            this.CheckNodeMap(Node);
 
 
             this.ActualNodes.insert(Node);
         }
 
         Node.ResetNode();
-        Node.White=true;
+        Node.Active=true;
         Node.Stage=0;
         Node.NextConnectDelta=1;
 
 
-        ADD_TO_STAT("AddToWhite");
-        //ToLog("AddNodeToWhite: "+Node.addrStr)
+        ADD_TO_STAT("AddToActive");
+        //ToLog("AddNodeToActive: "+Node.addrStr)
 
     }
 
 
-    DeleteNodeFromWhite(Node)
+    DeleteNodeFromActive(Node)
     {
         if(!Node.Stage)
             Node.Stage=0;
         Node.Stage++;
-        Node.White=false;
+        Node.Active=false;
         Node.Hot=false;
 
         // if(!Node.addrArr)
-        //     throw "DeleteNodeFromWhite !Node.addrArr"
+        //     throw "DeleteNodeFromActive !Node.addrArr"
 
         this.ActualNodes.remove(Node);
 
-        //ToLogTrace("DeleteNodeFromWhite");
+        //ToLogTrace("DeleteNodeFromActive");
 
         //Node.CloseNode();
-        CloseSocket(Node.Socket,"DeleteNodeFromWhite");
-        CloseSocket(Node.Socket2,"DeleteNodeFromWhite");
+        CloseSocket(Node.Socket,"DeleteNodeFromActive");
+        CloseSocket(Node.Socket2,"DeleteNodeFromActive");
         Node.ResetNode();
     }
 
 
-
-
-
-    SendTestPacket()
-    {
-
-
-        if(!this.SendTestNum)
-            this.SendTestNum=0;
-        this.SendTestNum++;
-        var data=Buffer.alloc(TEST_SIZE_SEND*1024);
-        for(var i=0;i<data.length;i++)
-            data[i]=i%256;
-
-
-        for(var Key in this.GrayMap)
-        {
-            var Node=this.GrayMap[Key];
-            if(Node.White && this.addrStr!==Node.addrStr)
-            {
-                this.Send(Node,
-                    {
-                        "Method":"TEST",
-                        "Data":data,//{SendTestNum:SendTestNum,data:data},
-                    },1);
-            }
-        }
-    }
-    TEST(Info,CurTime)
-    {
-        ADD_TO_STAT("TEST_PACKET");
-    }
 
     StartReconnect()
     {
@@ -1281,14 +1310,25 @@ module.exports = class CConnect extends require("./transfer-msg")
     }
 
 
+    IsLocalIP(addr)
+    {
+        //192.168.0.0 - 192.168.255.255
+        //10.0.0.0 - 10.255.255.255
+        //100.64.0.0 - 100.127.255.255
+        //172.16.0.0 - 172.31.255.255
+        if(addr.substr(0,7)==="192.168" || addr.substr(0,3)==="10.")
+            return 1;
+        else
+            return 0;
+    }
 }
 
 
 /*
 TODO:
-Сортировать GrayArr каждые 5 сек после получения пинга
+Сортировать NodesArr каждые 5 сек после получения пинга
 
-TODO: DeleteNodeFromWhite - в т.ч. по таймауту
+TODO: DeleteNodeFromActive - в т.ч. по таймауту
 */
 
 //SERVER.CorrectTimeOLD=SERVER.CorrectTime;

@@ -243,22 +243,17 @@
                     return;
 
                 document.title+=":"+Data.port;
-                domenlist=[{name:"",color:Colorlist[0] ,webport:Data.webport ,port:Data.port}];
+                domenlist=[{name:"",color:Colorlist[0] ,webport:80 ,port:Data.port}];
                 var arr=Data.Nodes;
 
                 for(var i=0;i<Math.min(Colorlist.length-1,arr.length);i++)
                 {
                     var Node=arr[i];
                     var webport;
-                    if(Node.webport)
-                        webport=Node.webport;
+                    if(Node.port%100===0)
+                        webport="80";
                     else
-                    {
-                        if(Node.port%100===0)
-                            webport="80";
-                        else
-                            webport="80"+Rigth(""+Node.port,2);
-                    }
+                        webport="80"+Rigth(""+Node.port,2);
                     if(Node.ip==="192.168.1.1" || (Node.ip==="195.211.195.236" && Node.port<"32000"))
                         Node.ip="test.ru";
                     else

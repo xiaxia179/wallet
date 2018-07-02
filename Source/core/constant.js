@@ -72,17 +72,24 @@ global.USE_CHECK_KEY_DB=0;
 
 
 
+global.START_NETWORK_DATE=1530446400000;//(new Date(2018, 6, 1, 12, 0, 0, 0))-0;
+
 
 //константы соединения:
-const NETWORK="TERA-R1";//10
+var NETWORK="TERA-R3";//10
 global.DEF_MAJOR_VERSION="0001";//4
+
+
+// global.START_NETWORK_DATE=1530522598195+(-1400)*1000;//(new Date)-0;
+// NETWORK="TERA-R4";
+
+
 
 global.DEF_NETWORK=NETWORK+"-"+DEF_MAJOR_VERSION;//15
 global.DEF_VERSION=DEF_MAJOR_VERSION+".0001";//9
 global.DEF_CLIENT="TERA-CORE";//16
-global.START_IP="test.com";
+global.START_IP="";
 
-global.START_NETWORK_DATE=1530446400000;//(new Date(2018, 6, 1, 12, 0, 0, 0))-0;
 global.FIRST_TIME_BLOCK=START_NETWORK_DATE;
 global.START_BLOCK_RUN=0;
 global.CREATE_NUM_START=123;
@@ -91,12 +98,7 @@ if(global.HTTP_PORT_NUMBER===undefined)
     global.HTTP_PORT_NUMBER = 80;
 if(global.START_PORT_NUMBER ===undefined)
     global.START_PORT_NUMBER = 30000;
-if(global.LIST_PORT_NUMBER   ===undefined)
-    global.LIST_PORT_NUMBER  = 30000;
 
-
-if(global.USE_GLOBAL_IP===undefined)
-    global.USE_GLOBAL_IP = 1;
 
 
 //**********************

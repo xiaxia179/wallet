@@ -3,29 +3,32 @@ var fs = require("fs");
 
 global.GetDataPath=function GetDataPath(name)
 {
-    if(global.DATA_PATH.substr(global.DATA_PATH.length-1,1)!=="\\")
-        global.DATA_PATH=global.DATA_PATH+"\\";
-    return global.DATA_PATH+name;
+    if(global.DATA_PATH.substr(global.DATA_PATH.length-1,1)!=="/")
+        global.DATA_PATH=global.DATA_PATH+"/";
+    return GetNormalPathString(global.DATA_PATH+name);
 }
 global.GetCodePath=function GetCodePath(name)
 {
-    if(global.CODE_PATH.substr(global.CODE_PATH.length-1,1)!=="\\")
-        return global.CODE_PATH+"\\"+name;
-    else
-        return global.CODE_PATH+name;
+    if(global.CODE_PATH.substr(global.CODE_PATH.length-1,1)!=="/")
+        global.CODE_PATH=global.CODE_PATH+"/";
+
+    return GetNormalPathString(global.CODE_PATH+name);
 }
 
-
+global.GetNormalPathString=function(Str)
+{
+    return Str.split("\\").join('/');
+}
 
 global.CheckCreateDir=function(Path,bHidden,IsFile)
 {
-    Path=Path.replace(new RegExp("/",'g'),"\\");
+    Path=GetNormalPathString(Path);
     if(!fs.existsSync(Path))
     {
         if(!bHidden)
-            ToLog("Create: "+Path);
+            console.log("Create: "+Path);
 
-        var arr=Path.split('\\');
+        var arr=Path.split('/');
         var CurPath=arr[0];
         if(IsFile)
         {
@@ -35,7 +38,7 @@ global.CheckCreateDir=function(Path,bHidden,IsFile)
         for(var i=1;i<arr.length;i++)
         {
 
-            CurPath+="\\"+arr[i];
+            CurPath+="/"+arr[i];
             if(!fs.existsSync(CurPath))
             {
                 fs.mkdirSync(CurPath);
@@ -57,8 +60,8 @@ function CopyFiles(FromPath,ToPath,bRecursive)
 
         for(var i=0;i<arr.length;i++)
         {
-            var name1=FromPath+"\\"+arr[i];
-            var name2=ToPath+"\\"+arr[i];
+            var name1=FromPath+"/"+arr[i];
+            var name2=ToPath+"/"+arr[i];
             if(fs.statSync(name1).isDirectory())
             {
                 if(bRecursive)

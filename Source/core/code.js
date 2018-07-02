@@ -51,7 +51,7 @@ module.exports = class CCode extends require("./base")
         CODE_VERSION.StartLoadVersionNumTime=new Date();
 
         var VersionNum=CodeVersion.VersionNum;
-        var fname=GetDataPath("Update\\wallet-"+VersionNum+".zip");
+        var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");
         if(fs.existsSync(fname))
         {
             this.UseCode();
@@ -78,7 +78,7 @@ module.exports = class CCode extends require("./base")
     {
         //отправка файла из спец. каталога
         var VersionNum=this.DataFromF(Info);
-        var fname=GetDataPath("Update\\wallet-"+VersionNum+".zip");
+        var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");
         if(fs.existsSync(fname))
         {
             var data = fs.readFileSync(fname);
@@ -101,7 +101,7 @@ module.exports = class CCode extends require("./base")
         //получение файла обновления
 
         //положить в спец. каталог
-        var fname=GetDataPath("Update\\wallet-"+VersionNum+".zip");
+        var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");
         if(!fs.existsSync(fname))
         {
             //проверка хеша
@@ -150,10 +150,10 @@ module.exports = class CCode extends require("./base")
     SetNewCodeVersion(VersionNum,PrivateKey)
     {
 
-        var fname=GetDataPath("ToUpdate\\wallet.zip");
+        var fname=GetDataPath("ToUpdate/wallet.zip");
         if(fs.existsSync(fname))
         {
-            var fname2=GetDataPath("Update\\wallet-"+VersionNum+".zip");
+            var fname2=GetDataPath("Update/wallet-"+VersionNum+".zip");
             if(fs.existsSync(fname2))
             {
                 return "File was exist: "+fname2;

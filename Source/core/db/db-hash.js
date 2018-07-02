@@ -1369,7 +1369,7 @@ function TestTest()
     ToLog("START TEST");
 
     //CUR_BITS_COUNT=19;
-    //DelDir("D:\\NODE\\");
+    //DelDir("D:/NODE/");
 
     global.USE_KEY_DB=1;
 
@@ -1388,12 +1388,12 @@ function TestTest()
                 DBMap:Server.DBMap,
             };
 
-        SaveParams(GetDataPath("DB\\db.lst"),DBParams);
+        SaveParams(GetDataPath("DB/db.lst"),DBParams);
 
     }
     function LoadDBParams()
     {
-        var DBParams=LoadParams(GetDataPath("DB\\db.lst"),{});
+        var DBParams=LoadParams(GetDataPath("DB/db.lst"),{});
         if(DBParams.CUR_BITS_COUNT)
             CUR_BITS_COUNT=DBParams.CUR_BITS_COUNT;
         if(DBParams.DBMap)
@@ -1401,7 +1401,7 @@ function TestTest()
         for(var key in Server.DBMap)
         {
             var FDItem=Server.DBMap[key];
-            var fname=GetDataPath("DB\\"+FDItem.name);
+            var fname=GetDataPath("DB/"+FDItem.name);
             FDItem.fd=fs.openSync(fname, "r+");
 
         }
@@ -1776,7 +1776,7 @@ function TestTest()
         }
     }
 
-    var fnameStop=GetDataPath("DB\\stop");
+    var fnameStop=GetDataPath("DB/stop");
     function TestCreateDB(DeltaStart,Count,IterCount)
     {
         //ToLog("CUR_BITS_COUNT="+CUR_BITS_COUNT)
@@ -1885,7 +1885,7 @@ function TestTest()
     //Test4();
 
     LoadDBParams();
-    var ParamsCreate=LoadParams(GetDataPath("DB\\create.lst"),{});
+    var ParamsCreate=LoadParams(GetDataPath("DB/create.lst"),{});
     if(!ParamsCreate.bCreate)
     {
         ParamsCreate.bCreate=true;
@@ -1900,7 +1900,7 @@ function TestTest()
 
     // return;
 
-    //DelDir("D:\\NODE\\");
+    //DelDir("D:/NODE/");
     //TestCreateDB(72*1000000,10000,180*100);
 
     //ParamsCreate.Num=TestCreateDB(ParamsCreate.Num,10000,1000000*100);
@@ -1942,7 +1942,7 @@ function TestTest()
     ToLog("ENDING")
     FlushAll();
     SaveDBParams();
-    SaveParams(GetDataPath("DB\\create.lst"),ParamsCreate);
+    SaveParams(GetDataPath("DB/create.lst"),ParamsCreate);
     ToLog("OK TEST")
     process.exit(0);
 }

@@ -114,7 +114,7 @@ function DoCommand(response,Path,params)
             if(typeof path!=="string")
                 path="ErrorPath";
             else
-            if(path.indexOf("..")>=0 || path.indexOf("\\")>=0)
+            if(path.indexOf("..")>=0 || path.indexOf("\\")>=0 || path.indexOf("/")>=0)
                 path="ErrorFilePath";
 
             if(path.indexOf(".")<0)
@@ -221,11 +221,8 @@ HTTPCaller.GetAct=function (num,count,Direct)
 
 
 
-HTTPCaller.GetWalletInfo=function (Param1,Param2,Param3)
+HTTPCaller.GetWalletInfo=function ()
 {
-    if(!global.NUM_CODE_COPY)
-        global.NUM_CODE_COPY=0;
-
     var Ret=
         {
             result:1,
@@ -247,6 +244,10 @@ HTTPCaller.GetWalletInfo=function (Param1,Param2,Param3)
 
 
             NeedRestart:global.NeedRestart,
+
+            ip:SERVER.ip,
+            port:SERVER.port,
+            NET_WORK_MODE:global.NET_WORK_MODE,
         };
 
     Ret.PrivateKey=WALLET.KeyPair.PrivKeyStr;
@@ -352,6 +353,21 @@ HTTPCaller.SetMining=function (MiningAccount,Param2,Param3)
     return {result:1};
 }
 
+HTTPCaller.TruncateBlockChain=function (BlockNum,Param2,Param3)
+{
+    BlockNum=parseInt(BlockNum);
+
+    if(!BlockNum)
+    {
+        return {result:0};
+    }
+
+    SERVER.BlockNumDB=BlockNum;
+    SERVER.TruncateBlockDB(SERVER.BlockNumDB);
+    return {result:1,text:"Truncate on BlockNum="+BlockNum};
+}
+
+
 HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
 {
     if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
@@ -387,6 +403,27 @@ HTTPCaller.SetNewCodeVersion=function (Num,Param2,Param3)
 
     var Ret=SERVER.SetNewCodeVersion(Num,WALLET.KeyPair.getPrivateKey(''));
     return {result:1,text:Ret};
+}
+
+
+
+HTTPCaller.SetNetMode=function (SetObj)
+{
+    if(!global.NET_WORK_MODE)
+        global.NET_WORK_MODE={};
+
+    for(var key in SetObj)
+    {
+        global.NET_WORK_MODE[key]=SetObj[key];
+    }
+
+    SAVE_CONST(true);
+
+
+    if(SetObj.RestartNode)
+        RestartNode();
+
+    return {result:1};
 }
 
 
@@ -544,7 +581,7 @@ function GetNodes(response)
     var res=[];
     for(var Node of ArrNodes)
     {
-        res.push({ip:Node.ip,port:Node.port,webport:Node.webport,addr:Node.addrStr,Hot:Node.Hot,White:Node.White});
+        res.push({ip:Node.ip,port:Node.port,webport:80,addr:Node.addrStr,Hot:Node.Hot,Active:Node.Active});
     }
 
     var Result=

@@ -69,7 +69,7 @@ function ReqDir(Path)
         {
             var name=arr[i];
             ToLog("Reg: "+name);
-            var name2=Path+"\\"+arr[i];
+            var name2=Path+"/"+arr[i];
             require(name2);
         }
     };
@@ -78,7 +78,7 @@ function ReqDir(Path)
 //Init:
 global.DApps={};
 global.DAppByType={};
-//ReqDir("..\\dapp");
+//ReqDir("../dapp");
 
 //require("../dapp/account");
 

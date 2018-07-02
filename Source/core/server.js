@@ -3,6 +3,11 @@
 const fs = require('fs');
 require("./constant");
 const crypto = require('crypto');
+
+
+global.DATA_PATH=GetNormalPathString(global.DATA_PATH);
+global.CODE_PATH=GetNormalPathString(global.CODE_PATH);
+
 console.log("DATA DIR: "+global.DATA_PATH);
 console.log("PROGRAM DIR: "+global.CODE_PATH);
 console.log("USE_AUTO_UPDATE: "+USE_AUTO_UPDATE);
@@ -10,7 +15,7 @@ console.log("USE_PARAM_JS: "+USE_PARAM_JS);
 
 if(USE_PARAM_JS)
 {
-    var PathParams=global.CODE_PATH+"\\..\\params.js";
+    var PathParams=GetCodePath("../params.js");
     if(fs.existsSync(PathParams))
         try{require(PathParams)}catch(e) {console.log(e)};
     if(global.ReturnServeJS)
@@ -54,7 +59,7 @@ if(cluster.isMaster)
         ToLog(err.stack);
     });
 
-    if(0)
+    if(global.nw)
     process.on('uncaughtException', function (err)
     {
         if(process.send)
@@ -79,7 +84,7 @@ if(cluster.isMaster)
 
 
     require("./html-server");
-    RunServers(false);
+    RunServer(false);
 
     if(global.ADDRLIST_MODE)
     {
@@ -126,7 +131,7 @@ if(cluster.isMaster)
 }
 else
 {
-    RunServers(true);
+    RunServer(true);
     process.on('message', (msg) =>
     {
         //ToLog("Get: "+JSON.stringify(msg))
@@ -139,8 +144,13 @@ else
 
 function FindAddrAll()
 {
-    if(!SERVER)
+    if(!SERVER || SERVER.CanSend<2)
         return;
+
+    if(!global.NET_WORK_MODE || !NET_WORK_MODE.UseDirectIP)
+        return;
+
+
     var keyThisServer=SERVER.ip+":"+SERVER.port;
 
     for(var n=0;n<FindList.length;n++)
@@ -151,16 +161,17 @@ function FindAddrAll()
             item.CountSend=0;
         if(item.CountSend>100)
              continue;
+        item.DirectIP=1;
 
         var key=item.ip+":"+item.port;
         if(keyThisServer===key)
             continue;
 
-        var Node=SERVER.GrayIPMap[key];
+        var Node=SERVER.NodesIPMap[key];
         if(Node && Node.Self)
             continue;
 
-        if(!Node || !Node.White)
+        if(!Node || !Node.Active)
         {
             if(Worker)
             {
@@ -170,15 +181,17 @@ function FindAddrAll()
             else
             {
                 item.CountSend++;
-                FindList[n]=SERVER.StartConnect(item.ip,item.port);
+                var Node=SERVER.StartConnect(item.ip,item.port);
+                if(Node)
+                    FindList[n]=Node;
             }
         }
     }
 
 
-    for(var Key in SERVER.GrayMap)
+    for(var Key in SERVER.NodesMap)
     {
-        var Node=SERVER.GrayMap[Key];
+        var Node=SERVER.NodesMap[Key];
         if(Node && Node.Self)
             continue;
         if(SERVER.addrStr===Node.addrStr)
@@ -188,9 +201,11 @@ function FindAddrAll()
         if(keyThisServer===keyTest)
             continue;
 
+        if(!Node.DirectIP && !Node.ReconnectFromServer)
+            continue;
 
 
-        if(Node.White)
+        if(Node.Active)
         {
             SERVER.StartGetNodes(Node);
         }
@@ -203,18 +218,30 @@ function FindAddrAll()
 }
 
 
-function RunServers(bVirtual)
+function RunServer(bVirtual)
 {
-    var KeyPair = crypto.createECDH('secp256k1');
-    if(!global.SERVER_PRIVATE_KEY || global.NEW_SERVER_PRIVATE_KEY)
+    if(global.NET_WORK_MODE && NET_WORK_MODE.UseDirectIP)
     {
-        global.SERVER_PRIVATE_KEY=crypto.randomBytes(32);
+        global.START_IP=NET_WORK_MODE.ip;
+        global.START_PORT_NUMBER=NET_WORK_MODE.port;
+    }
+
+    var KeyPair = crypto.createECDH('secp256k1');
+    if(!global.SERVER_PRIVATE_KEY_HEX || global.NEW_SERVER_PRIVATE_KEY)
+    {
+        while(true)
+        {
+            var Arr=crypto.randomBytes(32);
+            KeyPair.setPrivateKey(Buffer.from(Arr));
+            var Arr2=KeyPair.getPublicKey('','compressed');
+            if(Arr2[0]===2)
+                break;
+        }
+
+        global.SERVER_PRIVATE_KEY_HEX=GetHexFromArr(crypto.randomBytes(32));
         SAVE_CONST(true);
     }
-    KeyPair.setPrivateKey(Buffer.from(global.SERVER_PRIVATE_KEY));
+    KeyPair.setPrivateKey(Buffer.from(GetArrFromHex(global.SERVER_PRIVATE_KEY_HEX)));
     global.SERVER=new CTransport(KeyPair,START_IP, START_PORT_NUMBER,false,bVirtual);
-
 }
-
-
 

@@ -23,7 +23,7 @@ global.STR_TYPE=2;
 global.MAX_STR_BUF_DATA=200;
 
 //OLD:
-global.MAX_CONNECTION_WHITE=40;
+global.MAX_CONNECTION_ACTIVE=40;
 var MAX_CONNECTION_ANOTHER=40;
 
 
@@ -168,20 +168,22 @@ module.exports = class CTransport extends require("./connect")
     {
         super(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
 
-        //RunPort = RunPort || START_PORT_NUMBER;
+
 
         this.UseRNDHeader=UseRNDHeader;
 
         this.AnotherHostsFlood={Count:0, MaxCount:MAX_CONNECTION_ANOTHER, Time:GetCurrentTime()};
-        this.BAN_IP={};    //ip+ports
+        this.BAN_IP={};    //ip
 
         this.ip=RunIP;
         this.port=RunPort;
-        this.ip_local=RunIP;
-        this.port_local=RunPort;
-        this.CanSend=0;
-        this.NodeCount=0;
 
+
+
+
+        this.CanSend=0;
+        if(global.NET_WORK_MODE)
+            this.CanSend++;
 
         this.SendFormatMap={};
 
@@ -315,11 +317,6 @@ module.exports = class CTransport extends require("./connect")
 
 
 
-        //
-        //glStopNode=1;
-        // global.TEST_SIZE_SEND=100;//Kb
-        // this.MethodPrioritet["TEST"]=200;
-        // setInterval(this.SendTestPacket.bind(this),100);
 
         if(!this.VirtualMode)
             this.StartServer();
@@ -814,7 +811,7 @@ module.exports = class CTransport extends require("./connect")
                     this.SessionTree.insert(Item);
 
                     var addrStr=GetHexFromAddres(Session.addrArr);
-                    var Node=this.GrayMap[addrStr];
+                    var Node=this.NodesMap[addrStr];
                     if(!Node)
                     {
                         Node=this.GetNewNode(addrStr,Session.FromIP,Session.FromPort)
@@ -1529,9 +1526,9 @@ module.exports = class CTransport extends require("./connect")
 
         var item;
         var name;
-        if(Node && Node.White)
+        if(Node && Node.Active)
         {
-            name="White";
+            name="Active";
             item=Node.Flood;
         }
         else
@@ -1566,7 +1563,7 @@ module.exports = class CTransport extends require("./connect")
     AddToBan(Node)
     {
         Node.IsBan=true;
-        this.DeleteNodeFromWhite(Node);
+        this.DeleteNodeFromActive(Node);
 
         var Key=""+Node.ip;// + ':' + Node.port;
         this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+1000*24*3600*10,BanDelta:1000};
@@ -1627,7 +1624,7 @@ module.exports = class CTransport extends require("./connect")
     OnListening()
     {
         //ToLog("Run UDP server on "+this.ip+":"+this.port+"  for: "+this.addrStr);
-        ToLog("Run UDP server on port:"+START_PORT_NUMBER+"  for: "+this.addrStr);
+        ToLogClient("Run UDP server on port: "+START_PORT_NUMBER);//+"  for: "+this.addrStr);
         this.CanSend++;
     }
 
@@ -1906,7 +1903,7 @@ module.exports = class CTransport extends require("./connect")
         //var startTime = process.hrtime();
         if(!Node.Socket)
         {
-            this.DeleteNodeFromWhite(Node);
+            this.DeleteNodeFromActive(Node);
             return;
         }
 
@@ -2067,12 +2064,8 @@ module.exports = class CTransport extends require("./connect")
 
 
 
-    CheckPOWConnect(Socket,data)
+    CheckPOWorTicketConnect(Socket,data)
     {
-        //data=Buffer.alloc(0)
-        //data=Buffer.alloc(data.length)
-        //data=crypto.randomBytes(data.length/2);
-
         try
         {
             var Pow=BufLib.GetObjectFromBuffer(data,FORMAT_POW_TO_SERVER,{});
@@ -2101,11 +2094,28 @@ module.exports = class CTransport extends require("./connect")
         var hashPow=GetHashWithValues(Hash,Pow.nonce,0);
         var power=GetPowPower(hashPow);
 
+
         if(Pow.Reconnect)
         {
-            //TODO - Sign
-
             Node=this.FindRunNodeContext(Pow.addrArr,Pow.FromIP,Pow.FromPort);
+            if(Node.WaitConnectFromServer)
+            {
+                Node.NextConnectDelta=1000;
+                Node.WaitConnectFromServer=0;
+                Node.DirectIP=1;
+                ToLog("*************************************** OK CONNECT_FROM_SERVER: "+NodeInfo(Node)+" "+SocketInfo(Socket));
+                this.AddNodeToActive(Node);
+                Node.Socket=Socket;
+                SetSocketStatus(Socket,3);
+                SetSocketStatus(Socket,100);
+                Socket.Node=Node;
+
+                Socket.write(this.GetBufFromData("POW_CONNECT0","OK",2));
+                return;
+            }
+
+
+            //TODO - Sign
             Socket.Node=Node;
             Node.Socket2=Socket;
             SetSocketStatus(Socket,3);
@@ -2145,7 +2155,7 @@ module.exports = class CTransport extends require("./connect")
             //     Node.DoubleConnectCount=0;
             // }
 
-            Node.NextConnectDelta=1000;
+            //Node.NextConnectDelta=1000;
             if(Node.Socket && !Node.Socket.WasClose)// && Socket!==Node.Socket)
             {
                 if(SocketStatus(Node.Socket)===100
@@ -2165,7 +2175,7 @@ module.exports = class CTransport extends require("./connect")
             else
             {
             }
-            this.AddNodeToWhite(Node);
+            this.AddNodeToActive(Node);
 
             if(Node.Socket)
                 CloseSocket(Node.Socket,"Close prev connection: "+SocketStatistic(Node.Socket)+"  Status:"+SocketStatus(Node.Socket));
@@ -2173,13 +2183,21 @@ module.exports = class CTransport extends require("./connect")
             Node.FromIP=Pow.FromIP;
             Node.FromPort=Pow.FromPort;
 
+            Node.ReconnectFromServer=1;
+            SetSocketStatus(Socket,3);
+            Socket.Node=undefined;
+            Node.Socket=undefined;
+            Socket.write(this.GetBufFromData("POW_CONNECT4","WAIT_CONNECT_FROM_SERVER",2));
+            return;
+
 
             Node.Socket=Socket;
             SetSocketStatus(Socket,3);
             SetSocketStatus(Socket,100);
             Socket.Node=Node;
 
-            Socket.write(this.GetBufFromData("POW_CONNECT4","OK",2));
+
+            //Socket.write(this.GetBufFromData("POW_CONNECT4","OK",2));
 
         }
     }
@@ -2209,7 +2227,8 @@ module.exports = class CTransport extends require("./connect")
         //this.Net6.on('listening', this.OnListening.bind(this));
         //this.Net6.bind(BinData);
         //this.Net4.unref();
-        this.FindInternetIP()
+        if(!global.NET_WORK_MODE)
+            this.FindInternetIP()
     }
 
     StartServer()
@@ -2225,8 +2244,6 @@ module.exports = class CTransport extends require("./connect")
         this.Server = net.createServer
         ((sock) =>
         {
-
-
 
             if(this.WasBan({address:sock.remoteAddress}))
             {
@@ -2273,9 +2290,9 @@ module.exports = class CTransport extends require("./connect")
                     var Buf=SELF.GetDataFromBuf(data);
                     if(Buf)
                     {
-                        SELF.CheckPOWConnect(SOCKET,Buf.Data);
+                        SELF.CheckPOWorTicketConnect(SOCKET,Buf.Data);
                         SOCKET.ConnectToServer=0;
-                        return;//ok
+                        return;//ok or was close
                     }
                     CloseSocket(SOCKET,"=SERVER ON DATA=");
                 }
@@ -2288,11 +2305,12 @@ module.exports = class CTransport extends require("./connect")
 
             SOCKET.on('end', () =>
             {
-                if(SocketStatus(SOCKET))
+                var Status=SocketStatus(SOCKET);
+                if(Status)
                     ToLog("Get socket end *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
 
                 var Node=SOCKET.Node;
-                if(Node && SocketStatus(SOCKET)===200)
+                if(Node && Status===200)
                 {
                     Node.SwapSockets();
                     SOCKET.WasClose=1;
@@ -2345,10 +2363,12 @@ module.exports = class CTransport extends require("./connect")
         this.Server.listen(START_PORT_NUMBER, '0.0.0.0', () =>
         {
             this.CanSend++;
-            ToLog("Run TCP server on port:"+START_PORT_NUMBER+"  for: "+SELF.addrStr);
+            ToLogClient("Run TCP server on port: "+START_PORT_NUMBER);//+"  for: "+SELF.addrStr);
         });
 
-        this.FindInternetIP()
+        if(!global.NET_WORK_MODE)
+            this.FindInternetIP()
+        //this.StartServerUDP();
 
         //throw  new Error("GO!!")
 
@@ -2358,19 +2378,11 @@ module.exports = class CTransport extends require("./connect")
 
     FindInternetIP()
     {
-        //ToLog("USE_GLOBAL_IP:"+USE_GLOBAL_IP)
-        if(!USE_GLOBAL_IP)
-        {
-            this.CanSend++;
-            return;
-        }
-
-
-
         let SELF=this;
         const { STUN_BINDING_REQUEST, STUN_ATTR_XOR_MAPPED_ADDRESS } = stun.constants;
-        const server = stun.createServer(this.Net4);
+        let server = stun.createServer(this.Net4);
         const request = stun.createMessage(STUN_BINDING_REQUEST);
+
 
 
         server.on('error', (err) =>
@@ -2384,6 +2396,8 @@ module.exports = class CTransport extends require("./connect")
             SELF.ip=value.address;
             SELF.CanSend++;
 
+
+
             if(SELF.Net4)
             {
                 SELF.port=value.port;
@@ -2395,11 +2409,24 @@ module.exports = class CTransport extends require("./connect")
                 SELF.port=START_PORT_NUMBER;
             }
 
+            if(!global.NET_WORK_MODE)
+                global.NET_WORK_MODE={};
+            NET_WORK_MODE.StunIP=true;
+
             server.close()
         })
 
-        //TODO
-        server.send(request, 19302, 'stun.l.google.com')
+
+        var StrStunAddr='stun.l.google.com';
+        const dns = require('dns');
+        dns.lookup(StrStunAddr, (err, address, family) =>
+        {
+            if(!err)
+                server.send(request, 19302, StrStunAddr);
+            else
+                SELF.CanSend++;
+
+        });
 
     }
 
@@ -2413,7 +2440,7 @@ module.exports = class CTransport extends require("./connect")
     SendCloseSocket(Socket,Str)
     {
         //var address=Socket.address();
-        TO_ERROR_LOG("TRANSPORT",600,"CLOSE_SOCKET "+Socket.remoteAddress+":"+Socket.remotePort+" - "+Str);
+        ToLog("TRANSPORT",600,"CLOSE_SOCKET "+SocketInfo(Socket)+" - "+Str);
         if(Socket.WasClose)
         {
             return;
@@ -2449,7 +2476,7 @@ module.exports = class CTransport extends require("./connect")
 
             //TODO - Ban node
 
-            this.DeleteNodeFromWhite(Node);
+            this.DeleteNodeFromActive(Node);
             Node.ErrCount=0;
         }
     }

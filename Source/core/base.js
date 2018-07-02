@@ -11,7 +11,7 @@ const RBTree = require('bintrees').RBTree;
 const os = require('os');
 
 global.glStopNode=false;
-global.NodeCountID=0;
+
 
 const MAX_TIME_NETWORK_TRANSPORT=1*1000;//ms
 var GlSumUser;
@@ -31,7 +31,7 @@ module.exports = class CCommon
         this.addrStr=GetHexFromArr(this.addrArr);
         this.HashDBArr=shaarr2(this.KeyPair.getPrivateKey(),[0,0,0,0,0,0,0,1]);
 
-        this.id=NodeCountID++;
+
 
         //this.MetaBuf=new STreeBuffer(MAX_TIME_NETWORK_TRANSPORT,CompareItemHash,"object","PACKETS_LOST");
         //this.MessageReceiveBuf=new STreeBuffer(3600*1000,CompareItemHash,"object");

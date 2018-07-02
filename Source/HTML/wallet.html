@@ -26,6 +26,7 @@
 
 
 <script>
+    var Net_Work_Mode;
     var MiningAccount=0;
     var min_power_pow_acc_create;
     var WalletStatus;
@@ -399,7 +400,7 @@
         var ToID = ParseNum(document.getElementById("idTo").value);
         var Item=MapAccounts[ToID];
         var element=document.getElementById("idNameTo");
-        element.innerText=GetAccountText(Item,ToID);
+        element.innerText="To: "+GetAccountText(Item,ToID);
         if(Item && Item.MyAccount)
             element.className="bold";
         else
@@ -822,9 +823,9 @@
         if(Data.NeedRestart)
         {
             SetStatus("<H1 align='center' style='color:blue'>Wallet updating complete. Please restart program.</H1>");
-
-            //if(global.nw) nw.Window.get().reload();
         }
+
+        UpdateNetworkMode(Data);
     }
 
     function SetArrLog(arr)
@@ -868,6 +869,62 @@
         CheckSending();
     }
 
+
+    //NetworkParams
+    //NetworkParams
+    //NetworkParams
+
+    function UpdateNetworkMode(Data)
+    {
+        if(Data.NET_WORK_MODE)
+        {
+            if(!Net_Work_Mode)
+            {
+                Net_Work_Mode=Data.NET_WORK_MODE;
+                document.getElementById("idUseDirectIP").checked=Net_Work_Mode.UseDirectIP;
+                if(Net_Work_Mode.ip)
+                    document.getElementById("idIP").value=Net_Work_Mode.ip;
+                if(Net_Work_Mode.port)
+                    document.getElementById("idPort").value=Net_Work_Mode.port;
+                document.getElementById("idUseIncomeGrayIP").checked=Net_Work_Mode.UseIncomeGrayIP;
+            }
+            else
+            {
+                if(Data.NET_WORK_MODE.StunIP && !Net_Work_Mode.WasSets && !document.getElementById("idIP").value)
+                {
+                    Net_Work_Mode.WasSets=true;
+
+                    document.getElementById("idUseDirectIP").checked=true;
+                    document.getElementById("idIP").value=Data.ip;
+                    document.getElementById("idPort").value=Data.port;
+                    document.getElementById("idUseIncomeGrayIP").checked=false;
+
+                    if(Net_Work_Mode.ip===undefined)
+                    {
+                        SetNetworkParams(true);
+                    }
+                }
+            }
+        }
+    }
+
+    function SetNetworkParams(bNoRestart)
+    {
+        if(!Net_Work_Mode)
+            Net_Work_Mode={};
+        Net_Work_Mode.UseDirectIP=document.getElementById("idUseDirectIP").checked;
+        Net_Work_Mode.ip=document.getElementById("idIP").value;
+        Net_Work_Mode.port=parseInt(document.getElementById("idPort").value);
+        Net_Work_Mode.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
+
+        Net_Work_Mode.RestartNode=!bNoRestart;
+
+        GetData("/SetNetMode",Net_Work_Mode, function (Data)
+        {
+            SetStatus("Set net work params OK");
+        });
+
+    }
 
 </script>
 
@@ -1258,6 +1315,17 @@
             }
         });
     }
+    function TruncateBlockChain()
+    {
+        var VersionNum=document.getElementById("idTruncateBlockNum").value;
+        GetData("/TruncateBlockChain/"+VersionNum,function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                SetStatus(Data.text);
+            }
+        });
+     }
 
     function OnRestartNode()
     {
@@ -1712,19 +1780,31 @@
             <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
             <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
             <th id="Item.Description" class="name">Account name</th>
-            <!--<th id="Item.PubKey.substr(0,12)+'...'">PubKey</th>-->
             <th id="Item.Value.OperationID" class="num">Operation</th>
             <th id="Item.RefID" class="num">Adviser</th>
 
         </tr>
     </table>
 
+    <HR>
+    Network connections:<BR>
+    <input type="checkbox" id="idUseDirectIP">Use this direct IPv4 address on this computer (recommended):<BR>
+    ip:<INPUT type="string" maxlength="16" id="idIP"> port:<INPUT type="string" maxlength="16" id="idPort"><BR>
+    <input type="checkbox" disabled id="idUseIncomeGrayIP">Allow connection users without a direct address<BR>
+    <INPUT type="button" onclick="SetNetworkParams()" class="btdoit bt" value="Set and Restart">
+
     <DIV id="idDevelopService" style="display: none">
+
         <H3>Developer service:</H3>
 
         <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit bt" value="Create check point">
         <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit bt" value="Set new code version:">
         <INPUT type="string" id="idVersionNum" maxlength="6" value="1">
+
+        <BR>
+        <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit bt" value="Truncate chain:">
+        <INPUT type="string" id="idTruncateBlockNum" maxlength="6" value="0">
+
 
         <BR>
         <BR>
@@ -1837,25 +1917,28 @@
             <th id="Item.BlockNumCreate" class="num">Block Num</th>
         </tr>
     </table>
+    <BR>
     <B><DIV id="idTotalSum"></DIV></B>
 
 
-    <INPUT type="button" onclick="ViewGrid('/GetActsAll/0/100','grid_acts_all')" class="btdoit bt" value="View All Acts"><BR>
-    <table id="grid_acts_all" class="grid">
-        <tr>
-            <th id="Item.Num" class="num">Num</th>
-            <th id="Item.ID" class="num">Account</th>
-            <th id="Item.Mode">Mode</th>
-            <th id="Item.BlockNum">Block</th>
+    <!--<INPUT type="button" onclick="ViewGrid('/GetActsAll/0/100','grid_acts_all')" class="btdoit bt" value="View All Acts"><BR>-->
+    <!--<table id="grid_acts_all" class="grid">-->
+        <!--<tr>-->
+            <!--<th id="Item.Num" class="num">Num</th>-->
+            <!--<th id="Item.ID" class="num">Account</th>-->
+            <!--<th id="Item.Mode">Mode</th>-->
+            <!--<th id="Item.BlockNum">Block</th>-->
 
-            <th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>
-            <th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>
-            <th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>
-        </tr>
-    </table>
+            <!--<th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>-->
+            <!--<th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>-->
+            <!--<th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>-->
+        <!--</tr>-->
+    <!--</table>-->
 
 </DIV>
 
+<BR>
+<HR>
 Logs:
 <DIV id="idStatusServer"></DIV><BR>
 

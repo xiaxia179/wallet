@@ -134,9 +134,9 @@ module.exports = class CBlock extends require("./db/block-db")
 
     CheckStartedBlocks()
     {
-        if(fs.existsSync(GetCodePath("EXPERIMENTAL\\_run.js")))
+        if(fs.existsSync(GetCodePath("EXPERIMENTAL/_run.js")))
         {
-            require(GetCodePath("EXPERIMENTAL\\_run.js")).Run();
+            require(GetCodePath("EXPERIMENTAL/_run.js")).Run();
         }
         else
         if(this.BlockNumDB<BLOCK_PROCESSING_LENGTH2)
@@ -413,6 +413,7 @@ module.exports = class CBlock extends require("./db/block-db")
             if(RootChain.BlockNum<min_num_load)
                 min_num_load=RootChain.BlockNum;
 
+
             if(!chain.StopSend)
             {
                 //УДАЛЕНИЕ ИЗ ОБРАБОТКИ ПРИ УСЛОВИИ:
@@ -578,7 +579,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 this.TaskNodeIndex++;
                 Node=arr[this.TaskNodeIndex % arr.length];
             }
-            if(Node.White && Node.CanHot)
+            if(Node.Active && Node.CanHot)
             {
                 if(BlockNum!==undefined && Node.INFO && BlockNum>Node.INFO.BlockNumDB)
                 {

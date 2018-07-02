@@ -1045,8 +1045,8 @@ module.exports = class CConsensus extends require("./block-loader")
             if(MapFilter[Addr])
                 continue;
 
-            var Node=this.GrayMap[Addr];
-            if(Node.White)
+            var Node=this.NodesMap[Addr];
+            if(Node.Active)
             {
                 Str=Str+" "+Node.port;
                 this.SendF(Node,

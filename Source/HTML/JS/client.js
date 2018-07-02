@@ -12,13 +12,19 @@ if(window.nw)
             Func=ObjPost;
             ObjPost=null;
         }
-        if(global.NWMODE)
+        window.nw.global.RunRPC({path:Method,obj:ObjPost},Func);
+     }
+
+    const server = require('../core/html-server');
+    global.RunRPC=function (message,Func)
+    {
+        var reply=server.SendData(message);
+        if(Func)
         {
-            window.nw.global.RunRPC({path:Method,obj:ObjPost},Func);
-        }
-        else
-        {
-            window.nw.global.RunRPC2({path:Method,obj:ObjPost},Func);
+            setTimeout(function ()
+            {
+                Func(reply);
+            },10);
         }
     }
 

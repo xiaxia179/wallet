@@ -32,7 +32,7 @@ module.exports = class
                 {
                     if(bDelete)
                     {
-                        var fname=GetDataPath("DB\\"+Name);
+                        var fname=GetDataPath("DB/"+Name);
                         fs.unlink(fname,function (err)
                         {
                             if(err)
@@ -62,7 +62,7 @@ module.exports = class
                 this.WasCheckPathDB=true;
             }
 
-            var fname=GetDataPath("DB\\"+name);
+            var fname=GetDataPath("DB/"+name);
 
             if(!fs.existsSync(fname))
             {
