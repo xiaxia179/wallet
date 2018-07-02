@@ -5,7 +5,7 @@
 Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe
 * This  assembly file is an sfx rar-file that contains the source code + node-webkit
 * If you have already installed the assembly data, you can download only the updates and install them in the same directory:
-Updater: https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
+ https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
 
 
 
