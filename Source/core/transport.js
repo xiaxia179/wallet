@@ -2470,7 +2470,7 @@ module.exports = class CTransport extends require("./connect")
         if(Node.ErrCount>=10)
         {
 
-            ToErrorTrace("AddCheckErrCount>10 - CloseSocket, StrError: "+StrError+" "+NodeInfo(Node)+"\n");
+            //ToErrorTrace("AddCheckErrCount>10 - CloseSocket, StrError: "+StrError+" "+NodeInfo(Node)+"\n");
             ADD_TO_STAT("ERRORS");
 
 

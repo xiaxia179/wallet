@@ -166,7 +166,7 @@ module.exports = class CNode
         NODE.SocketStart=(new Date)-0;
         NODE.Socket = net.createConnection(NODE.port, NODE.ip, () =>
         {
-            this.TryConnectCount=0;
+            NODE.TryConnectCount=0;
 
             socketInit(NODE.Socket,"s");
             ToLog("Connected *"+NODE.Socket.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
@@ -505,6 +505,9 @@ module.exports = class CNode
 
 global.socketInit=function(Socket,Str)
 {
+    if(!Socket)
+        return;
+
     Socket.GetBytes=0;
     Socket.SendBytes=0;
 
