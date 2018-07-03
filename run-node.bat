@@ -1,4 +1,4 @@
-cd source
+cd Source
 
 :loop
 node.exe run-node.js
