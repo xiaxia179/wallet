@@ -10,10 +10,16 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
 ## Custon run whith Sorce code
 * Download nodejs (recommended ver v8.11.1):  https://nodejs.org/en
 * Download Source dir
-* goto dir Source and run command: npm install
-* run: node run-node.js
+* Goto dir Source and run command: npm install
+* Run: node run-node.js
+* Start the browser with the address: 127.0.0.1/wallet
 
-Notes: when the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js
+
+Notes: 
+* When the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js
+* nodejs uses the default http port for node 80, but you can change it when you start with the command: node run-node.js "httpport: 81"
+
+
 
 
 
