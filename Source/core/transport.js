@@ -979,7 +979,12 @@ module.exports = class CTransport extends require("./connect")
         var it=this.ActualNodes.iterator(), Item;
         while((Item = it.next()) !== null)
         {
-            Arr.push(Item);
+            if(SocketStatus(Item.Socket)>=100)
+                Arr.push(Item);
+            else
+            {
+                this.DeleteNodeFromActive(Item);
+            }
         }
         return Arr;
      }
@@ -2084,7 +2089,7 @@ module.exports = class CTransport extends require("./connect")
 
         if(Pow.DEF_NETWORK!==DEF_NETWORK)
         {
-            this.SendCloseSocket(Socket,"DEF_NETWORK");
+            this.SendCloseSocket(Socket,"DEF_NETWORK="+Pow.DEF_NETWORK+" MUST:"+DEF_NETWORK);
             //this.AddToBanIP(Socket.remoteAddress);
             return;
         }
@@ -2155,38 +2160,39 @@ module.exports = class CTransport extends require("./connect")
             //     Node.DoubleConnectCount=0;
             // }
 
-            //Node.NextConnectDelta=1000;
-            if(Node.Socket && !Node.Socket.WasClose)// && Socket!==Node.Socket)
-            {
-                if(SocketStatus(Node.Socket)===100
-                || (Node.Socket.ConnectToServer && CompareArr(this.addrArr,Node.addrArr)<0))//встречный запрос соединения
-                {
-                    Node.DoubleConnectCount++;
-                    ToLog("Find double connection *"+Socket.ConnectID+" "+NodeInfo(Node)+" from client  NodeSocketStatus="+SocketStatus(Node.Socket))
-                    Socket.write(this.GetBufFromData("POW_CONNECT3","DOUBLE",2));
-                    return;
-                }
-                else
-                {
-                    ToLog("Close double connection *"+Node.Socket.ConnectID+" "+NodeInfo(Node)+" from server NodeSocketStatus="+SocketStatus(Node.Socket))
-                    CloseSocket(Node.Socket,"Close double connection");
-                }
-            }
-            else
-            {
-            }
-            this.AddNodeToActive(Node);
-
-            if(Node.Socket)
-                CloseSocket(Node.Socket,"Close prev connection: "+SocketStatistic(Node.Socket)+"  Status:"+SocketStatus(Node.Socket));
+            // //Node.NextConnectDelta=1000;
+            // if(Node.Socket && !Node.Socket.WasClose)// && Socket!==Node.Socket)
+            // {
+            //     if(SocketStatus(Node.Socket)===100
+            //     || (Node.Socket.ConnectToServer && CompareArr(this.addrArr,Node.addrArr)<0))//встречный запрос соединения
+            //     {
+            //         Node.DoubleConnectCount++;
+            //         ToLog("Find double connection *"+Socket.ConnectID+" "+NodeInfo(Node)+" from client  NodeSocketStatus="+SocketStatus(Node.Socket))
+            //         Socket.write(this.GetBufFromData("POW_CONNECT3","DOUBLE",2));
+            //         return;
+            //     }
+            //     else
+            //     {
+            //         ToLog("Close double connection *"+Node.Socket.ConnectID+" "+NodeInfo(Node)+" from server NodeSocketStatus="+SocketStatus(Node.Socket))
+            //         CloseSocket(Node.Socket,"Close double connection");
+            //     }
+            // }
+            // else
+            // {
+            // }
+            // this.AddNodeToActive(Node);
+            //
+            // if(Node.Socket)
+            //     CloseSocket(Node.Socket,"Close prev connection: "+SocketStatistic(Node.Socket)+"  Status:"+SocketStatus(Node.Socket));
 
             Node.FromIP=Pow.FromIP;
             Node.FromPort=Pow.FromPort;
 
             Node.ReconnectFromServer=1;
-            SetSocketStatus(Socket,3);
-            Socket.Node=undefined;
-            Node.Socket=undefined;
+            global.MapReconnect[Node.addrStr]=Node;
+            // SetSocketStatus(Socket,3);
+            // Socket.Node=undefined;
+            //Node.Socket=undefined;
             Socket.write(this.GetBufFromData("POW_CONNECT4","WAIT_CONNECT_FROM_SERVER",2));
             return;
 
@@ -2392,7 +2398,7 @@ module.exports = class CTransport extends require("./connect")
         server.once('bindingResponse', stunMsg =>
         {
             var value=stunMsg.getAttribute(STUN_ATTR_XOR_MAPPED_ADDRESS).value;
-            ToLog("INTERNET IP:"+value.address+":"+value.port)
+            ToLog("INTERNET IP:"+value.address)
             SELF.ip=value.address;
             SELF.CanSend++;
 
@@ -2440,7 +2446,7 @@ module.exports = class CTransport extends require("./connect")
     SendCloseSocket(Socket,Str)
     {
         //var address=Socket.address();
-        ToLog("TRANSPORT",600,"CLOSE_SOCKET "+SocketInfo(Socket)+" - "+Str);
+        ToLog("CLOSE_SOCKET "+SocketInfo(Socket)+" - "+Str);
         if(Socket.WasClose)
         {
             return;

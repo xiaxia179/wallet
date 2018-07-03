@@ -16,6 +16,6 @@ global.START_IP="";
 global.START_PORT_NUMBER = 30000;
 global.HTTP_PORT_NUMBER=0;
 global.CREATE_ON_START=0;
-global.CREATE_NUM_START=0;
+
 global.LOCAL_RUN=0;
 require('./core/server');

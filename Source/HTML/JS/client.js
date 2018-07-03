@@ -15,16 +15,17 @@ if(window.nw)
         window.nw.global.RunRPC({path:Method,obj:ObjPost},Func);
      }
 
-    const server = require('../core/html-server');
     global.RunRPC=function (message,Func)
     {
+        const server = require('../core/html-server');
+
         var reply=server.SendData(message);
         if(Func)
         {
             setTimeout(function ()
             {
                 Func(reply);
-            },10);
+            },20);
         }
     }
 

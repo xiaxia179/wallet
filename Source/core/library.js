@@ -56,28 +56,6 @@ function Sha_CheckStr(arr)
     return ret;
 };
 
-if(TEST_HASH_MODE)
-global.sha=function (arr)
-{
-    var Ret1=SHA.sha3_256(arr);
-    var Ret2=Sha_CheckStr(arr);
-    if(Ret1!==Ret2)
-    {
-        throw "SHA CHECK ERROR!"
-    }
-    return Ret1;
-}
-if(TEST_HASH_MODE)
-global.shaarr=function (arr)
-{
-    var Ret1=SHA.sha3_256(arr);
-    var Ret2=Sha_CheckStr(arr);
-    if(Ret1!==Ret2)
-    {
-        throw "SHA CHECK ERROR!"
-    }
-    return SHA.sha3_array_256(arr);
-}
 
 
 //GLOBAL!!!!

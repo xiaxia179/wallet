@@ -14,7 +14,7 @@ global.PERIOD_FOR_RECONNECT=3600*1000;//ms
 //const PERIOD_FOR_RECONNECT=10*1000;//ms
 
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
-global.CODE_VERSION={VersionNum:START_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
+global.CODE_VERSION={VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
 
 
 var MAX_PING_FOR_CONNECT=150;//ms
@@ -75,16 +75,10 @@ module.exports = class CConnect extends require("./transfer-msg")
             Node.ConnectStart=0;
         var Delta=(new Date)-Node.ConnectStart;
 
-        if(Node.ReconnectFromServer===1)
-        {
-            Node.ReconnectFromServer=2;
-            Node.CreateConnect();
-        }
-        else
         if(Delta>=Node.NextConnectDelta)
         {
-            // ToLog("Node.Socket="+Node.Socket)
-            //if(Node.Socket && (SocketStatus(Node.Socket)===1 || SocketStatus(Node.Socket)===2))
+
+
             if(Node.DoubleConnection || Node.Socket && SocketStatus(Node.Socket))
             {
 
@@ -148,12 +142,10 @@ module.exports = class CConnect extends require("./transfer-msg")
             return;
 
         var arr=SERVER.GetActualNodes();
-        //for(var Key in this.NodesMap)
         for(var i=0;i<arr.length;i++)
         {
-            //var Node=this.NodesMap[Key];
             var Node=arr[i];
-            if(Node.Active && this.addrStr!==Node.addrStr)
+            if(this.IsCanConnect(Node))
             {
 
                 var Context={"StartTime":GetCurrentTime(0)};
@@ -923,10 +915,11 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         var CurTime=GetCurrentTime();
 
-        var arr=SERVER.GetActualNodes();
+        var arr=SERVER.NodesArr;
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
+            if(Node.Active && SocketStatus(Node.Socket)<100)
             {
                 var Delta=CurTime-Node.LastTime;
                 if(Delta>MAX_WAIT_PERIOD_FOR_ACTIVE)

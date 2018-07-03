@@ -71,7 +71,7 @@ global.USE_KEY_DB=0;
 global.USE_CHECK_KEY_DB=0;
 
 
-global.START_CODE_VERSION_NUM=11;
+global.UPDATE_CODE_VERSION_NUM=13;
 global.START_NETWORK_DATE=1530446400000;//(new Date(2018, 6, 1, 12, 0, 0, 0))-0;
 
 
@@ -80,11 +80,12 @@ var NETWORK="TERA-R3";//10
 global.DEF_MAJOR_VERSION="0001";//4
 
 
+InitParams();
+
 if(global.LOCAL_RUN)
 {
-// global.START_NETWORK_DATE=1530522598195+(-1400)*1000;//(new Date)-0;
-// NETWORK="TERA-R4";
-//
+    global.START_NETWORK_DATE=1530628144595+(1)*1000;//(new Date)-0;
+    NETWORK="TEST-R3";
 }
 
 
@@ -95,7 +96,7 @@ global.START_IP="";
 
 global.FIRST_TIME_BLOCK=START_NETWORK_DATE;
 global.START_BLOCK_RUN=0;
-global.CREATE_NUM_START=123;
+
 
 if(global.HTTP_PORT_NUMBER===undefined)
     global.HTTP_PORT_NUMBER = 80;
@@ -126,24 +127,20 @@ if(global.CREATE_ON_START===undefined)
 
 if(global.LOCAL_RUN===undefined)
     global.LOCAL_RUN=0;
-//global.LOCAL_RUN=0;
+if(global.CODE_PATH===undefined)
+    global.CODE_PATH=process.cwd();
 
-InitParams();
 
 
-if(LOCAL_RUN)
-{
-    CREATE_NUM_START=0
-    //global.LIST_PORT_NUMBER  = 30001;
-}
+
+
 
 //Отладка
-global.TEST_HASH_MODE=0; //медленный POW
 global.DEBUG_MODE=0;
 
 
-//CREATE_NUM_START=1;
-// CREATE_NUM_START=6;
+
+
 // LIST_PORT_NUMBER=30006;
 
 //try{require("../../params")}catch(e) {};

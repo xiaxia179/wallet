@@ -28,12 +28,17 @@ require("./library");
 const cluster = require('cluster');
 var CTransport=require("./transport");
 
-
+global.MapReconnect={};
 var FindList=LoadParams(GetDataPath("finds-server.lst"),undefined);
-if(!FindList)
+//if(!FindList)
 {
-    FindList=[{"ip":"194.1.237.94","port":30000},{"ip":"91.235.136.81","port":30000}];
+    FindList=[{"ip":"194.1.237.94","port":30000},{"ip":"91.235.136.81","port":30002}];
     SaveParams(GetDataPath("finds-server.lst"),FindList);
+}
+
+if(global.LOCAL_RUN)
+{
+    FindList=[{"ip":"127.0.0.1","port":40000}];
 }
 
 
@@ -91,7 +96,11 @@ if(cluster.isMaster)
         return;
     }
 
-    setInterval(function run()
+    setInterval(function run1()
+    {
+        ReconnectingFromServer();
+    }, 100);
+    setInterval(function run2()
     {
         FindAddrAll();
     }, 1000);
@@ -141,6 +150,22 @@ else
 }
 
 
+function ReconnectingFromServer()
+{
+    if(!SERVER || SERVER.CanSend<2)
+        return;
+
+    if(!global.NET_WORK_MODE || !NET_WORK_MODE.UseDirectIP)
+        return;
+
+    for(var key in MapReconnect)
+    {
+        var Node=MapReconnect[key];
+        Node.CreateConnect();
+        delete MapReconnect[key];
+        break;//next node on another time (100ms)
+    }
+}
 
 function FindAddrAll()
 {
@@ -156,7 +181,7 @@ function FindAddrAll()
     for(var n=0;n<FindList.length;n++)
     {
         var item=FindList[n];
-        item.FindList=true;
+
         if(!item.CountSend)
             item.CountSend=0;
         if(item.CountSend>100)
@@ -167,12 +192,16 @@ function FindAddrAll()
         if(keyThisServer===key)
             continue;
 
-        var Node=SERVER.NodesIPMap[key];
+        var Node=item.Node;
+
+        if(!Node)
+            Node=SERVER.NodesIPMap[key];
         if(Node && Node.Self)
             continue;
 
-        if(!Node || !Node.Active)
+        if(!Node || SERVER.IsCanConnect(Node))
         {
+
             if(Worker)
             {
                 item.CountSend++;
@@ -181,9 +210,7 @@ function FindAddrAll()
             else
             {
                 item.CountSend++;
-                var Node=SERVER.StartConnect(item.ip,item.port);
-                if(Node)
-                    FindList[n]=Node;
+                FindList[n].Node=SERVER.StartConnect(item.ip,item.port);
             }
         }
     }
@@ -201,11 +228,11 @@ function FindAddrAll()
         if(keyThisServer===keyTest)
             continue;
 
-        if(!Node.DirectIP && !Node.ReconnectFromServer)
+        if(!Node.DirectIP)// && !Node.ReconnectFromServer)
             continue;
 
 
-        if(Node.Active)
+        if(SocketStatus(Node.Socket)===0)
         {
             SERVER.StartGetNodes(Node);
         }
