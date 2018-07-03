@@ -26,12 +26,13 @@
 
 
 <script>
+    var CanSendTransaction=1;
     var Net_Work_Mode;
     var MiningAccount=0;
     var min_power_pow_acc_create;
     var WalletStatus;
     var BLOCK_PROCESSING_LENGTH=8;
-    var AvgSumPowBit=12;
+    var AvgSumPowBit=17;
     var PubKeyStr;
     var PrivKeyStr;
     var MapAccounts={};
@@ -273,6 +274,11 @@
     var WasCreateAccountInfo;
     function CreateAccount()
     {
+        if(!CanSendTransaction)
+        {
+            SetError("Can't Send transaction");
+            return;
+        }
         var Description=document.getElementById("idAccDescription").value;
         var Adviser=document.getElementById("idAdviser").value;
 
@@ -506,6 +512,12 @@
             SetError("Pay to required!");
             return;
         }
+        if(!CanSendTransaction)
+        {
+            SetError("Can't Send transaction");
+            return;
+        }
+
 
         CheckSending(true);
         if(document.getElementById("idSendButton").disabled)
@@ -530,6 +542,12 @@
     }
     function SendMoneyJSON()
     {
+        if(!CanSendTransaction)
+        {
+            SetError("Can't Send transaction");
+            return;
+        }
+
         var TR=GetTransactionFromJSON();
         if(!TR)
             return;
@@ -780,6 +798,7 @@
 
         if(Data.RelayMode || !Data.CurBlockNum || !Data.BlockNumDB || Data.CurBlockNum>Data.BlockNumDB+BLOCK_PROCESSING_LENGTH*2)
         {
+            CanSendTransaction=0;
             var StrMode="";
             var MaxNum=Data.CurBlockNum-BLOCK_PROCESSING_LENGTH;
             if(MaxNum>0)
@@ -796,8 +815,13 @@
         else
         if(WalletStatus==="WAIT")
         {
+            CanSendTransaction=1;
             WalletStatus="OK";
             SetStatus("<H1 align='center'>Synchronization complete</H1>");
+        }
+        else
+        {
+            CanSendTransaction=1;
         }
 
         MiningAccount=Data.MiningAccount;

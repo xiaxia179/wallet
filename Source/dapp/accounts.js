@@ -357,7 +357,8 @@ class CApp extends require("./dapp")
 
         //check sign
         var hash=shabuf(Body.slice(0,Body.length-64-12));
-        var Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);//TODO: buf verify
+        var Result=0;
+        try{Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);}catch (e){};
         if(!Result)
         {
             return "Error sign";
@@ -420,12 +421,16 @@ class CApp extends require("./dapp")
 
 
         //check sum
+        if(TotalSum.SumTER===0 && TotalSum.SumCENT===0)
+            return "No money transaction";
+
         if(Data.Value.SumTER<TotalSum.SumTER || (Data.Value.SumTER===TotalSum.SumTER && Data.Value.SumCENT<TotalSum.SumCENT))
             return "Not enough money on the account";
 
         //check sign
         var hash=shabuf(Body.slice(0,Body.length-64-12));
-        var Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);//TODO: buf verify
+        var Result=0;
+        try{Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);}catch (e){};
         if(!Result)
         {
             return "Error sign transaction";
