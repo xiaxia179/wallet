@@ -43,7 +43,7 @@ function DoCommand(response,Path,params)
     switch(method)
     {
         case "":
-            SendFileHTML(response,"./HTML/monitor.html");
+            SendFileHTML(response,"./HTML/wallet.html");
             break;
 
 
