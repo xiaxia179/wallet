@@ -19,7 +19,7 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
 * Reward for block: 1-20 coins, depends on network power (one billionth of the remainder of undistributed amount of coins and multiplied by the hundredth part of the square of the logarithm of the network power)
 * Block size 120 KB
 * Premine: 5%
-* Commission from the mining: 1% (to the development fund)
+* Commission from the mining: 1% (to the development)
 * Block generation time: 1 second
 * Block confirmation time: 8 seconds
 * Speed: from 1000 transactions per second
