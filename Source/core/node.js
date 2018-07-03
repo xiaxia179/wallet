@@ -167,11 +167,13 @@ module.exports = class CNode
         NODE.Socket = net.createConnection(NODE.port, NODE.ip, () =>
         {
             NODE.TryConnectCount=0;
-
-            socketInit(NODE.Socket,"s");
-            ToLog("Connected *"+NODE.Socket.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
-            NODE.Socket.ConnectToServer=true;
-            SetSocketStatus(NODE.Socket,2);
+            if(NODE.Socket)
+            {
+                socketInit(NODE.Socket,"s");
+                ToLog("Connected *"+NODE.Socket.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
+                NODE.Socket.ConnectToServer=true;
+                SetSocketStatus(NODE.Socket,2);
+            }
         });
         SetSocketStatus(NODE.Socket,1);
         NODE.Socket.Node=NODE;
@@ -190,10 +192,13 @@ module.exports = class CNode
         NODE.SocketStart=(new Date)-0;
         NODE.Socket2 = net.createConnection(NODE.port, NODE.ip, () =>
         {
-            socketInit(NODE.Socket2,"s");
-            ToLog("Reconnected *"+NODE.Socket2.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
-            NODE.Socket2.ConnectToServer=true;
-            SetSocketStatus(NODE.Socket2,2);
+            if(NODE.Socket2)
+            {
+                socketInit(NODE.Socket2,"s");
+                ToLog("Reconnected *"+NODE.Socket2.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
+                NODE.Socket2.ConnectToServer=true;
+                SetSocketStatus(NODE.Socket2,2);
+            }
         });
         SetSocketStatus(NODE.Socket2,1);
         NODE.Socket2.Node=NODE;

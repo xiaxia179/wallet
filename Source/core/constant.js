@@ -71,7 +71,7 @@ global.USE_KEY_DB=0;
 global.USE_CHECK_KEY_DB=0;
 
 
-
+global.START_CODE_VERSION_NUM=11;
 global.START_NETWORK_DATE=1530446400000;//(new Date(2018, 6, 1, 12, 0, 0, 0))-0;
 
 
