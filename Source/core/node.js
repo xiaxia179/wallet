@@ -17,18 +17,15 @@ var ConnectIDCount=1;
 
 module.exports = class CNode
 {
-    constructor(addrStr,ip,port,LastTime,DeltaTime)
+    constructor(addrStr,ip,port)
     {
         this.addrStr=addrStr;
         this.ip=ip;
         this.port=port;
         this.UserConnect=0;
 
-        if(LastTime)
-        {
-            this.LastTime=new Date(LastTime);
-            this.DeltaTime=DeltaTime;
-        }
+        this.LastTime=0;
+        this.DeltaTime=0;
 
         this.TryConnectCount=0;
         this.DirectIP=0;

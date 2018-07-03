@@ -7,6 +7,15 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
 * If you have already installed the assembly data, you can download only the updates and install them in the same directory:
  https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
 
+## Custon run whith Sorce code
+* Download nodejs:  https://nodejs.org/en
+* Download Source dir
+* goto dir Source and run command: npm install
+* run: node run-node.js
+
+Notes: when the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js
+
+
 
 
 

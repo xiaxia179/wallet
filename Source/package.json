@@ -4,10 +4,6 @@
   "description": "Tereonus wallet",
   "main": "run-nw.js",
   "main2": "run-electron.js",
-  "scripts": 
-  {
-    "start": "./node_modules/.bin/electron ."
-  },
   "repository": "https://github.com/blockriver/wallet",
   "keywords": [
     "wallet",
@@ -19,9 +15,6 @@
   ],
   "author": "progr76@gmail.com",
   "license": "TERA",
-  "devDependencies": {
-    "electron": "^2.0.0"
-  },
   "dependencies": {
     "bintrees": "^1.0.2",
     "ntp-client": "^0.5.3",

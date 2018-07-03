@@ -326,7 +326,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         else
         {
             if(!global.CAN_START)
-                ToLog("DeltaTime="+DeltaTime+">"+MAX_PING_FOR_CONNECT+" ms")
+                ToLog("DeltaTime="+DeltaTime+">"+MAX_PING_FOR_CONNECT+" ms  -  "+NodeInfo(Node))
         }
 
         if(!global.CAN_START)
@@ -467,7 +467,7 @@ module.exports = class CConnect extends require("./transfer-msg")
     GetNewNode(addrStr,ip,port)
     {
         var Node=new CNode(addrStr,ip,port);
-        this.AddToArrNodes(Node);
+        this.AddToArrNodes(Node,false);
 
 
 
@@ -555,7 +555,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         return ret;
     }
 
-    AddToArrNodes(Item,DirectIP)
+    AddToArrNodes(Item,bFromGetNodes)
     {
         if(Item.addrStr==="" || Item.addrStr===this.addrStr)
             return;
@@ -573,7 +573,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(Item instanceof CNode)
                 Node=Item;
             else
-                Node=new CNode(Item.addrStr,Item.ip,Item.port,Item.LastTime,Item.DeltaTime);
+                Node=new CNode(Item.addrStr,Item.ip,Item.port);
 
 
             //добавляем новые поля
@@ -591,8 +591,11 @@ module.exports = class CConnect extends require("./transfer-msg")
             ADD_TO_STAT("AddToNodes");
             this.NodesArrSortStart();
         }
-        Node.DirectIP=DirectIP;
-        Node.UserConnect=Item.UserConnect;
+        if(bFromGetNodes)
+        {
+            Node.DirectIP=true;
+            Node.UserConnect=Item.UserConnect;//???? can update??
+        }
 
         this.NodesMap[Node.addrStr]=Node;
         this.NodesIPMap[key]=Node;
@@ -821,7 +824,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             for(var n=0;arr && n<arr.length;n++)
             {
                 var Node=arr[n];
-                arr[n]=this.AddToArrNodes(Node);
+                arr[n]=this.AddToArrNodes(Node,true);
             }
         }
     }

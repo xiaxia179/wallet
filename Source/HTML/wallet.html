@@ -174,10 +174,10 @@
         }
 
         if(Select.value==="private" && PrivKeyStr!==Str)
-            ToLogServer("Changed key: "+PrivKeyStr);
+            SetStatus("Changed privat key");
         else
         if(Select.value==="public" && PubKeyStr!==Str)
-            ToLogServer("Changed key: "+PubKeyStr);
+            SetStatus("Changed public key");
 
         GetData("/SetWalletKey/"+Str, function (Data)
         {

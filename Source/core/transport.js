@@ -2085,7 +2085,7 @@ module.exports = class CTransport extends require("./connect")
         if(Pow.DEF_NETWORK!==DEF_NETWORK)
         {
             this.SendCloseSocket(Socket,"DEF_NETWORK");
-            this.AddToBanIP(Socket.remoteAddress);
+            //this.AddToBanIP(Socket.remoteAddress);
             return;
         }
 
