@@ -8,7 +8,7 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
  https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
 
 ## Custon run whith Sorce code
-* Download nodejs:  https://nodejs.org/en
+* Download nodejs (recommended ver v8.11.1):  https://nodejs.org/en
 * Download Source dir
 * goto dir Source and run command: npm install
 * run: node run-node.js
