@@ -178,7 +178,7 @@ global.GET_STATDIAGRAMS=function(Keys)
 
 
         var StepTime=1;
-        while(arr.length>=1024)
+        while(arr.length>=512)
         {
             arr=ResizeArr(arr);
             StepTime=StepTime*2;

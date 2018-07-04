@@ -22,11 +22,12 @@ global.COUNT_BLOCKS_FOR_LOAD=400;
 
 global.COUNT_HISTORY_BLOCKS_FOR_LOAD=3000;
 global.COUNT_BLOCKS_FOR_CHECK_POW=100;
+global.PERCENT_SUM_BLOCKS_FOR_STOP_CHECK_POW=90;
 
 global.MAX_COUNT_CHAIN_LOAD=120;
 
 global.PACKET_ALIVE_PERIOD=4*CONSENSUS_PERIOD_TIME;//ms
-global.PACKET_ALIVE_PERIOD_SEND=5*CONSENSUS_PERIOD_TIME;//ms
+global.PACKET_ALIVE_PERIOD_NEXT_NODE=PACKET_ALIVE_PERIOD/2;//ms
 //global.MAX_BLOCK_LOAD=128;
 global.MAX_BLOCK_SEND=8;
 global.COUNT_TASK_FOR_NODE=10;
@@ -547,7 +548,7 @@ module.exports = class CBlock extends require("./db/block-db")
         if(checktime && task.time)
         {
             var Delta=CurTime-task.time;
-            if(Delta<PACKET_ALIVE_PERIOD_SEND)
+            if(Delta<PACKET_ALIVE_PERIOD_NEXT_NODE)
                 return {Result:false,timewait:true};
         }
         task.time=undefined;
@@ -1121,9 +1122,9 @@ module.exports = class CBlock extends require("./db/block-db")
 
                 if(chain.LoadCountDB>=COUNT_BLOCKS_FOR_CHECK_POW)
                 {
-                    if(chain.LoadSumDB > 105*chain.LoadSum/100)
+                    if(chain.LoadSumDB*PERCENT_SUM_BLOCKS_FOR_STOP_CHECK_POW/100 > chain.LoadSum)
                     {
-                        var Str="ErrPow: SumDB > Sum loaded";
+                        var Str="Err sum Pow chains: SumDB > Sum loaded from: "+NodeInfo(Info.Node);
                         chain.StopSend=true;
                         chain.AddInfo(Str);
                         ToLog("======================================================"+Str);
@@ -1743,7 +1744,7 @@ module.exports = class CBlock extends require("./db/block-db")
             Node.SendBlockCount=0;
             Node.LoadBlockCount=0;
 
-            ADD_TO_STAT("NODE_CAN_GET:"+Node.port,Node.CanGetBlocks);
+            ADD_TO_STAT("NODE_CAN_GET:"+NodeName(Node),Node.CanGetBlocks);
         }
     }
 
@@ -2240,10 +2241,19 @@ global.AddInfoBlock=function(Block,Str)
 }
 global.GetNodeStrPort=function(Node)
 {
-    if(global.LOCAL_RUN)
-        return Node.port%10;
+    if(!Node)
+        return "";
+
+    if(LOCAL_RUN)
+        return ""+Node.port;
     else
-        return Node.port/1000;
+    {
+        if(!Node.ip)
+            return "";
+        var arr=Node.ip.split(".");
+
+        return ""+arr[2]+"."+arr[3];
+    }
 }
 
 

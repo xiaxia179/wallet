@@ -1,3 +1,4 @@
+
 nw.Window.open('./HTML/wallet.html',
     {
         width: 820,

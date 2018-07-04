@@ -1,5 +1,5 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=15;
+global.UPDATE_CODE_VERSION_NUM=16;
 
 require("./startlib.js");
 
@@ -35,13 +35,15 @@ global.MAX_BLOCK_SIZE=120*1024;
 global.TEST_TRANSACTION_GENERATE=0;
 global.MAX_TRANSACTION_SIZE=65535;
 global.MIN_TRANSACTION_SIZE=32;
-global.MAX_TRANSACTION_COUNT=Math.floor(MAX_BLOCK_SIZE/MIN_TRANSACTION_SIZE);//1000;
-//global.MIN_TRANSACTION_COUNT=Math.floor(MAX_TRANSACTION_COUNT/2);
+global.MAX_TRANSACTION_COUNT=2000;
+//global.MAX_TRANSACTION_COUNT=Math.floor(MAX_BLOCK_SIZE/MIN_TRANSACTION_SIZE);//1000;
 
 global.AVG_TRANSACTION_COUNT=Math.floor(MAX_TRANSACTION_COUNT/2);
-global.MIN_TRANSACTION_COUNT=global.AVG_TRANSACTION_COUNT*4;
-global.MIN_POWER_POW_TR=14;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-global.MIN_POWER_POW_BL=10;
+//global.MIN_TRANSACTION_COUNT=global.AVG_TRANSACTION_COUNT*4;
+
+global.MIN_POWER_POW_TR=13;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+if(global.MIN_POWER_POW_BL===undefined)
+    global.MIN_POWER_POW_BL=10;
 global.GENERATE_BLOCK_ACCOUNT=0;
 global.TOTAL_TER_MONEY=1e9;
 
@@ -131,7 +133,8 @@ if(global.CODE_PATH===undefined)
 
 
 //Отладка
-global.DEBUG_MODE=0;
+if(global.DEBUG_MODE===undefined)
+    global.DEBUG_MODE=0;
 
 
 

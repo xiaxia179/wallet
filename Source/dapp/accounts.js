@@ -358,6 +358,7 @@ class CApp extends require("./dapp")
         //check sign
         var hash=shabuf(Body.slice(0,Body.length-64-12));
         var Result=0;
+        if(Data.PubKey[0]===2 || Data.PubKey[0]===3)
         try{Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);}catch (e){};
         if(!Result)
         {
@@ -430,6 +431,7 @@ class CApp extends require("./dapp")
         //check sign
         var hash=shabuf(Body.slice(0,Body.length-64-12));
         var Result=0;
+        if(Data.PubKey[0]===2 || Data.PubKey[0]===3)
         try{Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);}catch (e){};
         if(!Result)
         {

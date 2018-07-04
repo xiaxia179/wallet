@@ -55,9 +55,6 @@ function DoCommand(response,Path,params)
         case "getpacketinfosend":
             GetPacketInfoSend(response);
             break;
-        case "getpacketstat":
-            GetPacketStat(response);
-            break;
 
         case "sendtransaction":
             SendTransaction(response,params[1],params[2],params[3],params[4]);
@@ -69,10 +66,6 @@ function DoCommand(response,Path,params)
 
         case "createdump":
             CreateDump(response);
-            break;
-
-        case "getnodes":
-            GetNodes(response);
             break;
 
         case "getnetparams":
@@ -93,18 +86,6 @@ function DoCommand(response,Path,params)
 
         case "stat":
             SendFileHTML(response,"./HTML/stat.html");
-            break;
-
-        case "arr-stats":
-            SendArrStats(response,params[1]);
-            break;
-
-        case "total-stats":
-            SendTotalStats(response,params[1]);
-            break;
-
-        case "data-chain":
-            SendDataChain(response,params[1]);
             break;
 
         default:
@@ -430,6 +411,128 @@ HTTPCaller.SetNetMode=function (SetObj)
 
 //STATS
 
+HTTPCaller.GetAllCounters=function (SetObj)
+{
+    var Result=GET_STATS();
+    Result.result=1;
+    Result.sessionid=sessionid;
+    return Result;
+}
+
+
+
+//MONITOR
+HTTPCaller.GetNodes=function ()
+{
+    var ArrNodes=SERVER.GetActualNodes();
+
+    var res=[];
+    for(var Node of ArrNodes)
+    {
+        res.push({ip:Node.ip,port:Node.port,webport:80,addr:Node.addrStr,Hot:Node.Hot,Active:Node.Active});
+    }
+
+    var Result=
+        {
+            result:1,
+            sessionid:sessionid,
+            Nodes:res,
+            DEF_NETWORK:DEF_NETWORK,
+            DEF_VERSION:DEF_VERSION,
+            port:SERVER.port,
+            webport:HTTP_PORT_NUMBER,
+        };
+    return Result;
+}
+
+
+
+//DIAGRAMS
+
+HTTPCaller.GetArrStats=function (Keys)
+{
+    var arr=GET_STATDIAGRAMS(Keys);
+    return {result:1,sessionid:sessionid,arr:arr};
+}
+
+
+//BLOCK CHAIN MONITOR
+
+HTTPCaller.GetBlockChain=function (type)
+{
+     if(!global.SERVER || !SERVER.LoadedChainList)
+    {
+        return {result:0};
+    }
+
+    var MainChains={};
+    for(var i=0;i<SERVER.LoadedChainList.length;i++)
+    {
+        var chain=SERVER.LoadedChainList[i];
+        if(chain && !chain.Deleted)
+            MainChains[chain.id]=true;
+    }
+
+    var arrBlocks=[];
+    var arrLoadedChainList=[];
+    var arrLoadedBlocks=[];
+    //for(var Block of SERVER.BlockChain)
+    for(var key in SERVER.BlockChain)
+    {
+        var Block=SERVER.BlockChain[key];
+        if(Block)
+        {
+            arrBlocks.push(CopyBlockDraw(Block,MainChains));
+        }
+    }
+
+
+
+
+
+    AddChainList(arrLoadedChainList,SERVER.LoadedChainList,true);
+    AddMapList(arrLoadedBlocks,type,SERVER.MapMapLoaded,MainChains);
+
+    var ArrLoadedChainList=SERVER.HistoryBlockBuf.LoadValue("LoadedChainList",1);
+    if(ArrLoadedChainList)
+        for(var List of ArrLoadedChainList)
+        {
+            AddChainList(arrLoadedChainList,List);
+        }
+
+    var ArrMapMapLoaded=SERVER.HistoryBlockBuf.LoadValue("MapMapLoaded",1);
+    if(ArrMapMapLoaded)
+        for(var List of ArrMapMapLoaded)
+        {
+            AddMapList(arrLoadedBlocks,type,List);
+        }
+
+
+    var obj=
+        {
+            CurrentBlockNum:SERVER.CurrentBlockNum,
+            LoadedChainList:arrLoadedChainList,
+            LoadedBlocks:arrLoadedBlocks,
+            BlockChain:arrBlocks,
+            port:SERVER.port,
+            DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
+            memoryUsage:process.memoryUsage(),
+            sessionid:sessionid,
+            result:1
+        };
+
+    arrBlocks=[];
+    arrLoadedChainList=[];
+    arrLoadedBlocks=[];
+
+    return obj;
+}
+
+
+
+
+
+//Others
 
 //**********************************************************************************************************************
 //**********************************************************************************************************************
@@ -475,26 +578,6 @@ setInterval(function ()
 },500*1000);
 
 
-function GetPacketStat(response)
-{
-    response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
-    response.writeHead(200, { 'Content-Type': 'application/json' });
-
-    if(!global.USE_PACKET_STAT)
-        global.USE_PACKET_STAT=1;
-    global.USE_PACKET_STAT_TIME = process.hrtime();
-
-    var Result=
-        {
-            result:1,
-            sessionid:sessionid,
-            stat:SERVER.ArrPacketStat,
-        };
-    if(Result.stat.length>10000)
-        Result.stat=[];
-    response.end(JSON.stringify(Result));
-
-}
 
 function GetPacketInfoSend(response)
 {
@@ -571,31 +654,6 @@ function GetPacketInfoSend(response)
 
 }
 
-function GetNodes(response)
-{
-    response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
-    response.writeHead(200, { 'Content-Type': 'application/json' });
-
-    var ArrNodes=SERVER.GetActualNodes();
-
-    var res=[];
-    for(var Node of ArrNodes)
-    {
-        res.push({ip:Node.ip,port:Node.port,webport:80,addr:Node.addrStr,Hot:Node.Hot,Active:Node.Active});
-    }
-
-    var Result=
-        {
-            result:1,
-            sessionid:sessionid,
-            Nodes:res,
-            DEF_NETWORK:DEF_NETWORK,
-            DEF_VERSION:DEF_VERSION,
-            port:SERVER.port,
-            webport:HTTP_PORT_NUMBER,
-        };
-    response.end(JSON.stringify(Result));
-}
 
 function GetNetParams(response)
 {
@@ -714,103 +772,8 @@ function GetCopyBlock(Block)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-function SendArrStats(response,Keys)
-{
-    response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
-    response.writeHead(200, { 'Content-Type': 'application/json' });
 
 
-    var Result=GET_STATDIAGRAMS(Keys);
-    Result.result=1;
-    Result.sessionid=sessionid;
-    response.end(JSON.stringify(Result));
-}
-
-function SendTotalStats(response)
-{
-    response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
-    response.writeHead(200, { 'Content-Type': 'application/json' });
-
-
-    var Result=GET_STATS();
-    Result.result=1;
-    Result.sessionid=sessionid;
-    response.end(JSON.stringify(Result));
-}
-
-
-function SendDataChain(response,type)
-{
-    response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
-
-    if(!global.SERVER || !SERVER.LoadedChainList)
-    {
-        response.end("");
-        return;
-    }
-
-    var MainChains={};
-    for(var i=0;i<SERVER.LoadedChainList.length;i++)
-    {
-        var chain=SERVER.LoadedChainList[i];
-        if(chain && !chain.Deleted)
-            MainChains[chain.id]=true;
-    }
-
-    var arrBlocks=[];
-    var arrLoadedChainList=[];
-    var arrLoadedBlocks=[];
-    //for(var Block of SERVER.BlockChain)
-    for(var key in SERVER.BlockChain)
-    {
-        var Block=SERVER.BlockChain[key];
-        if(Block)
-        {
-            arrBlocks.push(CopyBlockDraw(Block,MainChains));
-        }
-    }
-
-
-
-
-
-    AddChainList(arrLoadedChainList,SERVER.LoadedChainList,true);
-    AddMapList(arrLoadedBlocks,type,SERVER.MapMapLoaded,MainChains);
-
-    var ArrLoadedChainList=SERVER.HistoryBlockBuf.LoadValue("LoadedChainList",1);
-    if(ArrLoadedChainList)
-        for(var List of ArrLoadedChainList)
-        {
-            AddChainList(arrLoadedChainList,List);
-        }
-
-    var ArrMapMapLoaded=SERVER.HistoryBlockBuf.LoadValue("MapMapLoaded",1);
-    if(ArrMapMapLoaded)
-        for(var List of ArrMapMapLoaded)
-        {
-            AddMapList(arrLoadedBlocks,type,List);
-        }
-
-
-    var obj=
-        {
-            CurrentBlockNum:SERVER.CurrentBlockNum,
-            LoadedChainList:arrLoadedChainList,
-            LoadedBlocks:arrLoadedBlocks,
-            BlockChain:arrBlocks,
-            port:SERVER.port,
-            DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
-            memoryUsage:process.memoryUsage(),
-            sessionid:sessionid,
-        };
-
-    arrBlocks=[];
-    arrLoadedChainList=[];
-    arrLoadedBlocks=[];
-
-    var StrSend=JSON.stringify(obj);
-    response.end(StrSend);
-}
 
 //**********************************************************************************************************************
 //**********************************************************************************************************************
@@ -1058,7 +1021,7 @@ function ToLogClient(Str,StrKey,bFinal)
             final:bFinal,
         });
 
-    if(ArrLog.length>5)
+    if(ArrLog.length>10)
         ArrLog.shift();
 }
 global.ToLogClient=ToLogClient;

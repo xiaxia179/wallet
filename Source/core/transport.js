@@ -206,8 +206,8 @@ module.exports = class CTransport extends require("./connect")
             });
 
 
-            setInterval(this.DoLoadHardPacket.bind(this),2);
-            this.LoadHardPacket=new RBTree(function (a,b)
+            setInterval(this.DoHardPacketForSend.bind(this),2);
+            this.HardPacketForSend=new RBTree(function (a,b)
             {
                 return b.PacketNum-a.PacketNum;
             });
@@ -472,8 +472,7 @@ module.exports = class CTransport extends require("./connect")
 
 
             Node.SendTrafficCurrent=0;
-            ADD_TO_STAT("MAX:NODE_TRAFFIC_LIMIT:"+NodeInfo(Node),1000/STAT_PERIOD*Node.SendTrafficLimit/1024);
-
+            ADD_TO_STAT("MAX:NODE_TRAFFIC_LIMIT:"+NodeName(Node),1000/STAT_PERIOD*Node.SendTrafficLimit/1024);
         }
 
         if(!HardSendCount)
@@ -497,7 +496,7 @@ module.exports = class CTransport extends require("./connect")
             var Str="";
             if(Info.Data && Info.Data.Length)
                 Str=" LENGTH="+Info.Data.Length;
-            TO_DEBUG_LOG("GET:"+Info.Method+Str+" from: Node="+Info.Node.ip+":"+Info.Node.port);
+            TO_DEBUG_LOG("GET:"+Info.Method+Str+" from: Node="+NodeInfo(Info.Node));
         }
 
         // if(Info.Version>DEF_VERSION)
@@ -979,7 +978,7 @@ module.exports = class CTransport extends require("./connect")
         var it=this.ActualNodes.iterator(), Item;
         while((Item = it.next()) !== null)
         {
-            if(SocketStatus(Item.Socket)>=100)
+            if(GetSocketStatus(Item.Socket)>=100)
                 Arr.push(Item);
             else
             {
@@ -1813,7 +1812,7 @@ module.exports = class CTransport extends require("./connect")
         var startTime = process.hrtime();
         var StartTimeNum=(new Date)-0;
         ADD_TO_STAT("GETDATA",buf.length/1024);
-        ADD_TO_STAT("GETDATA:"+Node.port,buf.length/1024);
+        ADD_TO_STAT("GETDATA:"+NodeName(Node),buf.length/1024);
 
 
 
@@ -1826,7 +1825,7 @@ module.exports = class CTransport extends require("./connect")
         }
 
         ADD_TO_STAT("GET:"+Buf.Method);
-        ADD_TO_STAT("GET:"+Buf.Method+":"+Node.port);
+        ADD_TO_STAT("GET:"+Buf.Method+":"+NodeName(Node));
 
         //ToLog("LOAD "+Buf.Method+" ContextID="+GetHexFromAddres(Buf.ContextID));
 
@@ -1854,7 +1853,7 @@ module.exports = class CTransport extends require("./connect")
                 Node.LoadPacketNum++;
                 Buf.PacketNum=Node.LoadPacketNum;
                 Buf.LoadTimeNum=(new Date)-0;
-                this.LoadHardPacket.insert(Buf);
+                this.HardPacketForSend.insert(Buf);
 
                 return 1;
             }
@@ -1869,27 +1868,28 @@ module.exports = class CTransport extends require("./connect")
 
         return 1;
     }
-    DoLoadHardPacket()
+    DoHardPacketForSend()
     {
-        var Info=this.LoadHardPacket.min();
+        var Info=this.HardPacketForSend.min();
         if(!Info)
             return;
 
         var Node=Info.Node;
         if(Node.CanHardTraffic)
         {
-            this.LoadHardPacket.remove(Info);
+            this.HardPacketForSend.remove(Info);
             this.OnPacketTCP(Info);
         }
 
-        while(Info=this.LoadHardPacket.max())
+        while(Info=this.HardPacketForSend.max())
         {
             var DeltaTime=(new Date)-Info.LoadTimeNum;
-            if(DeltaTime>2000 || !Info.Node.Socket || Info.Node.Socket.WasClose)
+            if(DeltaTime>PACKET_ALIVE_PERIOD/2 || !Info.Node.Socket || Info.Node.Socket.WasClose)
             {
-                this.LoadHardPacket.remove(Info);
-                TO_DEBUG_LOG("Delete old load packet: "+Info.Method)
-                }
+                this.HardPacketForSend.remove(Info);
+                ADD_TO_STAT("DELETE_OLD_HARD_PACKET:"+Info.Method);
+                TO_DEBUG_LOG("Delete old load packet: "+Info.Method);
+            }
             else
             {
                 break;
@@ -1905,7 +1905,6 @@ module.exports = class CTransport extends require("./connect")
             return this.SendUDP(Node,Info,TypeData);
 
 
-        //var startTime = process.hrtime();
         if(!Node.Socket)
         {
             this.DeleteNodeFromActive(Node);
@@ -1958,7 +1957,7 @@ module.exports = class CTransport extends require("./connect")
             while(Info=Node.SendPacket.max())
             {
                 var DeltaTime=TimeNum-Info.TimeNum;
-                if(DeltaTime>PACKET_ALIVE_PERIOD/2)
+                if(DeltaTime>PACKET_ALIVE_PERIOD/2)//trigger
                 {
                     //ToLog("Delete OLD TIME "+Info.Method+" DeltaTime="+DeltaTime+" for:"+Node.port)
                     Node.SendPacket.remove(Info);
@@ -1977,8 +1976,8 @@ module.exports = class CTransport extends require("./connect")
 
             //ToLog("Send to "+Node.port+" PacketNum="+Info.PacketNum)
 
-            ADD_TO_STAT("MAX:NODE_BUF_WRITE:"+Node.port,Node.BufWrite.length/1024);
-            ADD_TO_STAT("MAX:NODE_SEND_BUF_PACKET_COUNT:"+Node.port,Node.SendPacket.size);
+            ADD_TO_STAT("MAX:NODE_BUF_WRITE:"+NodeName(Node),Node.BufWrite.length/1024);
+            ADD_TO_STAT("MAX:NODE_SEND_BUF_PACKET_COUNT:"+NodeName(Node),Node.SendPacket.size);
 
             if(Node.BufWrite.length>2*TRAFIC_LIMIT_1S)
             {
@@ -2005,7 +2004,7 @@ module.exports = class CTransport extends require("./connect")
                 Node.BufWrite=Buffer.concat([Node.BufWrite,BufWrite]);
 
             ADD_TO_STAT("SEND:"+Info.Method);
-            ADD_TO_STAT("SEND:"+Info.Method+":"+Node.port);
+            ADD_TO_STAT("SEND:"+Info.Method+":"+NodeName(Node));
             TO_DEBUG_LOG("SEND "+Info.Method+" to "+NodeInfo(Node)+" LENGTH="+BufWrite.length);
 
             //ToLog("SEND "+Info.Method+"  ContextID="+GetHexFromAddres(Info.ContextID))
@@ -2037,10 +2036,11 @@ module.exports = class CTransport extends require("./connect")
             var CanCountSend=Node.SendTrafficLimit-Node.SendTrafficCurrent;
             if(CanCountSend<CountSend)
             {
-                ADD_TO_STAT("DO_LIMIT_SENDDATA:"+Node.port,Value);
+                //ADD_TO_STAT("DO_LIMIT_SENDDATA:"+NodeName(Node),Value);
 
                 if(this.SendTrafficFree<CountSend)
                 {
+                    ADD_TO_STAT("LIMIT_SENDDATA:"+NodeName(Node),Value);
                     continue NEXT_NODE;
                 }
 
@@ -2061,7 +2061,7 @@ module.exports = class CTransport extends require("./connect")
 
             this.ADD_CURRENT_STAT_TIME("SEND_DATA",Value);
             ADD_TO_STAT("SENDDATA",Value);
-            ADD_TO_STAT("SENDDATA:"+Node.port,Value);
+            ADD_TO_STAT("SENDDATA:"+NodeName(Node),Value);
         }
 
     }
@@ -2090,7 +2090,7 @@ module.exports = class CTransport extends require("./connect")
         if(Pow.DEF_NETWORK!==DEF_NETWORK)
         {
             this.SendCloseSocket(Socket,"DEF_NETWORK="+Pow.DEF_NETWORK+" MUST:"+DEF_NETWORK);
-            //this.AddToBanIP(Socket.remoteAddress);
+            this.AddToBanIP(Socket.remoteAddress);
             return;
         }
 
@@ -2163,17 +2163,17 @@ module.exports = class CTransport extends require("./connect")
             // //Node.NextConnectDelta=1000;
             // if(Node.Socket && !Node.Socket.WasClose)// && Socket!==Node.Socket)
             // {
-            //     if(SocketStatus(Node.Socket)===100
+            //     if(GetSocketStatus(Node.Socket)===100
             //     || (Node.Socket.ConnectToServer && CompareArr(this.addrArr,Node.addrArr)<0))//встречный запрос соединения
             //     {
             //         Node.DoubleConnectCount++;
-            //         ToLog("Find double connection *"+Socket.ConnectID+" "+NodeInfo(Node)+" from client  NodeSocketStatus="+SocketStatus(Node.Socket))
+            //         ToLog("Find double connection *"+Socket.ConnectID+" "+NodeInfo(Node)+" from client  NodeSocketStatus="+GetSocketStatus(Node.Socket))
             //         Socket.write(this.GetBufFromData("POW_CONNECT3","DOUBLE",2));
             //         return;
             //     }
             //     else
             //     {
-            //         ToLog("Close double connection *"+Node.Socket.ConnectID+" "+NodeInfo(Node)+" from server NodeSocketStatus="+SocketStatus(Node.Socket))
+            //         ToLog("Close double connection *"+Node.Socket.ConnectID+" "+NodeInfo(Node)+" from server NodeSocketStatus="+GetSocketStatus(Node.Socket))
             //         CloseSocket(Node.Socket,"Close double connection");
             //     }
             // }
@@ -2183,13 +2183,13 @@ module.exports = class CTransport extends require("./connect")
             // this.AddNodeToActive(Node);
             //
             // if(Node.Socket)
-            //     CloseSocket(Node.Socket,"Close prev connection: "+SocketStatistic(Node.Socket)+"  Status:"+SocketStatus(Node.Socket));
+            //     CloseSocket(Node.Socket,"Close prev connection: "+SocketStatistic(Node.Socket)+"  Status:"+GetSocketStatus(Node.Socket));
 
             Node.FromIP=Pow.FromIP;
             Node.FromPort=Pow.FromPort;
 
             Node.ReconnectFromServer=1;
-            global.MapReconnect[Node.addrStr]=Node;
+            global.ArrReconnect.push(Node);
             // SetSocketStatus(Socket,3);
             // Socket.Node=undefined;
             //Node.Socket=undefined;
@@ -2237,6 +2237,11 @@ module.exports = class CTransport extends require("./connect")
             this.FindInternetIP()
     }
 
+    StopServer()
+    {
+        if(this.Server)
+            this.Server.close();
+    }
     StartServer()
     {
         if(!USE_TCP)
@@ -2311,7 +2316,7 @@ module.exports = class CTransport extends require("./connect")
 
             SOCKET.on('end', () =>
             {
-                var Status=SocketStatus(SOCKET);
+                var Status=GetSocketStatus(SOCKET);
                 if(Status)
                     ToLog("Get socket end *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
 
@@ -2325,7 +2330,7 @@ module.exports = class CTransport extends require("./connect")
             });
             SOCKET.on('close', (err) =>
             {
-                if(SOCKET.ConnectID && SocketStatus(SOCKET))
+                if(SOCKET.ConnectID && GetSocketStatus(SOCKET))
                      ToLog("Get socket close *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
 
                 if(!SOCKET.WasClose && SOCKET.Node)
@@ -2343,7 +2348,7 @@ module.exports = class CTransport extends require("./connect")
 
                 if(SOCKET.Node)
                     SELF.AddCheckErrCount(SOCKET.Node,1,"ERR##2 : socket");
-                ToError("ERR##2 : socket="+SOCKET.ConnectID+"  SocketStatus="+SocketStatus(SOCKET));
+                ToError("ERR##2 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
                 ToError(err);
             });
 
@@ -2356,6 +2361,17 @@ module.exports = class CTransport extends require("./connect")
 
         this.Server.on('error', (err) =>
         {
+            if (err.code === 'EADDRINUSE')
+            {
+                ToLog('Port '+SELF.port+' in use, retrying...');
+                setTimeout(() =>
+                {
+                    SELF.Server.close();
+                    SELF.RunListenServer();
+                }, 1000);
+                return;
+            }
+
             ADD_TO_STAT("ERRORS");
             ToError("ERR##3");
             ToError(err);
@@ -2364,19 +2380,21 @@ module.exports = class CTransport extends require("./connect")
 
 
 
-        //this.Server.on('error', SELF.OnError);
+        this.RunListenServer();
 
-        this.Server.listen(START_PORT_NUMBER, '0.0.0.0', () =>
-        {
-            this.CanSend++;
-            ToLogClient("Run TCP server on port: "+START_PORT_NUMBER);//+"  for: "+SELF.addrStr);
-        });
 
         if(!global.NET_WORK_MODE)
             this.FindInternetIP()
-        //this.StartServerUDP();
+    }
 
-        //throw  new Error("GO!!")
+    RunListenServer()
+    {
+        let SELF=this;
+        this.Server.listen(SELF.port, '0.0.0.0', () =>
+        {
+            SELF.CanSend++;
+            ToLogClient("Run TCP server on port: "+SELF.port);
+        });
 
     }
 

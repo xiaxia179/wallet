@@ -4,6 +4,19 @@
 
 if(window.nw)
 {
+    window.Open=function (name,width,height)
+    {
+        width = width || 820;
+        height = height || 1000;
+        window.nw.Window.open(name,
+            {
+                width: width,
+                height: height
+            }, function(win)
+            {
+            });
+    }
+
     window.GetData=function(Method, ObjPost, Func)
     {
         if(Func===undefined)
@@ -28,7 +41,6 @@ if(window.nw)
             },20);
         }
     }
-
 }
 // else
 // if(window.process)//ELECTRON
@@ -37,6 +49,7 @@ if(window.nw)
 // }
 else
 {
+    window.Open=window.open;
     window.GetData=
     function (Method, ObjPost, Func)
     {

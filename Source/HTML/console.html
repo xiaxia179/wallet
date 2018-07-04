@@ -5,11 +5,20 @@
     <title>Console</title>
 </head>
 
-<!--<script type="text/javascript" src="constant.js"></script>-->
-<script type="text/javascript" src="client.js"></script>
+<script>
+    window.RUN_CLIENT=1;
+    window.RUN_SERVER=0;
+    if(typeof global === 'object')
+    {
+        global.RUN_CLIENT=1;
+        global.RUN_SERVER=0;
+    }
+</script>
 
-<script type="text/javascript" src="sha3.js"></script>
-<script type="text/javascript" src="crypto-client.js"></script>
+<script type="text/javascript" src="../HTML/JS/client.js"></script>
+<script type="text/javascript" src="../HTML/JS/sha3.js"></script>
+<script type="text/javascript" src="../HTML/JS/crypto-client.js"></script>
+
 <script>
     function SetStatus(Str)
     {
@@ -31,7 +40,7 @@
 
         GetData("/getnetparams/", function (Data)
         {
-            if(Data)
+            if(Data && Data.result)
             {
                 if(Data.CurBlockNum>MaxBlockNum)
                     MaxBlockNum=Data.CurBlockNum;
@@ -40,7 +49,7 @@
                 if(!WasTitle)
                 {
                     WasTitle=1;
-                    document.title+=":"+Data.port;
+                    document.title+=":"+Data.ip;
                 }
             }
         });
@@ -52,8 +61,8 @@
     {
         SaveValues();
 
-        var Value = document.getElementById("idText").value;
-        var Type = document.getElementById("idSend").value;
+        var Value = document.getElementById("idConsoleText").value;
+        var Type = document.getElementById("idConsoleSend").value;
         if(Type==="TRCode")
         {
             SendTRCode(Value);
@@ -90,8 +99,8 @@
 
     function SendTRCode(Value)
     {
-        var DeltaBlockNum = parseInt(document.getElementById("idDeltaBlockNum").value);
-        //var arrValue=toUTF8Array(Value);
+        var DeltaBlockNum = parseInt(document.getElementById("idConsoleDeltaBlockNum").value);
+
         var Body=[];
         WriteByte(Body,5)
         WriteUint(Body,DeltaBlockNum+MaxBlockNum);
@@ -193,32 +202,56 @@
     }
 
 
+    function CheckDevelop()
+    {
+        GetData("/GetWalletInfo", function (Data)
+        {
+            if(Data && Data.result)
+            {
+                if(!Data.IsDevelopAccount)
+                {
+                    var Select = document.getElementById("idConsoleSend");
+                    for(var i=0;i<Select.options.length;i++)
+                    {
+                        var item=Select.options[i];
+                        if(item.value==="TRCode")
+                        {
+                            item.disabled=1;
+                            Select.options[i] = null;
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     window.onload=function()
     {
-
-
         setInterval(UpdateData,100);
+        setTimeout(CheckDevelop,500);
 
         window.onkeydown = CheckCtrlEnter;
 
         LoadValues();
+
+
     }
 
     function LoadValues()
     {
-        if(!localStorage["WasSave2"])
+        if(!localStorage["WasSaveConsole"])
             return;
-        document.getElementById("idText").value=localStorage["idText"];
-        document.getElementById("idSend").value=localStorage["idSend"];
-        document.getElementById("idDeltaBlockNum").value=localStorage["idDeltaBlockNum"];
+        document.getElementById("idConsoleText").value=localStorage["idConsoleText"];
+        document.getElementById("idConsoleSend").value=localStorage["idConsoleSend"];
+        document.getElementById("idConsoleDeltaBlockNum").value=localStorage["idConsoleDeltaBlockNum"];
     }
     function SaveValues()
     {
-        localStorage["WasSave2"]=1;
-        localStorage["idText"]=document.getElementById("idText").value;
-        localStorage["idSend"]=document.getElementById("idSend").value;
-        localStorage["idDeltaBlockNum"]=document.getElementById("idDeltaBlockNum").value;
+        localStorage["WasSaveConsole"]=1;
+        localStorage["idConsoleText"]=document.getElementById("idConsoleText").value;
+        localStorage["idConsoleSend"]=document.getElementById("idConsoleSend").value;
+        localStorage["idConsoleDeltaBlockNum"]=document.getElementById("idConsoleDeltaBlockNum").value;
 
     }
 
@@ -237,23 +270,23 @@
 
 
 New codes:
-<select size="1" id="idSend" onkeyup="SaveValues()" onchange="SaveValues()">
+<select size="1" id="idConsoleSend" onkeyup="SaveValues()" onchange="SaveValues()">
     <option value="DirectCode">Direct code</option>
     <option value="TRCode">Transaction code</option>
     <option value="HEX">HEX Transaction</option>
 </select>
 
-POW:<INPUT type="number" id="idPow" value="10">Delta BlockNum:<INPUT type="number" id="idDeltaBlockNum" value="100">
+POW:<INPUT type="number" id="idPow" value="10">Delta BlockNum:<INPUT type="number" id="idConsoleDeltaBlockNum" value="100">
 
 <BR><BR>
-<textarea id="idText" cols="120" rows="20"> </textarea>
+<textarea id="idConsoleText" cols="112" rows="20"> </textarea>
 <BR>
 <INPUT type="button" onclick="SendToServer()" class="buttons" value="Send">
 <BR>
 HEX:
 <BR>
 </textarea>
-<textarea rows="8" cols="120"  name="result" id="result">
+<textarea rows="8" cols="112"  name="result" id="result">
    </textarea>
 
 

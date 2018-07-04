@@ -6,9 +6,16 @@
 </head>
 <body>
 
+<script>
+    window.RUN_CLIENT=1;
+    window.RUN_SERVER=0;
+    if(typeof global === 'object')
+    {
+        global.RUN_CLIENT=1;
+        global.RUN_SERVER=0;
+    }
+</script>
 
-<!--<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>-->
-<!--<script type="text/javascript" src="../HTML/JS/constant.js"></script>-->
 <script type="text/javascript" src="../HTML/JS/client.js"></script>
 
 <script type="text/javascript">
@@ -237,9 +244,9 @@
         SetPause(1);
         setTimeout(function ()
         {
-            GetData("/getnodes",function (Data,Str)
+            GetData("/GetNodes",function (Data,Str)
             {
-                if(!Data)
+                if(!Data || !Data.result)
                     return;
 
                 document.title+=":"+Data.port;
@@ -1275,7 +1282,7 @@
     {
         GetData(domenlist[NumArr].name+"/data-chain/"+strReload,function (Data,Str)
         {
-            if(typeof Data==="object")
+            if(typeof Data==="object" && Data.result)
             {
                 Data.NumArr=NumArr;
                 ResDataArr[NumArr]=Data;
@@ -1522,6 +1529,8 @@
         var StartServer=Item.starttime;
         var mouseX=Item.mouseX;
 
+        if(!arr)
+            return;
 
         var obj = document.getElementById(name);
         var ctx     = obj.getContext('2d');
@@ -2019,7 +2028,7 @@
         }
         GetData("/arr-stats",arrNames,function (Data,Str)
         {
-            if(!Data || !Data.length)
+            if(!Data || !Data.length || !Data.result)
                 return;
 
 

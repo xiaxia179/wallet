@@ -16,6 +16,7 @@ global.PERIOD_FOR_RECONNECT=3600*1000;//ms
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
 global.CODE_VERSION={VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
 
+const MAX_PERIOD_GETNODES=60*1000;
 
 var MAX_PING_FOR_CONNECT=150;//ms
 var TIME_AUTOSORT_GRAY_LIST=5000;//ms
@@ -65,32 +66,23 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     }
 
-    StartConnect(ip,port)
+    StartConnect(Node)
     {
-        if(!ip)
-            return undefined;
-
-        var Node=this.FindRunNodeContext(undefined,ip,port)
-        if(!Node.ConnectStart)
-            Node.ConnectStart=0;
         var Delta=(new Date)-Node.ConnectStart;
 
-        if(Delta>=Node.NextConnectDelta)
+        if(Delta>=Node.NextConnectDelta && this.IsCanConnect(Node))
         {
-
-
-            if(Node.DoubleConnection || Node.Socket && SocketStatus(Node.Socket))
-            {
-
-            }
-            else
+            if(!GetSocketStatus(Node.Socket))
             {
                 Node.ConnectStart=(new Date)-0;
-                Node.NextConnectDelta=Node.NextConnectDelta*1.5;
+                if(Delta<60*1000)
+                    Node.NextConnectDelta=Node.NextConnectDelta*2;
+                else
+                    Node.NextConnectDelta=Node.NextConnectDelta*1.2;
+
                 Node.CreateConnect();
             }
         }
-        return Node;
     }
 
 
@@ -98,11 +90,8 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         var Node,addrStr;
 
-        if(addrArr!==undefined)
-        {
-            addrStr=GetHexFromAddres(addrArr);
-            Node=this.NodesMap[addrStr];
-        }
+        addrStr=GetHexFromAddres(addrArr);
+        Node=this.NodesMap[addrStr];
         if(!Node)
         {
             var key=""+ip+":"+port;
@@ -125,7 +114,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     StartHandshake(Node)
     {
-        return this.StartConnect(Node.ip,Node.port)
+        return this.StartConnect(Node)
     }
 
 
@@ -165,7 +154,10 @@ module.exports = class CConnect extends require("./transfer-msg")
         var Ret=
             {
                 VERSIONMAX:DEF_VERSION,
-                FIRST_TIME_BLOCK:global.FIRST_TIME_BLOCK,//+DELTA_CURRENT_TIME
+                FIRST_TIME_BLOCK:0,
+                PingVersion:0,
+                Reserve1:0,
+                Reserve2:0,
                 Time:(GetCurrentTime()-0),
                 BlockNumDB:this.BlockNumDB,
                 LoadHistoryMode:this.LoadHistoryMode,
@@ -180,7 +172,9 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         return "{\
                 VERSIONMAX:str15,\
-                FIRST_TIME_BLOCK:uint,\
+                PingVersion:byte,\
+                Reserve1:byte,\
+                Reserve2:uint32,\
                 Time:uint,\
                 BlockNumDB:uint,\
                 LoadHistoryMode:byte,\
@@ -222,10 +216,12 @@ module.exports = class CConnect extends require("./transfer-msg")
         var DeltaTime=GetCurrentTime(0)-Info.Context.StartTime;
         Node.DeltaTime=DeltaTime;
         Node.INFO=Data;
-        if(Data.LoadHistoryMode)
-            Node.Hot=false;
-        if(!Data.CanStart)
-            Node.Hot=false;
+        Node.LoadHistoryMode=Data.LoadHistoryMode;
+        if(Data.LoadHistoryMode || !Data.CanStart)
+        if(Node.Hot)
+        {
+            this.DeleteNodeFromHot(Node);
+        }
 
         Node.LastTime=GetCurrentTime();
 
@@ -239,7 +235,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             var SignArr=arr2(Data.CheckPoint.Hash,GetArrFromValue(Data.CheckPoint.BlockNum));
             if(CheckDevelopSign(SignArr,Data.CheckPoint.Sign))
             {
-                ToLog("Get new CheckPoint");
+                ToLog("Get new CheckPoint = "+Data.CheckPoint.BlockNum);
 
                 global.CHECK_POINT=Data.CheckPoint;
                 var Block=this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
@@ -268,7 +264,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             var SignArr=arr2(Data.CodeVersion.Hash,GetArrFromValue(Data.CodeVersion.VersionNum));
             if(CheckDevelopSign(SignArr,Data.CodeVersion.Sign))
             {
-                ToLog("Get new CodeVersion");
+                ToLog("Get new CodeVersion = "+Data.CodeVersion.VersionNum);
                 this.StartLoadCode(Node,Data.CodeVersion);
             }
             else
@@ -278,20 +274,28 @@ module.exports = class CConnect extends require("./transfer-msg")
             }
         }
 
-        if(Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum)
+        if(Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum && !Data.LoadHistoryMode)
         {
             Node.CanHot=true;
         }
         else
-        if(Data.CodeVersion.VersionNum<CODE_VERSION.VersionNum)
         {
             Node.CanHot=false;
-            ToLog("ERR VersionNum="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
+            if(Data.CodeVersion.VersionNum<CODE_VERSION.VersionNum)
+            {
+                ToLog("ERR VersionNum="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
+            }
+        }
+
+        if(!global.CAN_START)
+        {
+            ToLog("DeltaTime="+DeltaTime+" ms  -  "+NodeInfo(Node));
+            if(DeltaTime>MAX_PING_FOR_CONNECT)
+                ToLog("DeltaTime="+DeltaTime+">"+MAX_PING_FOR_CONNECT+" ms  -  "+NodeInfo(Node))
         }
 
 
-
-        if(DeltaTime<MAX_PING_FOR_CONNECT)
+        if(DeltaTime<=MAX_PING_FOR_CONNECT)
         {
 
             //расчет времени удаленной ноды
@@ -315,15 +319,11 @@ module.exports = class CConnect extends require("./transfer-msg")
 
             this.CorrectTime();
         }
-        else
-        {
-            if(!global.CAN_START)
-                ToLog("DeltaTime="+DeltaTime+">"+MAX_PING_FOR_CONNECT+" ms  -  "+NodeInfo(Node))
-        }
 
         if(!global.CAN_START)
         if(Times && Times.Count>=1 && Times.AvgDelta<=200)
         {
+            ToLogClient("Start synchronization")
             ToLog("*************************************************************************** CAN_START")
             global.CAN_START=true;
             if(Node.INFO.BlockNumDB>this.BlockNumDB+COUNT_HISTORY_BLOCKS_FOR_LOAD/2)
@@ -368,9 +368,12 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         if(!Node.Stage)
             Node.Stage=0;
-        Node.Stage++;
+        if(Node.Hot)
+        {
+            Node.Stage++;
+            Node.Hot=false;
+        }
 
-        Node.Hot=false;
         Node.CanHot=false;
         for(var i=0;i<this.LevelNodes.length;i++)
         {
@@ -408,12 +411,21 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(glStopNode)
             return;
 
-        this.Send(Node,
-            {
-                "Method":"GETNODES",
-                "Data":undefined
-            }
-        );
+        var Delta=(new Date)-Node.GetNodesStart;
+
+        if(Delta>=Node.NextGetNodesDelta)
+        {
+            Node.GetNodesStart=(new Date)-0;
+            Node.NextGetNodesDelta=Math.min(Node.NextGetNodesDelta*2,MAX_PERIOD_GETNODES);
+
+            this.Send(Node,
+                {
+                    "Method":"GETNODES",
+                    "Data":undefined
+                }
+            );
+        }
+
     }
 
     GETNODES(Info,CurTime)
@@ -477,6 +489,9 @@ module.exports = class CConnect extends require("./transfer-msg")
             return false;
 
         if(Node.ip===this.ip &&Node.port===this.port)
+            return false;
+
+        if(this.addrStr===Node.addrStr)
             return false;
 
         return true;
@@ -919,7 +934,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
-            if(Node.Active && SocketStatus(Node.Socket)<100)
+            if(Node.Active && GetSocketStatus(Node.Socket)<100)
             {
                 var Delta=CurTime-Node.LastTime;
                 if(Delta>MAX_WAIT_PERIOD_FOR_ACTIVE)
@@ -1012,7 +1027,7 @@ module.exports = class CConnect extends require("./transfer-msg")
     //КРИТЕРИИ НОРМАЛЬНОСТИ СВЯЗЕЙ:
     CheckDisconnectChilds(Level)
     {
-        //отсоедняем все дочерние узлы, имеющие более MIN_CONNECT_CHILD соединения
+        //отсоединяем все дочерние узлы, имеющие более MIN_CONNECT_CHILD соединения
         var bWas=0;
         var arr=this.LevelNodes[Level];
         if(arr)
@@ -1167,7 +1182,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         var AvgDelta=Math.floor(Sum/Count+0.5);
 
 
-        if(WORK_MODE)
+        if(global.CAN_START)
         {
             MAX_TIME_CORRECT=50;
         }
@@ -1320,6 +1335,18 @@ module.exports = class CConnect extends require("./transfer-msg")
         else
             return 0;
     }
+
+    GetActualsServerIP()
+    {
+        var arr=this.GetActualNodes();
+        var arr2=[];
+        for(var i=0;i<arr.length;i++)
+        {
+            arr2.push(arr[i].ip);
+        }
+        return JSON.stringify(arr2);
+    }
+
 }
 
 
@@ -1330,5 +1357,3 @@ TODO:
 TODO: DeleteNodeFromActive - в т.ч. по таймауту
 */
 
-//SERVER.CorrectTimeOLD=SERVER.CorrectTime;
-//SERVER.CorrectTime=function ()

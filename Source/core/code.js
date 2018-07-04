@@ -208,13 +208,14 @@ global.RestartNode=function()
 {
     global.NeedRestart=1;
 
-    // var it=SERVER.ActualNodes.iterator(), Node;
-    // while((Node = it.next()) !== null)
-    // {
-    //     if(Node.Socket)
-    //         CloseSocket(Node.Socket,"Restart");
-    // }
-    // SERVER.StopNode();
+    var it=SERVER.ActualNodes.iterator(), Node;
+    while((Node = it.next()) !== null)
+    {
+        if(Node.Socket)
+            CloseSocket(Node.Socket,"Restart");
+    }
+    SERVER.StopServer();
+    SERVER.StopNode();
 
     ToLog("***************************************** RESTART!!!");
 

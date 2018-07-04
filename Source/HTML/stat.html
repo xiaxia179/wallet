@@ -1,153 +1,30 @@
 <!doctype html>
 <html>
 <head>
-    <title>STATS</title>
+    <title>TERA COUNTERS</title>
     <meta charset='utf-8' />
 </head>
 <body>
 
+<script>
+    window.RUN_CLIENT=1;
+    window.RUN_SERVER=0;
+    if(typeof global === 'object')
+    {
+        global.RUN_CLIENT=1;
+        global.RUN_SERVER=0;
+    }
+</script>
 
-<DIV id="status"></DIV>
+<script type="text/javascript" src="../HTML/JS/client.js"></script>
 
 
-
-<!--<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>-->
 <script type="text/javascript">
-    function SetStatus(Str)
-    {
-        var id = document.getElementById("status");
-        id.innerText=Str;
-    }
-
-
-//    google.charts.load('current', {'packages':['corechart']});
-//    google.charts.setOnLoadCallback(InitChart);
-
-    var CanRedraw=true;
-    var ChartDgrm;
-    var DataChart,DataChartConfirmation;
-    var ChartConfirm;
-    function InitChart()
-    {
-        ChartDgrm = new google.visualization.SteppedAreaChart(document.getElementById('chart_div'));
-        GetStat();
-
-        //ChartConfirm = new google.visualization.SteppedAreaChart(document.getElementById('confirm_div'));
-    }
-
-    function drawChart(arr,arrnames,arrmult)
-    {
-        var StrFilter = document.getElementById("idFilter").value;
-        var mas=[];
-        for(var i=0;i<arr.length;i++)
-        {
-            var arr_stat=arr[i];
-            if(i===0)
-            {
-                var row=['Период'];
-                for(var name in arr_stat)
-                {
-                    if(StrFilter.length>0 && name.indexOf(StrFilter)==-1)
-                        continue;
-
-                    if(name.indexOf("MAX:")!==-1)
-                        continue;
-
-                    row.push(name);
-                }
-                mas.push(row);
-            }
-            var row=[arrnames[i]];
-            for(var name in arr_stat)
-            {
-                if(StrFilter.length>0 && name.indexOf(StrFilter)==-1)
-                    continue;
-
-                if(name.indexOf("MAX:")!==-1)
-                    continue;
-
-                row.push(Math.floor(arr_stat[name]/arrmult[i]));
-            }
-
-            mas.push(row);
-        }
-
-        DataChart=google.visualization.arrayToDataTable(mas);
-
-        var options = {
-            title: 'Statistics',
-            vAxis: {title: 'Avarage values per 10 sec'},
-            //backgroundColor: '#ddd',
-            legend: {position: 'top', maxLines: 5},
-            connectSteps: true,
-            isStacked: true,
-        };
-
-
-        google.visualization.events.addListener(ChartDgrm, 'onmouseover', function (pos)
-        {
-            CanRedraw=false;
-            //SetStatus("onmouseover="+JSON.stringify(pos));
-        });
-        google.visualization.events.addListener(ChartDgrm, 'onmouseout', function (pos)
-        {
-            CanRedraw=true;
-            //SetStatus("onmouseout="+JSON.stringify(pos));
-        });
-
-        if(CanRedraw)
-            ChartDgrm.draw(DataChart, options);
-
-    }
-
-    function drawChartConfirmation(arr)
-    {
-        return;
-
-        var mas=[];
-        for(var i=0;i<arr.length;i++)
-        {
-            var arr_stat=arr[i];
-            if(i===0)
-            {
-                var row=['Высота','Норма','Превышение'];
-                mas.push(row);
-            }
-            var val1=arr[i];
-            var val2=0;
-            if(val1===0)
-            {
-                val1=8;
-            }
-            if(val1>8)
-            {
-                val2=val1-8;
-                val1=8;
-            }
-            var row=[i,val1,val2];
-            mas.push(row);
-        }
-
-        DataChartConfirmation=google.visualization.arrayToDataTable(mas);
-
-        var options = {
-            title: 'Подтверждение блоков последние 10 минут',
-            vAxis: {title: 'Высота', titleTextStyle: {color: '#000'}},
-            legend: {position: 'none'},
-            isStacked: true,
-            height: 200,
-            connectSteps: true,
-        };
-
-
-        ChartConfirm.draw(DataChartConfirmation, options);
-
-    }
 
     function SetResult(Data)
     {
-
-        //drawChartConfirmation(Data.Confirmation);
+        if(!Data || !Data.result)
+            return;
 
 
         var arrnames=["10s","10m","total, avg"];
@@ -161,8 +38,6 @@
         }
 
 
-//        var arrdata=[Data.stats.Counter10S,Data.stats.Counter10M,Data.stats.Counter1H,Data.stats.Counter];
-//        var arrerr=[Data.errors.Counter10S,Data.errors.Counter10M,Data.errors.Counter1H,Data.errors.Counter];
         var arrdata=[Data.stats.Counter10S,Data.stats.Counter10M,Data.stats.Counter];
         var arrerr=[Data.errors.Counter10S,Data.errors.Counter10M,Data.errors.Counter];
         //drawChart(arrdata,arrnames,arrmult);
@@ -237,49 +112,22 @@
 
     //LIB
 
-    function GetData(Method, Func)
-    {
-        var serv=new XMLHttpRequest();
-        serv.open("GET", Method, true);
-        serv.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-        serv.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT");
-        serv.onreadystatechange = function()
-        {
-            if (serv.readyState == 4)
-            {
-                if(serv.status == 200)
-                {
-                    if(Func)
-                        Func(JSON.parse(serv.responseText));
-                }
-                else
-                {
-                    if(Func)
-                        Func(undefined);
-                }
-            }
-        }
-
-        serv.send("");
-    };
-
-
-
 
     function GetStat()
     {
-        GetData("/total-stats",function (Data)
+        GetData("/GetAllCounters",function (Data)
         {
-            //SetResult("Result:"+JSON.stringify(Data));
             SetResult(Data);
-
         });
     }
 
 
-    setInterval(GetStat,1000);
 
-    //window.onload=GetStat;
+    window.onload=function()
+    {
+        GetStat();
+        setInterval(GetStat,1000);
+    }
 
 
 </script>
@@ -315,12 +163,15 @@
 
 <div id="confirm_div" style="height: 0px;"></div>
 
-<h3>Статистика</h3>
-Фильтр:<INPUT type="string" style="width: 292px" id="idFilter" value="">
+<h2 align='center' >Performance counters</h2>
+
+Filter:
+<INPUT type="search" style="width: 292px" id="idFilter" value="">
+<BR>
 
     <table id="grid_stat" class="stat">
         <tr>
-            <th>Statistic</th>
+            <th>Counters</th>
             <th>10 sec</th>
             <th>10 min</th>
             <th>total</th>
@@ -337,7 +188,7 @@
 
     <table id="grid_error" class="stat">
         <tr>
-            <th>Error</th>
+            <th>Errors</th>
             <th>10 sec</th>
             <th>10 min</th>
             <th>total</th>

@@ -3,16 +3,10 @@
  * Copyright: Yuriy Ivanov, 2018 e-mail: progr76@gmail.com
  */
 
-global.WORK_MODE=false;
-const WORK_MODE_TIME=100;
-
-var StartBlockSaveDB=-1;
-
 const fs = require('fs');
-
 const DBLib=require("./db");
-global.BlockDB=new DBLib();
 
+global.BlockDB=new DBLib();
 global.BLOCK_HEADER_SIZE=150;//144;
 
 const FILE_NAME_HEADER="block-header";
@@ -474,17 +468,6 @@ module.exports = class CDB extends require("../code")
         var BufWrite=BufLib.GetNewBuffer(BLOCK_HEADER_SIZE);
         this.BlockHeaderToBuf(BufWrite,Block);
         var Res=this.WriteBufHeaderDB(BufWrite,Block.BlockNum);
-        if(Res && !WORK_MODE && Block.BlockNum>BLOCK_PROCESSING_LENGTH*2)
-        {
-            if(StartBlockSaveDB===-1)
-                StartBlockSaveDB=GetCurrentBlockNumByTime();
-            if(Block.BlockNum-StartBlockSaveDB >= WORK_MODE_TIME)//режим нормальной работы через T времени
-            {
-                global.WORK_MODE=true;
-                ToLog("WORK_MODE")
-            }
-        }
-
         return Res;
     }
 

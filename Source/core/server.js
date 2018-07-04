@@ -28,9 +28,10 @@ require("./library");
 const cluster = require('cluster');
 var CTransport=require("./transport");
 
-global.MapReconnect={};
+global.glCurNumFindArr=0;
+global.ArrReconnect=[];
 var FindList=LoadParams(GetDataPath("finds-server.lst"),undefined);
-//if(!FindList)
+if(!FindList)
 {
     FindList=[{"ip":"194.1.237.94","port":30000},{"ip":"91.235.136.81","port":30002}];
     SaveParams(GetDataPath("finds-server.lst"),FindList);
@@ -72,10 +73,11 @@ if(cluster.isMaster)
 
         TO_ERROR_LOG("APP",666,err);
         ToLog(err.stack);
+
         if(err.code==="ENOTFOUND"
         ||err.code==="ECONNRESET")
         {
-            //
+            //do work
         }
         else
         {
@@ -102,8 +104,8 @@ if(cluster.isMaster)
     }, 100);
     setInterval(function run2()
     {
-        FindAddrAll();
-    }, 1000);
+        ConnectToNode();
+    }, 100);
 
 
 
@@ -158,16 +160,17 @@ function ReconnectingFromServer()
     if(!global.NET_WORK_MODE || !NET_WORK_MODE.UseDirectIP)
         return;
 
-    for(var key in MapReconnect)
+    if(ArrReconnect.length)
     {
-        var Node=MapReconnect[key];
+        var Node=ArrReconnect.shift();
         Node.CreateConnect();
-        delete MapReconnect[key];
-        break;//next node on another time (100ms)
     }
+
+    //connect to next node on another time (100ms)
 }
 
-function FindAddrAll()
+
+function ConnectToNode()
 {
     if(!SERVER || SERVER.CanSend<2)
         return;
@@ -175,73 +178,27 @@ function FindAddrAll()
     if(!global.NET_WORK_MODE || !NET_WORK_MODE.UseDirectIP)
         return;
 
+    if(!SERVER.NodesArr || !SERVER.NodesArr.length)
+        return;
 
-    var keyThisServer=SERVER.ip+":"+SERVER.port;
+    var Num=glCurNumFindArr%SERVER.NodesArr.length;
+    var Node=SERVER.NodesArr[Num];
 
-    for(var n=0;n<FindList.length;n++)
+    if(GetSocketStatus(Node.Socket)===100)
     {
-        var item=FindList[n];
-
-        if(!item.CountSend)
-            item.CountSend=0;
-        if(item.CountSend>100)
-             continue;
-        item.DirectIP=1;
-
-        var key=item.ip+":"+item.port;
-        if(keyThisServer===key)
-            continue;
-
-        var Node=item.Node;
-
-        if(!Node)
-            Node=SERVER.NodesIPMap[key];
-        if(Node && Node.Self)
-            continue;
-
-        if(!Node || SERVER.IsCanConnect(Node))
-        {
-
-            if(Worker)
-            {
-                item.CountSend++;
-                Worker.send(item);
-            }
-            else
-            {
-                item.CountSend++;
-                FindList[n].Node=SERVER.StartConnect(item.ip,item.port);
-            }
-        }
+        SERVER.StartGetNodes(Node);
+    }
+    else
+    {
+        SERVER.StartConnect(Node);
     }
 
+    if(Num===0)
+        glCurNumFindArr=0;
 
-    for(var Key in SERVER.NodesMap)
-    {
-        var Node=SERVER.NodesMap[Key];
-        if(Node && Node.Self)
-            continue;
-        if(SERVER.addrStr===Node.addrStr)
-            continue;
+    glCurNumFindArr++;
 
-        var keyTest=Node.ip+":"+Node.port;
-        if(keyThisServer===keyTest)
-            continue;
-
-        if(!Node.DirectIP)// && !Node.ReconnectFromServer)
-            continue;
-
-
-        if(SocketStatus(Node.Socket)===0)
-        {
-            SERVER.StartGetNodes(Node);
-        }
-        else
-        {
-            SERVER.StartConnect(Node.ip,Node.port);
-        }
-
-    }
+    //connect to next node on another time
 }
 
 
@@ -270,5 +227,30 @@ function RunServer(bVirtual)
     }
     KeyPair.setPrivateKey(Buffer.from(GetArrFromHex(global.SERVER_PRIVATE_KEY_HEX)));
     global.SERVER=new CTransport(KeyPair,START_IP, START_PORT_NUMBER,false,bVirtual);
+
+    DoStartFindList();
 }
+
+function DoStartFindList()
+{
+    var keyThisServer=SERVER.ip+":"+SERVER.port;
+
+    for(var n=0;n<FindList.length;n++)
+    {
+        var item=FindList[n];
+        if(!item.ip)
+            continue;
+
+        var key=item.ip+":"+item.port;
+        if(keyThisServer===key)
+            continue;
+
+
+        var addrStr=GetHexFromAddres(crypto.randomBytes(32));
+        var Node=SERVER.GetNewNode(addrStr,item.ip,item.port);
+        Node.addrStrTemp=addrStr;
+        Node.DirectIP=1;
+    }
+}
+
 

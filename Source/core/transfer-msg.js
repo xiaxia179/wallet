@@ -295,7 +295,7 @@ module.exports = class CMessages extends require("./transaction-validator")
         if(Res<=0)
             return Res;
 
-        return this.AddTrToQuote(this.TreePoolTr,Tr,MIN_TRANSACTION_COUNT);
+        return this.AddTrToQuote(this.TreePoolTr,Tr,MAX_TRANSACTION_COUNT);
     }
 
 

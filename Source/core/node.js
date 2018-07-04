@@ -49,7 +49,10 @@ module.exports = class CNode
 
         this.DoubleConnectCount=0;
 
+        this.ConnectStart=0
         this.NextConnectDelta=1000;
+        this.GetNodesStart=0
+        this.NextGetNodesDelta=1000;
 
         this.SendBlockArr=[];
         this.LoadBlockArr=[];
@@ -115,7 +118,7 @@ module.exports = class CNode
     ConnectStatus()
     {
         if(this.Socket)
-            return SocketStatus(this.Socket);
+            return GetSocketStatus(this.Socket);
         else
             return 0;
     }
@@ -249,7 +252,7 @@ module.exports = class CNode
 
 
 
-            if(SocketStatus(SOCKET)===2)
+            if(GetSocketStatus(SOCKET)===2)
             {
                 SetSocketStatus(SOCKET,3);
 
@@ -267,7 +270,7 @@ module.exports = class CNode
                 CloseSocket(SOCKET,Buf?"Method="+Buf.Method:"=CLIENT ON DATA=");
             }
             else
-            if(SocketStatus(SOCKET)===3)
+            if(GetSocketStatus(SOCKET)===3)
             {
                 var Buf=SERVER.GetDataFromBuf(data);
                 if(Buf)
@@ -326,9 +329,9 @@ module.exports = class CNode
         });
         SOCKET.on('end', () =>
         {
-            if(SocketStatus(SOCKET))
+            if(GetSocketStatus(SOCKET))
                 ToLog("Get socket end *"+SOCKET.ConnectID+" from server "+NodeInfo(NODE)+" Stat: "+SocketStatistic(SOCKET));
-            if(SocketStatus(SOCKET)===200)
+            if(GetSocketStatus(SOCKET)===200)
             {
                 NODE.SwapSockets();
                 SOCKET.WasClose=1;
@@ -337,11 +340,11 @@ module.exports = class CNode
         });
         SOCKET.on('close', (err) =>
         {
-            if(SOCKET.ConnectID && SocketStatus(SOCKET))
+            if(SOCKET.ConnectID && GetSocketStatus(SOCKET))
                 ToLog("Get socket close *"+SOCKET.ConnectID+" from server "+NodeInfo(NODE)+" Stat: "+SocketStatistic(SOCKET));
             if(!SOCKET.WasClose)
             {
-                if(SocketStatus(SOCKET)>=2)
+                if(GetSocketStatus(SOCKET)>=2)
                 {
 
                     CloseSocket(SOCKET,"GET CLOSE");
@@ -354,11 +357,11 @@ module.exports = class CNode
         SOCKET.on('error', (err) =>
         {
 
-            if(SocketStatus(SOCKET)>=2)
+            if(GetSocketStatus(SOCKET)>=2)
             {
                 SERVER.AddCheckErrCount(NODE,1,"ERR##1 : socket");
                 ADD_TO_STAT("ERRORS");
-                ToError("ERR##1 : socket="+SOCKET.ConnectID+"  SocketStatus="+SocketStatus(SOCKET));
+                ToError("ERR##1 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
                 ToError(err);
             }
         });
@@ -423,7 +426,7 @@ module.exports = class CNode
         if(TestNode && TestNode!==Node)
         {
 
-            if(SocketStatus(TestNode.Socket))
+            if(GetSocketStatus(TestNode.Socket))
             {
                 ToLog("DoubleConnection find for: "+NodeInfo(Node));
                 Node.DoubleConnection=true;
@@ -568,7 +571,7 @@ function SetSocketStatus(Socket,Status)
     }
 }
 
-function SocketStatus(Socket)
+function GetSocketStatus(Socket)
 {
     if(Socket && Socket.SocketStatus)
     {
@@ -610,8 +613,8 @@ function SocketStatistic(Socket)
         Str+=" Send="+Socket.SendBytes;
     if(Socket.GetBytes)
         Str+=" Get="+Socket.GetBytes;
-    if(SocketStatus(Socket))
-        Str+=" SocketStatus="+SocketStatus(Socket);
+    if(GetSocketStatus(Socket))
+        Str+=" SocketStatus="+GetSocketStatus(Socket);
     if(Str==="")
         Str="0";
     return Str;
@@ -623,9 +626,20 @@ function NodeInfo(Node)
     else
         return "";
 }
+function NodeName(Node)
+{
+    if(!Node)
+        return "";
+
+    if(LOCAL_RUN)
+        return ""+Node.port;
+    else
+        return ""+Node.ip;
+}
 global.SocketStatistic=SocketStatistic;
-global.SocketStatus=SocketStatus;
+global.GetSocketStatus=GetSocketStatus;
 global.SetSocketStatus=SetSocketStatus;
 global.NodeInfo=NodeInfo;
+global.NodeName=NodeName;
 global.SocketInfo=SocketInfo;
 
