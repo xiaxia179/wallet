@@ -278,7 +278,7 @@ module.exports = class CNode
                     var Str=Buf.Data;
                     if(Str==="WAIT_CONNECT_FROM_SERVER")
                     {
-                        ToLog("**********************OK POW CLIENT connect to server: "+NodeInfo(this)+" : WAIT_CONNECT_FROM_SERVER")
+                        ToLog("2. -------------------- CLIENT OK POW to server: "+NodeInfo(NODE));
                         //SetSocketStatus(SOCKET,0);
                         CloseSocket(SOCKET,"WAIT_CONNECT_FROM_SERVER");
                         NODE.WaitConnectFromServer=1;
@@ -288,8 +288,7 @@ module.exports = class CNode
                     {
                         NODE.NextConnectDelta=1000;
                         SetSocketStatus(SOCKET,100);
-                        ToLog("**********************OK POW CLIENT connect to server: "+NodeInfo(this))
-                        this.NextConnectDelta=1000;
+                        ToLog("4. ******************** CLIENT OK CONNECT to server: "+NodeInfo(NODE))
 
                         if(RECONNECTION)
                         {
@@ -362,7 +361,7 @@ module.exports = class CNode
                 SERVER.AddCheckErrCount(NODE,1,"ERR##1 : socket");
                 ADD_TO_STAT("ERRORS");
                 ToError("ERR##1 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
-                ToError(err);
+                //ToError(err);
             }
         });
 

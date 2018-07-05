@@ -93,6 +93,11 @@
     function SendHEXTransaction(Value)
     {
         var Body=GetArrFromHex(Value);
+        if(Body.length<64)
+        {
+            SetStatus("Error length HEX transaction");
+            return;
+        }
         Body.length+=12;
         SendTransaction(Body);
     }
@@ -276,7 +281,7 @@ New codes:
     <option value="HEX">HEX Transaction</option>
 </select>
 
-POW:<INPUT type="number" id="idPow" value="10">Delta BlockNum:<INPUT type="number" id="idConsoleDeltaBlockNum" value="100">
+POW:<INPUT type="number" id="idPow" value="16">Delta BlockNum:<INPUT type="number" id="idConsoleDeltaBlockNum" value="100">
 
 <BR><BR>
 <textarea id="idConsoleText" cols="112" rows="20"> </textarea>

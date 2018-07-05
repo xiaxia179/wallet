@@ -220,7 +220,6 @@ HTTPCaller.GetWalletInfo=function ()
             StartDateBlock:FIRST_TIME_BLOCK,
             ArrLog:ArrLog,
             MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
-            //ArrAcc:DApps.Accounts.GetAccounts(WALLET.AccountMap),
             MaxAccID:DApps.Accounts.GetMaxAccount(),
 
 
@@ -230,6 +229,7 @@ HTTPCaller.GetWalletInfo=function ()
             port:SERVER.port,
             NET_WORK_MODE:global.NET_WORK_MODE,
         };
+
 
     Ret.PrivateKey=WALLET.KeyPair.PrivKeyStr;
     Ret.PublicKey=WALLET.KeyPair.PubKeyStr;

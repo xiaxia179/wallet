@@ -295,12 +295,13 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
 
 
+        var Times;
         if(DeltaTime<=MAX_PING_FOR_CONNECT)
         {
 
             //расчет времени удаленной ноды
-            var Times=Node.Times;
-            if(!Times)
+            Times=Node.Times;
+            if(!Times || Times.Count>=10)
             {
                 Times={SumDelta:0,Count:0,AvgDelta:0};
                 Node.Times=Times;
@@ -1136,9 +1137,9 @@ module.exports = class CConnect extends require("./transfer-msg")
         {
             var Node=ArrNodes[i];
             if(!Node.Times)
-                return;
-            if(Node.Times.Count<2)
-                return;
+                continue;
+            if(Node.Times.Count<5)
+                continue;
             NodesSet.add(Node);
         }
 
@@ -1150,8 +1151,8 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         if(DeltaArr.length<1)
             return;
-        if(DeltaArr.length<CountNodes)
-            return;
+        // if(DeltaArr.length<CountNodes)
+        //     return;
 
         DeltaArr.sort(function (a,b) {return a-b});
 
@@ -1198,10 +1199,15 @@ module.exports = class CConnect extends require("./transfer-msg")
         //     return;
 
 
-        if(Math.abs(AvgDelta)>=25)//CONSENSUS_CHECK_TIME
-            ToLog("Correct time: Delta="+AvgDelta+"  DELTA_CURRENT_TIME="+DELTA_CURRENT_TIME);
-        else
+        if(Math.abs(AvgDelta)<25)//CONSENSUS_CHECK_TIME
+        {
             return;
+        }
+        //ToLog("Correct time: Delta="+AvgDelta+"  DELTA_CURRENT_TIME="+DELTA_CURRENT_TIME);
+        if(AvgDelta>0)
+            ADD_TO_STAT("CORRECT_TIME_UP")
+        else
+            ADD_TO_STAT("CORRECT_TIME_DOWN")
 
         global.DELTA_CURRENT_TIME += AvgDelta;
 
@@ -1302,7 +1308,8 @@ module.exports = class CConnect extends require("./transfer-msg")
     StartReconnect()
     {
         //переподсоединяемся к серверам раз в час
-        //return;
+        //TODO
+        return;
 
 
         var arr=this.GetActualNodes();

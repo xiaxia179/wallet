@@ -1,5 +1,5 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=16;
+global.UPDATE_CODE_VERSION_NUM=17;
 
 require("./startlib.js");
 
@@ -43,7 +43,7 @@ global.AVG_TRANSACTION_COUNT=Math.floor(MAX_TRANSACTION_COUNT/2);
 
 global.MIN_POWER_POW_TR=13;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(global.MIN_POWER_POW_BL===undefined)
-    global.MIN_POWER_POW_BL=10;
+    global.MIN_POWER_POW_BL=6;
 global.GENERATE_BLOCK_ACCOUNT=0;
 global.TOTAL_TER_MONEY=1e9;
 
@@ -81,9 +81,10 @@ InitParams();
 
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=1530628144595+(1)*1000;//(new Date)-0;
+    global.START_NETWORK_DATE=1530783132785;//(new Date)-0;//1530781502576+(1)*1000;//
     NETWORK="TEST-R3";
 }
+
 
 
 global.DEF_NETWORK=NETWORK+"-"+DEF_MAJOR_VERSION;//15

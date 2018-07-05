@@ -81,7 +81,8 @@ module.exports = class CDB extends require("../code")
         var BlockNum=(FI.size/BLOCK_HEADER_SIZE)-1;
 
         BlockNum=this.CheckBlocksOnStartReverse(BlockNum);
-        this.BlockNumDB=this.CheckBlocksOnStartFoward(BlockNum-100,1);
+        this.BlockNumDB=this.CheckBlocksOnStartFoward(BlockNum-10000,0);
+        this.BlockNumDB=this.CheckBlocksOnStartFoward(this.BlockNumDB-60,1);
         if(this.BlockNumDB>=BLOCK_PROCESSING_LENGTH2)
         {
             var Block=this.ReadBlockHeaderDB(this.BlockNumDB);

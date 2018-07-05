@@ -105,7 +105,7 @@ if(cluster.isMaster)
     setInterval(function run2()
     {
         ConnectToNode();
-    }, 100);
+    }, 200);
 
 
 

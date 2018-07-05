@@ -2108,7 +2108,7 @@ module.exports = class CTransport extends require("./connect")
                 Node.NextConnectDelta=1000;
                 Node.WaitConnectFromServer=0;
                 Node.DirectIP=1;
-                ToLog("*************************************** OK CONNECT_FROM_SERVER: "+NodeInfo(Node)+" "+SocketInfo(Socket));
+                ToLog("3. ******************** SERVER OK CONNECT  for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
                 this.AddNodeToActive(Node);
                 Node.Socket=Socket;
                 SetSocketStatus(Socket,3);
@@ -2116,6 +2116,11 @@ module.exports = class CTransport extends require("./connect")
                 Socket.Node=Node;
 
                 Socket.write(this.GetBufFromData("POW_CONNECT0","OK",2));
+                return;
+            }
+            if(!Node.Socket)
+            {
+                CloseSocket(Socket,"Reconnect fail - not prev connection");
                 return;
             }
 
@@ -2151,7 +2156,7 @@ module.exports = class CTransport extends require("./connect")
 
             Node=this.FindRunNodeContext(Pow.addrArr,Pow.FromIP,Pow.FromPort);
 
-            ToLog("*************************************** OK POW SERVER for client node:"+NodeInfo(Node)+" "+SocketInfo(Socket));
+            ToLog("1. -------------------- SERVER OK POW for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
 
             // if(Node.DoubleConnectCount>5 && Node.Socket && !Node.Socket.WasClose)
             // {
@@ -2256,7 +2261,7 @@ module.exports = class CTransport extends require("./connect")
         ((sock) =>
         {
 
-            if(this.WasBan({address:sock.remoteAddress}))
+            if(SELF.WasBan({address:sock.remoteAddress}))
             {
                 sock.ConnectID="new";
                 CloseSocket(sock,"WAS BAN",true);
@@ -2349,7 +2354,7 @@ module.exports = class CTransport extends require("./connect")
                 if(SOCKET.Node)
                     SELF.AddCheckErrCount(SOCKET.Node,1,"ERR##2 : socket");
                 ToError("ERR##2 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
-                ToError(err);
+                //ToError(err);
             });
 
 
@@ -2374,7 +2379,7 @@ module.exports = class CTransport extends require("./connect")
 
             ADD_TO_STAT("ERRORS");
             ToError("ERR##3");
-            ToError(err);
+            //ToError(err);
         });
 
 

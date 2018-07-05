@@ -156,6 +156,20 @@
         font-weight: 600;
     }
 
+
+    #topframe
+    {
+        z-index:1000;
+        position:fixed;
+        top:10px;
+        left:10px;
+        text-align: left;
+        width:1200px; /* ширина блока */
+        opacity: .7;
+        color: blue;
+
+    }
+
 </style>
 
 
@@ -165,8 +179,10 @@
 
 <h2 align='center' >Performance counters</h2>
 
-Filter:
-<INPUT type="search" style="width: 292px" id="idFilter" value="">
+<DIV id="topframe">
+    Filter: <INPUT type="search" style="width: 292px" id="idFilter" onkeyup="GetStat()" value="">
+</DIV>
+
 <BR>
 
     <table id="grid_stat" class="stat">

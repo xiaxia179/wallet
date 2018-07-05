@@ -67,9 +67,6 @@ class CApp extends require("./dapp")
 
         setInterval(this.ControlActSize.bind(this),60*1000);
 
-        //ToLog("DEVELOP_KEY: "+DevelopKeyPair.getPrivateKey('hex'))
-        // ToLog("DEVELOP_PUB KEY: "+GetHexFromArr(DevelopKeyPair.PubKeyArr))
-
         //TODO NET TRANSFER
     }
 

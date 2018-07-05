@@ -28,7 +28,10 @@ class CApp extends require("./dapp")
     OnWriteTransaction(Body,BlockNum,TrNum)
     {
         if(Body.length<=70)
+        {
             return "Error length transaction";
+        }
+
         try
         {
             var TR=BufLib.GetObjectFromBuffer(Body,FORMAT_CODES,{});

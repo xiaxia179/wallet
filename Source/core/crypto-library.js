@@ -989,8 +989,6 @@ global.Utf8ArrayToStr=Utf8ArrayToStr;
 global.GetArrFromStr=GetArrFromStr;
 
 
-//global.DevelopKeyPair=GetKeyPairTest("DEVELOPER");
-//DevelopKeyPair.PubKeyArr;
 global.DEVELOP_PUB_KEY=Buffer.from(GetArrFromHex("022e80aa78bc07c72781fac12488096f0bfa7b4f48fbab0f2a92e208d1ee3654df"));
 global.ARR_PUB_KEY=
         [
@@ -1004,4 +1002,13 @@ global.ARR_PUB_KEY=
             "027617f9511b0b0cdbda8f3e17907732731296321846f3fd6fd19460f7227d9482",
         ];
 
+if(LOCAL_RUN)
+{
+    var KeyPair=GetKeyPairTest("DEVELOPER");
+    global.DEVELOP_PUB_KEY=KeyPair.PubKeyArr;
+    ToLog("DEVELOP_KEY: "+KeyPair.getPrivateKey('hex'))
 
+    for(var i=0;i<100;i++)
+        global.ARR_PUB_KEY[i]=GetHexFromArr(global.DEVELOP_PUB_KEY);
+
+}
