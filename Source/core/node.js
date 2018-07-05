@@ -27,7 +27,7 @@ module.exports = class CNode
         this.LastTime=0;
         this.DeltaTime=0;
 
-        this.TryConnectCount=0;
+        //this.TryConnectCount=0;
         this.DirectIP=0;
         this.FromIP=undefined;
         this.FromPort=undefined;
@@ -162,17 +162,17 @@ module.exports = class CNode
 
         CloseSocket(NODE.Socket,"CreateConnect");
 
-        this.TryConnectCount++;
+        //NODE.TryConnectCount++;
         NODE.SocketStart=(new Date)-0;
         NODE.Socket = net.createConnection(NODE.port, NODE.ip, () =>
         {
-            NODE.TryConnectCount=0;
             if(NODE.Socket)
             {
                 socketInit(NODE.Socket,"s");
                 ToLog("Connected *"+NODE.Socket.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
                 NODE.Socket.ConnectToServer=true;
                 SetSocketStatus(NODE.Socket,2);
+                //NODE.TryConnectCount=0;
             }
         });
         SetSocketStatus(NODE.Socket,1);
@@ -451,12 +451,14 @@ module.exports = class CNode
         var Pow=this.GetPOWClientData(nonce)
 
 
+        if(0)//TODO
         if(Socket!==this.Socket)//Reconnect
         {
             Pow.Reconnect=1;
             Pow.SendBytes=this.Socket.SendBytes;
             SetSocketStatus(this.Socket,200);
         }
+
         var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1200,{});
         var BufAll=SERVER.GetBufFromData("POW_CONNECT6",BufWrite,1);
         Socket.write(BufAll);
@@ -488,6 +490,8 @@ module.exports = class CNode
 
     write(BufWrite)
     {
+        if(!this.Socket)
+            return;
 
         socketWrite(this.Socket,BufWrite);
 

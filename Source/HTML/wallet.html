@@ -34,6 +34,7 @@
     var AvgSumPowBit=16;
     var PubKeyStr;
     var PrivKeyStr;
+    var WalletOpen;
     var MapAccounts={};
     var MapCheckTransaction={};
     var MapSendTransaction={};
@@ -211,6 +212,9 @@
     {
 
         var Item=document.getElementById(name);
+        if(typeof bSet==="string")
+            Item.style.display = bSet;
+        else
         if(bSet)
         {
             Item.style.display = 'block';
@@ -225,7 +229,7 @@
     function IsVisibleBlock(name)
     {
         var Item=document.getElementById(name);
-        if(Item.style.display === 'block')
+        if(Item.style.display === 'block' || Item.style.display === "table-row")
             return true;
         else
             return false;
@@ -814,7 +818,7 @@
                 StrMode=" "+Percent+"% "+" ("+Data.BlockNumDB+"/"+MaxNum+")";
             }
 
-            SetMainStatus("<H2 align='center' style='color:red'>Waiting for synchronization "+StrMode+"</H2>");
+            SetMainStatus("<DIV align='center' style='color:red'><big><B>Waiting for synchronization "+StrMode+"</B></big></DIV>");
             WalletStatus="WAIT";
         }
         else
@@ -822,7 +826,7 @@
         {
             CanSendTransaction=1;
             WalletStatus="OK";
-            SetMainStatus("<H2 align='center'>Synchronization complete</H2>",true);
+            SetMainStatus("<DIV align='center' style='color:green'><big><B>Synchronization complete</B></big></DIV>",1);
         }
         else
         {
@@ -838,6 +842,10 @@
         min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE;
         PubKeyStr=Data.PublicKey;
         PrivKeyStr=Data.PrivateKey;
+        WalletOpen=Data.WalletOpen;
+        SetVisibleBlock("idOpenWallet",WalletOpen===false);
+        SetVisibleBlock("wallet_config_tab",WalletOpen!==false);
+
 
 
         SetArrLog(Data.ArrLog);
@@ -1120,7 +1128,7 @@
     }
     function SetError(Str)
     {
-        SetStatus("<H3 align='left' style='color:red'>"+Str+"</H3>");
+        SetStatus("<DIV  align='left' style='color:red'><B>"+Str+"</B></DIV>");
     }
 
 
@@ -1269,6 +1277,15 @@
                     SendMoney();
 
             }
+            else
+            if(IsVisibleBlock("idBlockPassword"))
+                SetPassword();
+            else
+                if(WalletOpen===false)
+                {
+                    ViewOpenWallet();
+                }
+
 
         }
         else
@@ -1286,6 +1303,9 @@
             else
             if(CurTabName==="TabSend" && IsVisibleBlock("edit_transaction"))
                 SetVisibleBlock("edit_transaction",false)
+            else
+            if(IsVisibleBlock("idBlockPassword"))
+                CancelSetPassword();
 
         }
 
@@ -1410,8 +1430,130 @@
 </script>
 
 <script>
+    function ViewOpenWallet()
+    {
+        if(WalletOpen!==false)
+        {
+            SetStatus("Wallet not close");
+            return;
+        }
 
+        document.getElementById("idPassword1").value="";
+        SetVisibleBlock("idBlockPassword",true);
+        SetVisibleBlock("idPasswordRow2","none");
+    }
+    function OpenWallet()
+    {
+        var Passwd1=document.getElementById("idPassword1").value;
+        GetData("/OpenWallet/",Passwd1, function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                SetStatus("Wallet open");
+                SetVisibleBlock("idBlockPassword",false);
+            }
+            else
+            {
+                SetError("Wrong password!")
+            }
+        });
+
+    }
+    function CancelOpenWallet()
+    {
+        SetVisibleBlock("idBlockPassword",false);
+    }
+
+
+    function ViewSetPassword()
+    {
+        if(WalletOpen===false)
+        {
+            SetError("First open wallet!");
+            return;
+        }
+
+        document.getElementById("idPassword1").value="";
+        document.getElementById("idPassword2").value="";
+        SetVisibleBlock("idBlockPassword",!IsVisibleBlock("idBlockPassword"));
+
+        SetVisibleBlock("idPasswordRow2","table-row");
+    }
+
+
+    function SetPassword()
+    {
+        if(!IsVisibleBlock("idPasswordRow2"))
+        {
+            OpenWallet();
+            return;
+        }
+
+        var Passwd1=document.getElementById("idPassword1").value;
+        var Passwd2=document.getElementById("idPassword2").value;
+        if(Passwd1!==Passwd2)
+        {
+            SetError("Passwords are not equal");
+            return;
+        }
+
+        GetData("/SetWalletPasswordNew/",Passwd1, function (Data)
+        {
+            if(Data && Data.result===1)
+            {
+                SetStatus("New password was set");
+                SetVisibleBlock("idBlockPassword",false);
+            }
+        });
+    }
+    function CancelSetPassword()
+    {
+        SetVisibleBlock("idBlockPassword",false);
+    }
 </script>
+
+<style type="text/css">
+
+    table.password
+    {
+        border-collapse: collapse;
+        width: 400px;
+    }
+
+    #idOpenWallet
+    {
+        z-index:1001;
+        position:fixed;
+        top:46px;
+        left:660px;
+        padding: 5px;
+        text-align: center;
+        box-shadow: 0 0 0 1px;
+
+        width: 130px;
+        height: 30px;
+        line-height: 20px;
+        margin: 10px;
+        background: transparent;
+        font-weight: 600;
+
+    }
+    #idBlockPassword
+    {
+        z-index:1000;
+        position:fixed;
+        top:200px;
+        left:250px;
+        height:150px;
+        width:320px;
+        padding: 10px;
+        background: inherit;
+        text-align: left;
+        box-shadow: 0 0 0 1px;
+    }
+
+</style>
+
 
 <style type="text/css">
     /*Списки*/
@@ -1556,7 +1698,7 @@
     }
 
     /*Редактирование new acc description*/
-    #grid_edit_newacc .bt
+    #grid_edit_newacc .bt, #grid_mining_set .bt, #idTablePassword .bt
     {
         width: 80px;
         height: 30px;
@@ -1569,18 +1711,23 @@
         width: 16px;
         height: 16px;
         text-align: left;
-        float: left;
+        top: 3px;
+        position:relative;
     }
 
 
     /*idStatus Log operations*/
     #idStatus
     {
-        width:100%;
-        max-width: 800px;
+        z-index:1000;
+        position:absolute;
+        top:40px;
+        left:10px;
         text-align: left;
+        width:800px; /* ширина блока */
         color:blue;
     }
+
     #idServerLog
     {
         width:100%;
@@ -1619,6 +1766,7 @@
         background: transparent;
         font-weight: 600;
     }
+
 </style>
 
 
@@ -1775,24 +1923,27 @@
         <th><INPUT id="MTabExplorer" type="button" onclick="SelectTab('TabExplorer')" class="bttab bt" value="EXPLORER"></th>
     </tr>
 </table>
-<DIV id="idStatus">&nbsp;</DIV><BR>
+
+<INPUT id="idOpenWallet" style="display: none" type="button" onclick="ViewOpenWallet()" value="Open Wallet">
+
+<DIV id="idStatus">&nbsp;</DIV>
+<BR><BR><BR>
+
 <DIV id="TabAccounts" style="display: block">
 
     Public key:<B><DIV id="idPubKey"></DIV></B>
     <BR>
+    <DIV id="wallet_config_tab" style="display: none">
     <INPUT type="button" onclick="NewAccount()" class="btdoit bt" value="New account...">
     <INPUT type="button" onclick="EditPrivateKey()" class="btdoit bt" value="Edit Key..." id="idEditPrivKey">
     <INPUT type="button" onclick="NewPrivateKey()" class="btdoit bt" value="New PrivateKey...">
     <INPUT type="button" onclick="MiningSets()" class="btdoit bt" value="Mining Sets...">
-    Style:
-    <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
-        <option value="styleBrown">Brown</option>
-        <option value="styleBlue">Blue</option>
-        <option value="styleGreen">Green</option>
-    </select>
+    <INPUT type="button" onclick="ViewSetPassword()" class="bt btdoit" value="Set Password...">
+    </DIV>
+
 
     <DIV id="edit_mining_set" style="display: none">
-        <table class="form_input keys" id="grid_edit_newacc">
+        <table class="form_input keys" id="grid_mining_set">
             <tr>
                 <td><DIV>Mining account:</DIV></td><td><INPUT type="number" id="idMiningAccount" min=0 max=1000000000000 value="0"></td>
             </tr>
@@ -1819,7 +1970,9 @@
             <tr>
                 <td></td>
                 <td><INPUT type="button" onclick="SavePrivateKey()" class="bt" value="Save">
-                    <INPUT type="button" onclick="CancelSavePrivateKey()" class="bt" value="Cancel"></td>
+                    <INPUT type="button" onclick="CancelSavePrivateKey()" class="bt" value="Cancel">
+                </td>
+
             </tr>
         </table>
     </DIV>
@@ -1865,9 +2018,9 @@
 
     <HR>
     Network connections:<BR>
-    <input type="checkbox" id="idUseDirectIP">Use this direct IPv4 address on this computer (recommended):<BR>
+    <INPUT type="checkbox" id="idUseDirectIP">Use this direct IPv4 address on this computer (recommended):<BR>
     ip:<INPUT  maxlength="16" id="idIP" required pattern="\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"> port:<INPUT maxlength="9" id="idPort" required pattern="^[ 0-9]+$"><BR>
-    <input type="checkbox" disabled id="idUseIncomeGrayIP">Allow connection users without a direct address<BR>
+    <INPUT type="checkbox" disabled id="idUseIncomeGrayIP">Allow connection users without a direct address<BR>
     <INPUT type="button" onclick="SetNetworkParams()" class="btdoit bt" value="Set and Restart">
 
     <DIV id="idDevelopService" style="display: none">
@@ -1887,6 +2040,15 @@
         <BR>
 
     </DIV>
+
+
+    Style:
+    <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
+        <option value="styleBrown">Brown</option>
+        <option value="styleBlue">Blue</option>
+        <option value="styleGreen">Green</option>
+    </select>
+
 
 </DIV>
 
@@ -1984,10 +2146,10 @@
 
 <DIV id="TabExplorer" style="display: none">
 
-    <INPUT type="button" onclick="ViewGrid('/GetAccountsAll/0/100','grid_accounts_all',0,1)" class="btdoit bt" value="View All Account">
+    <INPUT type="button" onclick="ViewGrid('/GetAccountsAll/0/50','grid_accounts_all',0,1)" class="btdoit bt" value="View All Account">
     <INPUT type="button" onclick="window.Open('./HTML/stat.html')" class="btdoit bt" value="Counters">
     <INPUT type="button" onclick="window.Open('./HTML/stat-diagram.html',1030)" class="btdoit bt" value="Diagrams">
-    <INPUT type="button" onclick="window.Open('./HTML/blockchain.html',1200)" class="btdoit bt" value="Blockchain">
+    <INPUT type="button" onclick="window.Open('./HTML/monitor.html',1200)" class="btdoit bt" value="Monitor">
     <INPUT type="button" onclick="window.Open('./HTML/console.html')" class="btdoit bt" value="Console">
     <BR>
     <table id="grid_accounts_all" class="grid">
@@ -2026,6 +2188,28 @@
 <HR>
 Server logs:
 <DIV id="idServerLog"></DIV><BR>
+</DIV>
+
+
+
+<DIV id="idBlockPassword" style="display: none">
+    <H3 align="center">Enter your password:</H3>
+    <table class="password" id="idTablePassword">
+        <tr>
+            <td><DIV>Password:</DIV></td><td><INPUT type="password"  id="idPassword1" autofocus onkeyup="" value=""></td>
+        </tr>
+
+        <tr id="idPasswordRow2" style="display: none">
+            <td><DIV>Repeat:</DIV></td><td><INPUT type="password"  id="idPassword2" onkeyup="" value=""></td>
+        </tr>
+
+        <tr>
+            <td></td>
+            <td><INPUT type="button" onclick="SetPassword()" class="bt" value="Set">
+                <INPUT type="button" onclick="CancelSetPassword()" class="bt" value="Cancel"></td>
+        </tr>
+
+    </table>
 </DIV>
 
 

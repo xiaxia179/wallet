@@ -28,17 +28,21 @@ if(window.nw)
         window.nw.global.RunRPC({path:Method,obj:ObjPost},Func);
      }
 
+    let ServerHTTP=undefined;
     global.RunRPC=function (message,Func)
     {
-        const server = require('../core/html-server');
+        if(!ServerHTTP)
+            ServerHTTP = require('../core/html-server');
 
-        var reply=server.SendData(message);
+        var reply=ServerHTTP.SendData(message);
         if(Func)
         {
-            setTimeout(function ()
-            {
-                Func(reply);
-            },20);
+            Func(reply);
+            // let FUNC=Func;
+            // setTimeout(function ()
+            // {
+            //     FUNC(reply);
+            // },20);
         }
     }
 }

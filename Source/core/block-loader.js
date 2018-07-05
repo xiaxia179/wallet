@@ -2262,3 +2262,8 @@ global.GetNodeStrPort=function(Node)
 
 //GetHexFromAddres
 //GetStrFromHashShort
+
+//Servise:
+//SERVER.ReWriteDAppTransactions(StartNum)
+//SERVER.CheckBlocksOnStartFoward(StartNum,0);
+

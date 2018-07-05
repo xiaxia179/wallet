@@ -63,6 +63,31 @@ function ToLogFile(file_name,Str)
 }
 
 
+
+global.ArrLogClient=[];
+function ToLogClient(Str,StrKey,bFinal)
+{
+    if(!Str)
+        return;
+
+    ToLog(Str);
+
+    if(!StrKey)
+        StrKey="";
+    ArrLogClient.push(
+        {
+            text:GetStrTime()+" "+Str,
+            key:StrKey,
+            final:bFinal,
+        });
+
+    if(ArrLogClient.length>10)
+        ArrLogClient.shift();
+}
+global.ToLogClient=ToLogClient;
+
+
+
 var StartStatTime;
 var CONTEXT_STATS={Total:{},Interval:[]};
 var CONTEXT_ERRORS={Total:{},Interval:[]};
@@ -454,6 +479,7 @@ global.GetStrOnlyTime=function (now)
     Str=Str+"."+now.getMilliseconds().toStringZ(3);
     return Str;
 }
+
 
 
 //TODO: Ввести несколько файлов и разные уровни ошибок: инфо, ошибки

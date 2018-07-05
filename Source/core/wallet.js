@@ -21,20 +21,40 @@ class CApp
 
         this.ObservTree=new RBTree(CompareItemHASH32);
 
+        this.Password="";
+        this.WalletOpen=undefined;
+
         var Params=LoadParams(CONFIG_NAME,undefined);
         if(!Params)
         {
+            this.WalletOpen=true;
+
             Params={};
             Params.Key=GetHexFromArr(crypto.randomBytes(32));
             Params.AccountMap={};
             Params.MiningAccount=0;
         }
+
         if(Params.MiningAccount)
             global.GENERATE_BLOCK_ACCOUNT=Params.MiningAccount;
         this.AccountMap=Params.AccountMap;
         this.KeyPair = crypto.createECDH('secp256k1');
-        this.SetPrivateKey(Params.Key,true);
+
+        if(Params.Protect)
+        {
+            ToLogClient("Wallet protect by password");
+            this.KeyXOR=GetArrFromHex(Params.KeyXOR);
+            this.WalletOpen=false;
+
+            this.SetPrivateKey(Params.PubKey,true);//TODO
+        }
+        else
+        {
+            this.SetPrivateKey(Params.Key,true);//TODO
+        }
     }
+
+
     SetMiningAccount(Account)
     {
         global.GENERATE_BLOCK_ACCOUNT=Account;
@@ -46,14 +66,23 @@ class CApp
         this.ObservTree.insert({HASH:shaarr(Tr.body)});
         return SERVER.AddTransaction(Tr);
     }
-    SetPrivateKey(PrivateKeyStr,bSetNew)
+    SetPrivateKey(KeyStr,bSetNew)
     {
-        if(PrivateKeyStr && PrivateKeyStr.length===64)//private
+        var bGo=1;
+        if(this.WalletOpen===false)
         {
-            this.KeyPair.setPrivateKey(GetArr32FromHex(PrivateKeyStr));
+            //ToLogClient("Wallet is close by password");
+            bGo=0;
+        }
+
+
+
+        if(KeyStr && KeyStr.length===64 && bGo)//private
+        {
+            this.KeyPair.setPrivateKey(GetArr32FromHex(KeyStr));
             this.KeyPair.PubKeyArr=this.KeyPair.getPublicKey('','compressed');
             this.KeyPair.PubKeyStr=GetHexFromArr(this.KeyPair.PubKeyArr);
-            this.KeyPair.PrivKeyStr=PrivateKeyStr.toUpperCase();
+            this.KeyPair.PrivKeyStr=KeyStr.toUpperCase();
             this.KeyPair.addrArr=this.KeyPair.PubKeyArr.slice(1);
             this.KeyPair.addrStr=GetHexAddresFromPublicKey(this.KeyPair.addrArr);
             this.KeyPair.addr=this.KeyPair.addrArr;
@@ -64,9 +93,9 @@ class CApp
         else
         {
             this.KeyPair.WasInit=0;
-            if(PrivateKeyStr)
+            if(KeyStr)
             {
-                this.PubKeyArr=GetArrFromHex(PrivateKeyStr);
+                this.PubKeyArr=GetArrFromHex(KeyStr);
                 this.KeyPair.PubKeyStr=GetHexFromArr(this.PubKeyArr);
             }
             else
@@ -80,22 +109,104 @@ class CApp
 
 
 
-        if(bSetNew)// && DApps.Accounts)
+        if(bSetNew)
         {
             this.AccountMap=DApps.Accounts.FindAccounts(this.PubKeyArr);
         }
 
-        this.SaveWallet();
+        if(bGo)
+            this.SaveWallet();
 
 
     }
+
+    OpenWallet(StrPassword)
+    {
+        if(this.WalletOpen!==false)
+        {
+            ToLogClient("Wallet was open");
+        }
+
+
+        var Hash=this.HashProtect(StrPassword);
+        var TestPrivKey=this.XORHash(this.KeyXOR,Hash);
+
+        this.KeyPair.setPrivateKey(Buffer.from(TestPrivKey));
+        var TestPubKey=this.KeyPair.getPublicKey('','compressed');
+        if(CompareArr(TestPubKey,this.PubKeyArr)!==0)
+        {
+            ToLogClient("Wrong password");
+            return 0;
+        }
+
+        this.Password=StrPassword;
+        this.WalletOpen=true;
+        this.SetPrivateKey(GetHexFromArr(TestPrivKey),false);
+
+        ToLogClient("Wallet open");
+        return 1;
+    }
+
+    SetPasswordNew(StrPassword)
+    {
+        if(this.WalletOpen===false)
+        {
+            ToLogClient("Wallet is close by password");
+            return;
+        }
+
+        this.Password=StrPassword;
+        this.WalletOpen=true;
+        this.SaveWallet();
+    }
+
+    HashProtect(Str)
+    {
+        var arr=shaarr(Str);
+        for(var i=0;i<10000;i++)
+        {
+            arr=shaarr(arr);
+        }
+        return arr;
+    }
+    XORHash(arr1,arr2)
+    {
+        var arr3=[];
+        for(var i=0; i<32; i++)
+        {
+            arr3[i]=arr1[i]^arr2[i];
+        }
+        return arr3;
+    }
+
     SaveWallet()
     {
+        if(this.WalletOpen===false)
+        {
+            ToLogClient("Wallet is close by password");
+            return;
+        }
+
+
         var Params={};
-        if(this.KeyPair.WasInit)
-            Params.Key=this.KeyPair.PrivKeyStr;
+
+        if(this.Password)
+        {
+            Params.Protect=true;
+            if(this.KeyPair.WasInit)
+            {
+                var Hash=this.HashProtect(this.Password);
+                Params.KeyXOR=GetHexFromArr(this.XORHash(this.KeyPair.getPrivateKey(),Hash));
+            }
+            Params.PubKey=GetHexFromArr(this.PubKeyArr);
+        }
         else
-            Params.Key=GetHexFromArr(this.PubKeyArr);
+        {
+            if(this.KeyPair.WasInit)
+                Params.Key=this.KeyPair.PrivKeyStr;
+            else
+                Params.Key=GetHexFromArr(this.PubKeyArr);
+        }
 
         Params.AccountMap=this.AccountMap;
         Params.MiningAccount=global.GENERATE_BLOCK_ACCOUNT;

@@ -24,6 +24,7 @@ if(USE_PARAM_JS)
 
 
 
+
 require("./library");
 const cluster = require('cluster');
 var CTransport=require("./transport");
@@ -190,7 +191,7 @@ function ConnectToNode()
     }
     else
     {
-        SERVER.StartConnect(Node);
+        SERVER.StartConnectTry(Node);
     }
 
     if(Num===0)
@@ -204,6 +205,8 @@ function ConnectToNode()
 
 function RunServer(bVirtual)
 {
+    ToLog("CODE_VERSION_NUM:"+UPDATE_CODE_VERSION_NUM);
+
     if(global.NET_WORK_MODE && NET_WORK_MODE.UseDirectIP)
     {
         global.START_IP=NET_WORK_MODE.ip;

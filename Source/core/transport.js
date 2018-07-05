@@ -2195,20 +2195,7 @@ module.exports = class CTransport extends require("./connect")
 
             Node.ReconnectFromServer=1;
             global.ArrReconnect.push(Node);
-            // SetSocketStatus(Socket,3);
-            // Socket.Node=undefined;
-            //Node.Socket=undefined;
             Socket.write(this.GetBufFromData("POW_CONNECT4","WAIT_CONNECT_FROM_SERVER",2));
-            return;
-
-
-            Node.Socket=Socket;
-            SetSocketStatus(Socket,3);
-            SetSocketStatus(Socket,100);
-            Socket.Node=Node;
-
-
-            //Socket.write(this.GetBufFromData("POW_CONNECT4","OK",2));
 
         }
     }

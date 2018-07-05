@@ -63,6 +63,19 @@ module.exports = class CSmartContract extends require("./block-exchange")
         return 1;
     }
 
+    ReWriteDAppTransactions(StartNum)
+    {
+        if(StartNum===undefined)
+            return;
+        ToLog("Rewrite from: "+StartNum+" to "+this.BlockNumDB);
+        for(var Num=StartNum;Num<=this.BlockNumDB;Num++)
+        {
+            var Block=this.ReadBlockDB(Num);
+            this.OnWriteBlock(Block);
+        }
+        ToLog("Rewriting complite");
+    }
+
 
     //EVENTS
     //EVENTS

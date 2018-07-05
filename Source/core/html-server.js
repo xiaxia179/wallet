@@ -208,6 +208,8 @@ HTTPCaller.GetWalletInfo=function ()
         {
             result:1,
 
+            WalletOpen:WALLET.WalletOpen,
+
             VersionNum:Math.max(CODE_VERSION.VersionNum,global.NUM_CODE_COPY),
             RelayMode:SERVER.RelayMode,
             BlockNumDB:SERVER.BlockNumDB,
@@ -218,7 +220,7 @@ HTTPCaller.GetWalletInfo=function ()
             AccountMap:WALLET.AccountMap,
 
             StartDateBlock:FIRST_TIME_BLOCK,
-            ArrLog:ArrLog,
+            ArrLog:ArrLogClient,
             MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
             MaxAccID:DApps.Accounts.GetMaxAccount(),
 
@@ -254,6 +256,20 @@ HTTPCaller.SetWalletKey=function (PrivateKeyStr,Param2,Param3)
     WALLET.SetPrivateKey(PrivateKeyStr,true);
     return {result:1};
 }
+
+HTTPCaller.SetWalletPasswordNew=function (Password)
+{
+    WALLET.SetPasswordNew(Password);
+    return {result:1};
+}
+HTTPCaller.OpenWallet=function (Password)
+{
+    var res=WALLET.OpenWallet(Password);
+    return {result:res};
+}
+
+
+
 
 
 HTTPCaller.GetSignTransaction=function (TR,Param2,Param3)
@@ -807,6 +823,13 @@ function GetGUID(Block)
 }
 function CopyBlockDraw(Block,MainChains)
 {
+    var MinerID=0;
+    if(Block.AddrHash)
+    {
+        Block.AddrHash.len=0;
+        MinerID=ReadUintFromArr(Block.AddrHash);
+    }
+
     GetGUID(Block);
     var Item=
         {
@@ -819,6 +842,8 @@ function CopyBlockDraw(Block,MainChains)
             SumHash:GetHexFromAddresShort(Block.SumHash),
             SeqHash:GetHexFromAddresShort(Block.SeqHash),
             TreeHash:GetHexFromAddresShort(Block.TreeHash),
+            AddrHash:GetHexFromAddresShort(Block.AddrHash),
+            Miner1:MinerID,
             Comment1:Block.Comment1,
             Comment2:Block.Comment2,
             SumPow:Block.SumPow,
@@ -1004,27 +1029,6 @@ function GetStrTime()
     return Str;
 }
 
-var ArrLog=[];
-function ToLogClient(Str,StrKey,bFinal)
-{
-    if(!Str)
-        return;
-
-    ToLog(Str);
-
-    if(!StrKey)
-        StrKey="";
-    ArrLog.push(
-        {
-            text:GetStrTime()+" "+Str,
-            key:StrKey,
-            final:bFinal,
-        });
-
-    if(ArrLog.length>10)
-        ArrLog.shift();
-}
-global.ToLogClient=ToLogClient;
 
 //TRANSFER DATA (CLIENT-SERVER)
 function OnGetData(arg)

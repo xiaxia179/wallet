@@ -66,7 +66,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     }
 
-    StartConnect(Node)
+    StartConnectTry(Node)
     {
         var Delta=(new Date)-Node.ConnectStart;
 
@@ -114,7 +114,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     StartHandshake(Node)
     {
-        return this.StartConnect(Node)
+        return this.StartConnectTry(Node)
     }
 
 
@@ -320,6 +320,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
             this.CorrectTime();
         }
+        ADD_TO_STAT("MAX:PING_TIME",DeltaTime);
 
         if(!global.CAN_START)
         if(Times && Times.Count>=1 && Times.AvgDelta<=200)
@@ -484,7 +485,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(Node.addrStr===this.addrStr
             || Node.IsBan
             || !Node.DirectIP
-            || Node.TryConnectCount>=2
+            //|| Node.TryConnectCount>=2
             || Node.Self
             || Node.DoubleConnection)
             return false;
