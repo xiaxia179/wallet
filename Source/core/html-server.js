@@ -369,9 +369,15 @@ HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
 {
     if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
     {
+        ToLogClient("Not developer key")
         return {result:0};
     }
 
+    if(WALLET.WalletOpen===false)
+    {
+        ToLogClient("Not open wallet")
+        return {result:0};
+    }
 
 
     if(!BlockNum)
@@ -393,8 +399,15 @@ HTTPCaller.SetNewCodeVersion=function (Num,Param2,Param3)
 {
     if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
     {
+        ToLogClient("Not developer key")
         return {result:0};
     }
+    if(WALLET.WalletOpen===false)
+    {
+        ToLogClient("Not open wallet")
+        return {result:0};
+    }
+
 
     Num=parseInt(Num);
 

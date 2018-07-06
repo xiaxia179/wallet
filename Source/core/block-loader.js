@@ -427,12 +427,13 @@ module.exports = class CBlock extends require("./db/block-db")
                         chain.StopSend=true;
                         chain.AddInfo("Stop load #1");
 
+
                         // if(this.RelayMode)
                         // {
-                        //     this.BlockNumDB=chain.BlockNum;
-                        //     this.TruncateBlockDB(chain.BlockNum);
-                        //     this.StartLoadHistory();
-                        //     return;
+                            this.BlockNumDB=chain.BlockNum;
+                            this.TruncateBlockDB(chain.BlockNum);
+                            this.StartLoadHistory();
+                            return;
                         // }
 
                     }
