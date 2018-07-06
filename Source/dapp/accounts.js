@@ -735,13 +735,13 @@ class CApp extends require("./dapp")
     {
         return this.DBState.GetMaxNum();
     }
-    GetAccountsAll(id,count)
+    GetAccountsAll(start,count)
     {
         if(count>1000)
             count=1000;
 
         var arr=[];
-        for(var num=id;num<=num+count;num++)
+        for(var num=start;num<start+count;num++)
         {
             var Data=this.ReadState(num);
             if(!Data)

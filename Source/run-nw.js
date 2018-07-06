@@ -19,4 +19,4 @@ global.HTTP_PORT_NUMBER=0;
 global.CREATE_ON_START=0;
 
 global.LOCAL_RUN=0;
-require('./core/server');
+require('./core/run-server');

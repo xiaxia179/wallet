@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Console</title>
+
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/buttons.css">
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/style.css">
 </head>
 
 <script>
@@ -76,7 +79,6 @@
         {
             SendDirectCode(Value);
         }
-
     }
 
     function SendDirectCode(Value)
@@ -86,7 +88,7 @@
         {
             if(Data)
             {
-                SetStatus("Result:"+Data.text);
+                ToResult(Data.text);
             }
         });
     }
@@ -240,7 +242,7 @@
 
         LoadValues();
 
-
+        document.body.className=localStorage["idSelStyle"];
     }
 
     function LoadValues()
@@ -267,33 +269,37 @@
 <style type="text/css">
 
 </style>
+
+
 <body>
-<h3>CONSOLE</h3>
+<DIV align='center'>
+    <h3>CONSOLE</h3>
 
-<DIV id="status2"></DIV><BR>
-<DIV id="status"> ... </DIV><BR>
-
-
-New codes:
-<select size="1" id="idConsoleSend" onkeyup="SaveValues()" onchange="SaveValues()">
-    <option value="DirectCode">Direct code</option>
-    <option value="TRCode">Transaction code</option>
-    <option value="HEX">HEX Transaction</option>
-</select>
-
-POW:<INPUT type="number" id="idPow" value="16">Delta BlockNum:<INPUT type="number" id="idConsoleDeltaBlockNum" value="100">
-
-<BR><BR>
-<textarea id="idConsoleText" cols="112" rows="20"> </textarea>
-<BR>
-<INPUT type="button" onclick="SendToServer()" class="buttons" value="Send">
-<BR>
-HEX:
-<BR>
-</textarea>
-<textarea rows="8" cols="112"  name="result" id="result">
-   </textarea>
+    <DIV id="status2"></DIV><BR>
+    <DIV id="status"> ... </DIV><BR>
 
 
+    Mode:
+    <select size="1" id="idConsoleSend" onkeyup="SaveValues()" onchange="SaveValues()">
+        <option value="DirectCode">Direct code</option>
+        <option value="TRCode">Transaction code</option>
+        <option value="HEX">HEX Transaction</option>
+    </select>
+
+    POW:<INPUT type="number" id="idPow" value="16"> Delta BlockNum:<INPUT type="number" id="idConsoleDeltaBlockNum" value="100">
+
+    <BR><BR>
+    <DIV>
+        <textarea id="idConsoleText" rows="8" cols="112" autofocus> </textarea>
+        <BR>
+        <INPUT type="button" onclick="SendToServer()" class="bt btdoit" value="Send">
+        <BR>
+        RESULT:
+        <BR>
+        </textarea>
+        <textarea rows="20" cols="112"  name="result" id="result">
+        </textarea>
+    </DIV>
+</DIV>
 </body>
 </html>

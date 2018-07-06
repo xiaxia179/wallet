@@ -115,7 +115,7 @@ function DoCommand(response,Path,params)
                 }
             }
             else
-            if(type===".css")
+            if(type==="css")
             {
                 path="./HTML/CSS/"+path;
             }
@@ -997,8 +997,12 @@ function SendFileHTML(response,name)
             {
                 response.writeHead(200, { 'Content-Type': 'image/vnd.microsoft.icon'});
             }
+            else
             if(type===".js")
                 response.writeHead(200, { 'Content-Type': 'application/javascript'});
+            else
+            if(type==="css")
+                response.writeHead(200, { 'Content-Type': 'text/css'});
             else
                 response.writeHead(200, { 'Content-Type': 'text/html'});
 
@@ -1157,7 +1161,20 @@ if(global.ELECTRON)
 }
 exports.SendData = OnGetData;
 
+function RunConsole()
+{
+    var Str = fs.readFileSync("./EXPERIMENTAL/!run-console.js",{encoding : "utf8"});
 
+    try
+    {
+        var ret=eval(Str);
+    }
+    catch (e)
+    {
+        ret=""+e;
+    }
+    return ret;
+}
 
 //GetHexFromArr
 

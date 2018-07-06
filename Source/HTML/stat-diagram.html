@@ -22,10 +22,6 @@
     function SetNewSession(cursessionid)
     {
         sessionid=cursessionid;
-
-        var diargams = document.getElementById("packets_diargams");
-        if(diargams)
-            diargams.innerHTML="";
     }
 
     //LIB
@@ -724,31 +720,24 @@
         width:100px; /* ширина блока */
     }
 
-    #diagr_content
-    {
-        width:1020px;
-    }
 
 </style>
 
 <body>
+<DIV align='center'>
 
-<DIV id="topframe">
-    <INPUT type="button" style="float:left" onclick="SetPause()" id="run">
-</DIV>
-<DIV id="viewer">
-</DIV>
+    <DIV id="topframe">
+        <INPUT type="button" style="float:left" onclick="SetPause()" id="run">
+    </DIV>
 
 
-</DIV>
 
-<DIV id="diagr_content">
-
-<DIV id="diargams">
-</DIV>
+    <DIV id="diagr_content" align='center'>
+        <DIV id="diargams" align='center'>
+        </DIV>
+    </DIV>
 
 </DIV>
-
 
 
 </body>

@@ -162,7 +162,6 @@ module.exports = class CNode
 
         CloseSocket(NODE.Socket,"CreateConnect");
 
-        //NODE.TryConnectCount++;
         NODE.SocketStart=(new Date)-0;
         NODE.Socket = net.createConnection(NODE.port, NODE.ip, () =>
         {
@@ -172,7 +171,6 @@ module.exports = class CNode
                 ToLog("Connected *"+NODE.Socket.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
                 NODE.Socket.ConnectToServer=true;
                 SetSocketStatus(NODE.Socket,2);
-                //NODE.TryConnectCount=0;
             }
         });
         SetSocketStatus(NODE.Socket,1);

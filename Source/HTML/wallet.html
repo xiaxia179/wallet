@@ -5,6 +5,11 @@
 <head>
     <meta charset="UTF-8">
     <title>TEREONUS</title>
+
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/wallet.css">
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/buttons.css">
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/style.css">
+
 </head>
 
 
@@ -22,6 +27,8 @@
 <script type="text/javascript" src="../HTML/JS/client.js"></script>
 <script type="text/javascript" src="../HTML/JS/sha3.js"></script>
 <script type="text/javascript" src="../HTML/JS/crypto-client.js"></script>
+
+
 
 
 <script>
@@ -1361,6 +1368,8 @@
     }
     window.onload=function()
     {
+        InitPasItems();
+
         UpdatesConfigData();
         UpdatesData();
 
@@ -1380,6 +1389,8 @@
 
         if(CurTabName==="TabHistory")
             ViewHistory();
+
+
 
     }
 
@@ -1430,6 +1441,13 @@
 </script>
 
 <script>
+    var itemPassword1,itemPassword2;
+    function InitPasItems()
+    {
+        itemPassword1=document.getElementById("idPassword1");
+        itemPassword2=document.getElementById("idPassword2");
+    }
+
     function ViewOpenWallet()
     {
         if(WalletOpen!==false)
@@ -1438,13 +1456,15 @@
             return;
         }
 
-        document.getElementById("idPassword1").value="";
+        itemPassword1.onkeydown = OnEnterPas1;
+        itemPassword1.value="";
         SetVisibleBlock("idBlockPassword",true);
         SetVisibleBlock("idPasswordRow2","none");
+        itemPassword1.focus();
     }
     function OpenWallet()
     {
-        var Passwd1=document.getElementById("idPassword1").value;
+        var Passwd1=itemPassword1.value;
         GetData("/OpenWallet/",Passwd1, function (Data)
         {
             if(Data && Data.result===1)
@@ -1473,11 +1493,14 @@
             return;
         }
 
-        document.getElementById("idPassword1").value="";
-        document.getElementById("idPassword2").value="";
-        SetVisibleBlock("idBlockPassword",!IsVisibleBlock("idBlockPassword"));
+        itemPassword1.onkeydown = OnEnterPas1;
+        itemPassword2.onkeydown = OnEnterPas2;
 
+        itemPassword1.value="";
+        itemPassword2.value="";
+        SetVisibleBlock("idBlockPassword",!IsVisibleBlock("idBlockPassword"));
         SetVisibleBlock("idPasswordRow2","table-row");
+        itemPassword1.focus();
     }
 
 
@@ -1489,8 +1512,8 @@
             return;
         }
 
-        var Passwd1=document.getElementById("idPassword1").value;
-        var Passwd2=document.getElementById("idPassword2").value;
+        var Passwd1=itemPassword1.value;
+        var Passwd2=itemPassword2.value;
         if(Passwd1!==Passwd2)
         {
             SetError("Passwords are not equal");
@@ -1510,6 +1533,31 @@
     {
         SetVisibleBlock("idBlockPassword",false);
     }
+
+    function OnEnterPas1(e)
+    {
+        if(e.keyCode===13)
+        {
+            if(IsVisibleBlock("idPasswordRow2"))
+            {
+                itemPassword2.focus();
+            }
+            else
+            {
+                OpenWallet();
+            }
+        }
+        //SetStatus("e.keyCode="+e.keyCode)
+    }
+    function OnEnterPas2(e)
+    {
+        if(e.keyCode===13)
+        {
+            SetPassword();
+        }
+        //SetStatus("e.keyCode="+e.keyCode)
+    }
+
 </script>
 
 <style type="text/css">
@@ -1523,10 +1571,10 @@
     #idOpenWallet
     {
         z-index:1001;
-        position:fixed;
+        position:absolute;
         top:46px;
         left:660px;
-        padding: 5px;
+        padding: 3px;
         text-align: center;
         box-shadow: 0 0 0 1px;
 
@@ -1547,7 +1595,7 @@
         height:150px;
         width:320px;
         padding: 10px;
-        background: inherit;
+        background: #d9d9d9;
         text-align: left;
         box-shadow: 0 0 0 1px;
     }
@@ -1555,663 +1603,308 @@
 </style>
 
 
-<style type="text/css">
-    /*Списки*/
-    table
-    {
-        border-collapse: collapse;
-        width:100%;
-        max-width: 800px
-    }
-    .grid th, .grid td
-    {
-        border: 1px solid #264378;
-        padding: 4px;
-    }
-    .grid td
-    {
-        width: 60px;
-        text-align: right;
-    }
-
-    td.sum
-    {
-        text-align: right;
-        width: 150px;
-        font-weight: 700;
-    }
-    td.num
-    {
-        text-align: right;
-        width: 50px;
-    }
-
-    td.cur
-    {
-        text-align: left;
-        width: 50px;
-    }
-
-    td.txt
-    {
-        text-align: left;
-        width: 100px;
-    }
-    td.desc
-    {
-        text-align: left;
-        width: 300px;
-    }
-    td.name
-    {
-        text-align: center;
-        width: 300px;
-    }
-
-    td.date
-    {
-        text-align: left;
-        width: 400px;
-        font-size: small
-    }
-
-</style>
-
-<style type="text/css">
-    /*TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader*/
-    .bttab
-    {
-        border: 2px solid black;
-        padding: 0px;
-        width: 100%;
-        height: 30px;
-        margin: 0px;
-        font-weight: 700;
-    }
-    .current
-    {
-        border: 0px solid black;
-    }
-
-
-    /*SEND SEND SEND SEND SEND SEND SEND SEND SEND SEND */
-
-    table.form_input
-    {
-       border-collapse: collapse;
-       width: 600px;
-    }
-    .form_input td
-    {
-        width: 20%;
-    }
-    .form_input td:nth-child(2)
-    {
-        width: 80%;
-    }
-
-    .form_input input, .form_input select
-    {
-        width: 98%;
-        text-align: right;
-    }
-
-    .form_input textarea
-    {
-        width: 98%;
-        text-align: left;
-    }
-    .form_input .bsend
-    {
-        width: 33%;
-        height: 30px;
-        text-align: center;
-        float: left;
-    }
-    .short_input input
-    {
-        width: 120px;
-    }
-
-
-    /*CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG*/
-    /*Просмотр ключей*/
-    table.keys
-    {
-        border-collapse: collapse;
-        width: 800px;
-    }
-    /*Редактирование приватного ключа*/
-    #grid_edit_key .bt
-    {
-        width: 80px;
-        height: 30px;
-        line-height: 20px;
-        margin: 10px;
-        text-align: center;
-    }
-    #idTypeKey,#idShortNameText
-    {
-        width: 250px;
-        height: 20px;
-        text-align: left;
-    }
-
-    /*Редактирование new acc description*/
-    #grid_edit_newacc .bt, #grid_mining_set .bt, #idTablePassword .bt
-    {
-        width: 80px;
-        height: 30px;
-        line-height: 20px;
-        margin: 10px;
-        text-align: center;
-    }
-    #idAutoSetMining
-    {
-        width: 16px;
-        height: 16px;
-        text-align: left;
-        top: 3px;
-        position:relative;
-    }
-
-
-    /*idStatus Log operations*/
-    #idStatus
-    {
-        z-index:1000;
-        position:absolute;
-        top:40px;
-        left:10px;
-        text-align: left;
-        width:800px; /* ширина блока */
-        color:blue;
-    }
-
-    #idServerLog
-    {
-        width:100%;
-        max-width: 800px;
-        text-align: left;
-
-        border: 1px solid black;
-        height: 200px;
-        padding: 1px;
-        margin: 0px;
-    }
-
-    #idTransaction
-    {
-        width:100%;
-        max-width: 800px;
-        text-align: left;
-        color:#204410;
-    }
-
-    /*Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons*/
-
-    /*User action*/
-    .btdoit
-    {
-        width: 130px;
-        height: 30px;
-        line-height: 20px;
-        margin: 10px;
-    }
-
-
-    /*All buttons*/
-    .bt
-    {
-        background: transparent;
-        font-weight: 600;
-    }
-
-</style>
-
-
-<style type="text/css">
-    .bold
-    {
-        font-weight: 600;
-    }
-</style>
-
-<style type="text/css">
-    body.styleBrown .bt
-    {
-        background: #86754A;
-        color: #F5E5BB;
-    }
-    body.styleBrown
-    {
-        background: #F5E5BB;
-    }
-
-    body.styleBrown table.grid
-    {
-        background:#F5F0E3;
-    }
-
-    body.styleBrown .bttab
-    {
-        background: #86754A;
-        color:white;
-    }
-    body.styleBrown .bttab:hover
-    {
-        background: #F5E5BB;
-        color: #503F13;
-    }
-
-    body.styleBrown .current
-    {
-        background: #503F13;
-        color:white;
-    }
-    body.styleBrown .current:hover
-    {
-        background: #503F13;
-        color:white;
-    }
-
-    body.styleBrown input,textarea,select
-    {
-        background:white;
-        color: black;
-    }
-</style>
-<style type="text/css">
-    body.styleGreen .bt
-    {
-        background: #4F7340;
-        color: #CBF4BA;
-    }
-    body.styleGreen
-    {
-        background: #CBF4BA;
-    }
-
-    body.styleGreen table.grid
-    {
-        background:#E7F4E1;
-    }
-
-    body.styleGreen .bttab
-    {
-        background: #4F7340;
-        color:white;
-    }
-    body.styleGreen .bttab:hover
-    {
-        background: #CBF4BA;
-        color: #204410;
-    }
-
-    body.styleGreen .current
-    {
-        background: #204410;
-        color:white;
-    }
-    body.styleGreen .current:hover
-    {
-        background: #204410;
-        color:white;
-    }
-
-
-    body.styleGreen input,textarea,select
-    {
-        background:white;
-        color: black;
-    }
-</style>
-<style type="text/css">
-    body.styleBlue .bt
-    {
-        background: #354259;
-        color: #BED0F2;
-    }
-    body.styleBlue
-    {
-        background: #BED0F2;
-    }
-
-    body.styleBlue table.grid
-    {
-        background:#E1E7F2;
-    }
-
-    body.styleBlue .bttab
-    {
-        background: #354259;
-        color:white;
-    }
-    body.styleBlue .bttab:hover
-    {
-        background: #BED0F2;
-        color: #0D1B35;
-    }
-
-    body.styleBlue .current
-    {
-        background: #0D1B35;
-        color:white;
-    }
-    body.styleBlue .current:hover
-    {
-        background: #0D1B35;
-        color:white;
-    }
-
-    body.styleBlue input,textarea,select
-    {
-        background:white;
-        color: black;
-    }
-</style>
-
-
 
 <body>
+<DIV align='left'>
 
-<table id="TabHeader" onclick="SelectTab">
-    <tr>
-        <th><INPUT id="MTabAccounts" type="button" onclick="SelectTab('TabAccounts')" class="bttab bt" value="CONFIG"></th>
-        <th><INPUT id="MTabSend" type="button" onclick="SelectTab('TabSend')" class="bttab bt" value="SEND"></th>
-        <th><INPUT id="MTabHistory" type="button" onclick="SelectTab('TabHistory')" class="bttab bt" value="HISTORY"></th>
-        <th><INPUT id="MTabExplorer" type="button" onclick="SelectTab('TabExplorer')" class="bttab bt" value="EXPLORER"></th>
-    </tr>
-</table>
-
-<INPUT id="idOpenWallet" style="display: none" type="button" onclick="ViewOpenWallet()" value="Open Wallet">
-
-<DIV id="idStatus">&nbsp;</DIV>
-<BR><BR><BR>
-
-<DIV id="TabAccounts" style="display: block">
-
-    Public key:<B><DIV id="idPubKey"></DIV></B>
-    <BR>
-    <DIV id="wallet_config_tab" style="display: none">
-    <INPUT type="button" onclick="NewAccount()" class="btdoit bt" value="New account...">
-    <INPUT type="button" onclick="EditPrivateKey()" class="btdoit bt" value="Edit Key..." id="idEditPrivKey">
-    <INPUT type="button" onclick="NewPrivateKey()" class="btdoit bt" value="New PrivateKey...">
-    <INPUT type="button" onclick="MiningSets()" class="btdoit bt" value="Mining Sets...">
-    <INPUT type="button" onclick="ViewSetPassword()" class="bt btdoit" value="Set Password...">
-    </DIV>
-
-
-    <DIV id="edit_mining_set" style="display: none">
-        <table class="form_input keys" id="grid_mining_set">
-            <tr>
-                <td><DIV>Mining account:</DIV></td><td><INPUT type="number" id="idMiningAccount" min=0 max=1000000000000 value="0"></td>
-            </tr>
-
-            <tr>
-                <td></td>
-                <td><INPUT type="button" onclick="SaveMiningSet()" class="bt" value="Save">
-                    <INPUT type="button" onclick="CancalMiningSet()" class="bt" value="Cancel"></td>
-            </tr>
-        </table>
-    </DIV>
-
-
-    <DIV id="edit_keys" style="display: none">
-        <table class="form_input keys" id="grid_edit_key">
-            <tr>
-                <td>
-                    <select size="1" id="idTypeKey" onkeyup="SelectTypeKey();SaveValues()" onchange="SelectTypeKey();SaveValues()">
-                        <option value="private">Private key</option>
-                        <option value="public">Public key (sign from another wallet)</option>
-                    </select>
-                </td><td><INPUT type="string" id="idKeyNew" value=""></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td><INPUT type="button" onclick="SavePrivateKey()" class="bt" value="Save">
-                    <INPUT type="button" onclick="CancelSavePrivateKey()" class="bt" value="Cancel">
-                </td>
-
-            </tr>
-        </table>
-    </DIV>
-
-
-
-
-    <DIV id="edit_create_acc" style="display: none">
-        <table class="form_input keys" id="grid_edit_newacc">
-            <tr>
-                <td><DIV>Short public name:</DIV></td><td><INPUT type="string" maxlength="40" id="idAccDescription" onkeyup="CheckLengthAccDesription('idAccDescription',40)" value=""></td>
-            </tr>
-
-            <tr>
-                <td><DIV>Adviser:</DIV></td><td><INPUT type="number" id="idAdviser" min=0 max=1000000000000 value="0"></td>
-            </tr>
-            <tr>
-                <td></td><td><INPUT type="checkbox" checked id="idAutoSetMining">Mining on this account</td>
-            </tr>
-
-            <tr>
-                <td></td>
-                <td><INPUT type="button" onclick="CreateAccount()" class="bt" value="Create">
-                    <INPUT type="button" onclick="CancelCreateAccount()" class="bt" value="Cancel"></td>
-            </tr>
-
-        </table>
-    </DIV>
-
-
-    <BR>
-    <table id="grid_accounts" class="grid">
+    <table id="TabHeader" onclick="SelectTab">
         <tr>
-            <th id="Item.Num" class="num">ID</th>
-            <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
-            <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
-            <th id="Item.Description" class="name">Account name</th>
-            <th id="Item.Value.OperationID" class="num">Operation</th>
-            <th id="Item.RefID" class="num">Adviser</th>
-
+            <th><INPUT id="MTabAccounts" type="button" onclick="SelectTab('TabAccounts')" class="bttab bt" value="CONFIG"></th>
+            <th><INPUT id="MTabSend" type="button" onclick="SelectTab('TabSend')" class="bttab bt" value="SEND"></th>
+            <th><INPUT id="MTabHistory" type="button" onclick="SelectTab('TabHistory')" class="bttab bt" value="HISTORY"></th>
+            <th><INPUT id="MTabExplorer" type="button" onclick="SelectTab('TabExplorer')" class="bttab bt" value="EXPLORER"></th>
         </tr>
     </table>
 
-    <HR>
-    Network connections:<BR>
-    <INPUT type="checkbox" id="idUseDirectIP">Use this direct IPv4 address on this computer (recommended):<BR>
-    ip:<INPUT  maxlength="16" id="idIP" required pattern="\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"> port:<INPUT maxlength="9" id="idPort" required pattern="^[ 0-9]+$"><BR>
-    <INPUT type="checkbox" disabled id="idUseIncomeGrayIP">Allow connection users without a direct address<BR>
-    <INPUT type="button" onclick="SetNetworkParams()" class="btdoit bt" value="Set and Restart">
+    <INPUT id="idOpenWallet" style="display: none" type="button" onclick="ViewOpenWallet()" value="Open Wallet">
 
-    <DIV id="idDevelopService" style="display: none">
+    <DIV id="idStatus">&nbsp;</DIV>
+    <BR><BR><BR>
 
-        <H3>Developer service:</H3>
+    <DIV id="TabAccounts" style="display: block">
 
-        <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit bt" value="Create check point">
-        <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit bt" value="Set new code version:">
-        <INPUT type="string" id="idVersionNum" maxlength="6" value="1">
+        Public key:<B><DIV id="idPubKey"></DIV></B>
+        <BR>
+        <DIV id="wallet_config_tab" style="display: none">
+        <INPUT type="button" onclick="NewAccount()" class="btdoit bt" value="New account...">
+        <INPUT type="button" onclick="EditPrivateKey()" class="btdoit bt" value="Edit Key..." id="idEditPrivKey">
+        <INPUT type="button" onclick="NewPrivateKey()" class="btdoit bt" value="New PrivateKey...">
+        <INPUT type="button" onclick="MiningSets()" class="btdoit bt" value="Mining Sets...">
+        <INPUT type="button" onclick="ViewSetPassword()" class="bt btdoit" value="Set Password...">
+        </DIV>
+
+
+        <DIV id="edit_mining_set" style="display: none">
+            <table class="form_input keys" id="grid_mining_set">
+                <tr>
+                    <td><DIV>Mining account:</DIV></td><td><INPUT type="number" id="idMiningAccount" min=0 max=1000000000000 value="0"></td>
+                </tr>
+
+                <tr>
+                    <td></td>
+                    <td><INPUT type="button" onclick="SaveMiningSet()" class="bt" value="Save">
+                        <INPUT type="button" onclick="CancalMiningSet()" class="bt" value="Cancel"></td>
+                </tr>
+            </table>
+        </DIV>
+
+
+        <DIV id="edit_keys" style="display: none">
+            <table class="form_input keys" id="grid_edit_key">
+                <tr>
+                    <td>
+                        <select size="1" id="idTypeKey" onkeyup="SelectTypeKey();SaveValues()" onchange="SelectTypeKey();SaveValues()">
+                            <option value="private">Private key</option>
+                            <option value="public">Public key (sign from another wallet)</option>
+                        </select>
+                    </td><td><INPUT type="string" id="idKeyNew" value=""></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><INPUT type="button" onclick="SavePrivateKey()" class="bt" value="Save">
+                        <INPUT type="button" onclick="CancelSavePrivateKey()" class="bt" value="Cancel">
+                    </td>
+
+                </tr>
+            </table>
+        </DIV>
+
+
+
+
+        <DIV id="edit_create_acc" style="display: none">
+            <table class="form_input keys" id="grid_edit_newacc">
+                <tr>
+                    <td><DIV>Short public name:</DIV></td><td><INPUT type="string" maxlength="40" id="idAccDescription" onkeyup="CheckLengthAccDesription('idAccDescription',40)" value=""></td>
+                </tr>
+
+                <tr>
+                    <td><DIV>Adviser:</DIV></td><td><INPUT type="number" id="idAdviser" min=0 max=1000000000000 value="0"></td>
+                </tr>
+                <tr>
+                    <td></td><td><INPUT type="checkbox" checked id="idAutoSetMining">Mining on this account</td>
+                </tr>
+
+                <tr>
+                    <td></td>
+                    <td><INPUT type="button" onclick="CreateAccount()" class="bt" value="Create">
+                        <INPUT type="button" onclick="CancelCreateAccount()" class="bt" value="Cancel"></td>
+                </tr>
+
+            </table>
+        </DIV>
+
 
         <BR>
-        <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit bt" value="Truncate chain:">
-        <INPUT type="string" id="idTruncateBlockNum" maxlength="6" value="0">
+        <table id="grid_accounts" class="grid">
+            <tr>
+                <th id="Item.Num" class="num">ID</th>
+                <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
+                <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+                <th id="Item.Description" class="name">Account name</th>
+                <th id="Item.Value.OperationID" class="num">Operation</th>
+                <th id="Item.RefID" class="num">Adviser</th>
+
+            </tr>
+        </table>
+
+        <HR>
+        Network connections:<BR>
+        <INPUT type="checkbox" id="idUseDirectIP">Use this direct IPv4 address on this computer (recommended):<BR>
+        ip:<INPUT  maxlength="16" id="idIP" required pattern="\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"> port:<INPUT maxlength="9" id="idPort" required pattern="^[ 0-9]+$"><BR>
+        <INPUT type="checkbox" disabled id="idUseIncomeGrayIP">Allow connection users without a direct address<BR>
+        <INPUT type="button" onclick="SetNetworkParams()" class="btdoit bt" value="Set and Restart">
+
+        <DIV id="idDevelopService" style="display: none">
+
+            <H3>Developer service:</H3>
+
+            <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit bt" value="Create check point">
+            <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit bt" value="Set new code version:">
+            <INPUT type="string" id="idVersionNum" maxlength="6" value="1">
+
+            <BR>
+            <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit bt" value="Truncate chain:">
+            <INPUT type="string" id="idTruncateBlockNum" maxlength="6" value="0">
 
 
-        <BR>
-        <BR>
+            <BR>
+            <BR>
 
-    </DIV>
-
-
-    Style:
-    <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
-        <option value="styleBrown">Brown</option>
-        <option value="styleBlue">Blue</option>
-        <option value="styleGreen">Green</option>
-    </select>
+        </DIV>
 
 
-</DIV>
-
-
-<DIV id="TabHistory" style="display: none">
-    <INPUT type="button" onclick="ViewHistory()" class="btdoit bt" value="Refresh history">
-    <table id="grid_receive" class="grid">
-        <tr>
-            <th id="Item.Direct">Direct</th>
-            <th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>
-            <th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>
-            <th id="SUM_TO_STRING(Item)" class="sum">Amount</th>
-            <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
-            <th id="Item.Description"class="desc">Description</th>
-            <th id="Item.FromID" class="num">From</th>
-            <th id="GetStrID(Item.ToID)" class="num">To</th>
-            <th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>
-            <th id="Item.BlockNum" class="num">Block</th>
-        </tr>
-
-    </table>
-</DIV>
-
-
-
-<DIV id="TabSend" style="display: none">
-
-<table class="form_input">
-    <tr>
-        <td>From account</td>
-        <td>
-
-        <select size="1" id="idAccount" onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()">
+        Style:
+        <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
+            <option value="styleBrown">Brown</option>
+            <option value="styleBlue">Blue</option>
+            <option value="styleGreen">Green</option>
         </select>
 
-        <!--<INPUT type="number" list="tri" id="idAccount" value="" onkeyup="CreateTransaction()" onchange="CreateTransaction()"-->
-        <!--placeholder="Your account (required)">-->
-    </td>
-    </tr>
-    <tr><td>&nbsp;</td><td><DIV id="idNameTo" class="bold"></DIV></td></tr>
-    <tr>
-        <td>Pay to</td><td><INPUT style="float: left" type="number" id="idTo" min=1 max=1000000000000 value="" onkeyup="OnEditIdTo()" onchange="OnEditIdTo()"
-        placeholder="Payee (required)" autofocus></td>
-    </tr>
-    <tr>
-        <td>Amount</td>
-        <td>
-            <DIV class="short_input">
-                <INPUT type="number" id="idSumTER" value="" min=0 max=1000000000 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()"><B>.</B>
-                <INPUT type="number" id="idSumCENT" value="" min=0 max=999999999 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()"> <B>TER</B>
-            </DIV>
-        </td>
-    </tr>
-    <tr>
-        <td>Description (optional)</td><td><textarea id="idDescription" rows="4" onkeyup="CheckLengthAccDesription('idDescription',200);OnEditTransactionFields()" onchange="OnEditTransactionFields()"></textarea></td>
-    </tr>
-    <tr>
-        <td>
-        </td>
-        <td>
-        <INPUT type="button" onclick="ClearTransaction()" class="bsend bt" value="Clear">
-        <INPUT type="button" onclick="EditJSONTransaction()" class="bsend bt" value="Edit JSON">
-        <INPUT type="button" onclick="SendMoney()" class="bsend bt" value="Send" id="idSendButton">
-        </td>
-    </tr>
-</table>
-    <DIV id="edit_transaction" style="display: none">
-        <textarea id="idTransaction" rows="18" onkeyup="StartEditTransactionJSON()" onchange="StartEditTransactionJSON()"></textarea>
-        <BR>
-        <INPUT type="button" onclick="SignJSON()" class="btdoit bt" value="Sign JSON" id="idSignJSON">
-        <INPUT type="button" onclick="SendMoneyJSON()" class="btdoit bt" value="Send from JSON">
+
     </DIV>
 
 
-<!--History:-->
-<!--<table id="grid_act_send" class="grid">-->
-    <!--<tr>-->
-        <!--<th id="Item.Direct">Direct</th>-->
-        <!--<th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>-->
-        <!--<th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>-->
-        <!--<th id="SUM_TO_STRING(Item)" class="sum">Amount</th>-->
-        <!--<th id="MapCurrency[Item.Currency]" class="cur">Currency</th>-->
-        <!--<th id="Item.Description"class="desc">Description</th>-->
-        <!--<th id="Item.FromID" class="num">From</th>-->
-        <!--<th id="Item.ToID" class="num">To</th>-->
-        <!--<th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>-->
-        <!--<th id="Item.BlockNum" class="num">Block</th>-->
-    <!--</tr>-->
-<!--</table>-->
+    <DIV id="TabHistory" style="display: none">
+        <INPUT type="button" onclick="ViewHistory()" class="btdoit bt" value="Refresh history">
+        <table id="grid_receive" class="grid">
+            <tr>
+                <th id="Item.Direct">Direct</th>
+                <th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>
+                <th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>
+                <th id="SUM_TO_STRING(Item)" class="sum">Amount</th>
+                <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+                <th id="Item.Description"class="desc">Description</th>
+                <th id="Item.FromID" class="num">From</th>
+                <th id="GetStrID(Item.ToID)" class="num">To</th>
+                <th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>
+                <th id="Item.BlockNum" class="num">Block</th>
+            </tr>
 
-</DIV>
+        </table>
+    </DIV>
 
 
 
+    <DIV id="TabSend" style="display: none">
 
-<DIV id="TabExplorer" style="display: none">
-
-    <INPUT type="button" onclick="ViewGrid('/GetAccountsAll/0/50','grid_accounts_all',0,1)" class="btdoit bt" value="View All Account">
-    <INPUT type="button" onclick="window.Open('./HTML/stat.html')" class="btdoit bt" value="Counters">
-    <INPUT type="button" onclick="window.Open('./HTML/stat-diagram.html',1030)" class="btdoit bt" value="Diagrams">
-    <INPUT type="button" onclick="window.Open('./HTML/monitor.html',1200)" class="btdoit bt" value="Monitor">
-    <INPUT type="button" onclick="window.Open('./HTML/console.html')" class="btdoit bt" value="Console">
-    <BR>
-    <table id="grid_accounts_all" class="grid">
+    <table class="form_input">
         <tr>
-            <th id="Item.Num" class="num">ID</th>
-            <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
-            <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
-            <th id="Item.Description"class="name">Account name</th>
-            <th id="Item.PubKey.substr(0,66)">PubKey</th>
-            <th id="Item.Value.OperationID" class="num">Operation</th>
-            <th id="Item.BlockNumCreate" class="num">Block Num</th>
+            <td>From account</td>
+            <td>
+
+            <select size="1" id="idAccount" onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()">
+            </select>
+
+            <!--<INPUT type="number" list="tri" id="idAccount" value="" onkeyup="CreateTransaction()" onchange="CreateTransaction()"-->
+            <!--placeholder="Your account (required)">-->
+        </td>
+        </tr>
+        <tr><td>&nbsp;</td><td><DIV id="idNameTo" class="bold"></DIV></td></tr>
+        <tr>
+            <td>Pay to</td><td><INPUT style="float: left" type="number" id="idTo" min=1 max=1000000000000 value="" onkeyup="OnEditIdTo()" onchange="OnEditIdTo()"
+            placeholder="Payee (required)" ></td>
+        </tr>
+        <tr>
+            <td>Amount</td>
+            <td>
+                <DIV class="short_input">
+                    <INPUT type="number" id="idSumTER" value="" min=0 max=1000000000 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()"><B>.</B>
+                    <INPUT type="number" id="idSumCENT" value="" min=0 max=999999999 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()"> <B>TER</B>
+                </DIV>
+            </td>
+        </tr>
+        <tr>
+            <td>Description (optional)</td><td><textarea id="idDescription" rows="4" onkeyup="CheckLengthAccDesription('idDescription',200);OnEditTransactionFields()" onchange="OnEditTransactionFields()"></textarea></td>
+        </tr>
+        <tr>
+            <td>
+            </td>
+            <td>
+            <INPUT type="button" onclick="ClearTransaction()" class="bsend bt" value="Clear">
+            <INPUT type="button" onclick="EditJSONTransaction()" class="bsend bt" value="Edit JSON">
+            <INPUT type="button" onclick="SendMoney()" class="bsend bt" value="Send" id="idSendButton">
+            </td>
         </tr>
     </table>
-    <BR>
-    <B><DIV id="idTotalSum"></DIV></B>
+        <DIV id="edit_transaction" style="display: none">
+            <textarea id="idTransaction" rows="18" onkeyup="StartEditTransactionJSON()" onchange="StartEditTransactionJSON()"></textarea>
+            <BR>
+            <INPUT type="button" onclick="SignJSON()" class="btdoit bt" value="Sign JSON" id="idSignJSON">
+            <INPUT type="button" onclick="SendMoneyJSON()" class="btdoit bt" value="Send from JSON">
+        </DIV>
 
 
-    <!--<INPUT type="button" onclick="ViewGrid('/GetActsAll/0/100','grid_acts_all')" class="btdoit bt" value="View All Acts"><BR>-->
-    <!--<table id="grid_acts_all" class="grid">-->
+    <!--History:-->
+    <!--<table id="grid_act_send" class="grid">-->
         <!--<tr>-->
-            <!--<th id="Item.Num" class="num">Num</th>-->
-            <!--<th id="Item.ID" class="num">Account</th>-->
-            <!--<th id="Item.Mode">Mode</th>-->
-            <!--<th id="Item.BlockNum">Block</th>-->
-
-            <!--<th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>-->
-            <!--<th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>-->
-            <!--<th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>-->
+            <!--<th id="Item.Direct">Direct</th>-->
+            <!--<th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>-->
+            <!--<th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>-->
+            <!--<th id="SUM_TO_STRING(Item)" class="sum">Amount</th>-->
+            <!--<th id="MapCurrency[Item.Currency]" class="cur">Currency</th>-->
+            <!--<th id="Item.Description"class="desc">Description</th>-->
+            <!--<th id="Item.FromID" class="num">From</th>-->
+            <!--<th id="Item.ToID" class="num">To</th>-->
+            <!--<th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>-->
+            <!--<th id="Item.BlockNum" class="num">Block</th>-->
         <!--</tr>-->
     <!--</table>-->
 
+    </DIV>
+
+
+
+
+    <DIV id="TabExplorer" style="display: none">
+
+        <INPUT type="button" onclick="ViewGrid('/GetAccountsAll/0/50','grid_accounts_all',0,1)" class="btdoit bt" value="View Accounts">
+        <INPUT type="button" onclick="window.Open('./HTML/stat.html')" class="btdoit bt" value="Counters">
+        <INPUT type="button" onclick="window.Open('./HTML/stat-diagram.html',1030)" class="btdoit bt" value="Diagrams">
+        <INPUT type="button" onclick="window.Open('./HTML/monitor.html',1200)" class="btdoit bt" value="Monitor">
+        <INPUT type="button" onclick="window.Open('./HTML/console.html')" class="btdoit bt" value="Console">
+        <BR>
+        <table id="grid_accounts_all" class="grid">
+            <tr>
+                <th id="Item.Num" class="num">ID</th>
+                <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
+                <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+                <th id="Item.Description"class="name">Account name</th>
+                <th id="Item.PubKey.substr(0,66)">PubKey</th>
+                <th id="Item.Value.OperationID" class="num">Operation</th>
+                <th id="Item.BlockNumCreate" class="num">Block Num</th>
+            </tr>
+        </table>
+        <BR>
+        <B><DIV id="idTotalSum"></DIV></B>
+
+
+        <!--<INPUT type="button" onclick="ViewGrid('/GetActsAll/0/100','grid_acts_all')" class="btdoit bt" value="View All Acts"><BR>-->
+        <!--<table id="grid_acts_all" class="grid">-->
+            <!--<tr>-->
+                <!--<th id="Item.Num" class="num">Num</th>-->
+                <!--<th id="Item.ID" class="num">Account</th>-->
+                <!--<th id="Item.Mode">Mode</th>-->
+                <!--<th id="Item.BlockNum">Block</th>-->
+
+                <!--<th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>-->
+                <!--<th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>-->
+                <!--<th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>-->
+            <!--</tr>-->
+        <!--</table>-->
+
+    </DIV>
+
+    <BR>
+    <DIV id="idServerBlock">
+    <HR>
+    Server logs:
+    <DIV id="idServerLog"></DIV><BR>
+    </DIV>
+
+
+
+    <DIV id="idBlockPassword" style="display: none">
+        <H3 align="center">Enter your password:</H3>
+        <table class="password" id="idTablePassword">
+            <tr>
+                <td><DIV>Password:</DIV></td><td><INPUT type="password"  id="idPassword1" value=""></td>
+            </tr>
+
+            <tr id="idPasswordRow2" style="display: none">
+                <td><DIV>Repeat:</DIV></td><td><INPUT type="password"  id="idPassword2" onkeyup="" value=""></td>
+            </tr>
+
+            <tr>
+                <td></td>
+                <td><INPUT type="button" onclick="SetPassword()" class="bt" value="Set">
+                    <INPUT type="button" onclick="CancelSetPassword()" class="bt" value="Cancel"></td>
+            </tr>
+
+        </table>
+    </DIV>
+
 </DIV>
-
-<BR>
-<DIV id="idServerBlock">
-<HR>
-Server logs:
-<DIV id="idServerLog"></DIV><BR>
-</DIV>
-
-
-
-<DIV id="idBlockPassword" style="display: none">
-    <H3 align="center">Enter your password:</H3>
-    <table class="password" id="idTablePassword">
-        <tr>
-            <td><DIV>Password:</DIV></td><td><INPUT type="password"  id="idPassword1" autofocus onkeyup="" value=""></td>
-        </tr>
-
-        <tr id="idPasswordRow2" style="display: none">
-            <td><DIV>Repeat:</DIV></td><td><INPUT type="password"  id="idPassword2" onkeyup="" value=""></td>
-        </tr>
-
-        <tr>
-            <td></td>
-            <td><INPUT type="button" onclick="SetPassword()" class="bt" value="Set">
-                <INPUT type="button" onclick="CancelSetPassword()" class="bt" value="Cancel"></td>
-        </tr>
-
-    </table>
-</DIV>
-
 
 </body>
 

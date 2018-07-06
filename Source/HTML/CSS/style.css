@@ -1,0 +1,141 @@
+﻿
+/*STYLE STYLE STYLE*/
+/*STYLE STYLE STYLE*/
+/*STYLE STYLE STYLE*/
+/*STYLE STYLE STYLE*/
+
+
+
+body.styleBrown .bt
+{
+    background: #86754A;
+    color: #F5E5BB;
+}
+body.styleBrown
+{
+    background: #F5E5BB;
+}
+
+body.styleBrown table.grid
+{
+    background:#F5F0E3;
+}
+
+body.styleBrown .bttab
+{
+    background: #86754A;
+    color:white;
+}
+body.styleBrown .bttab:hover
+{
+    background: #F5E5BB;
+    color: #503F13;
+}
+
+body.styleBrown .current
+{
+    background: #503F13;
+    color:white;
+}
+body.styleBrown .current:hover
+{
+    background: #503F13;
+    color:white;
+}
+
+body.styleBrown input,textarea,select
+{
+    background:white;
+    color: black;
+}
+
+
+body.styleGreen .bt
+{
+    background: #4F7340;
+    color: #CBF4BA;
+}
+body.styleGreen
+{
+    background: #CBF4BA;
+}
+
+body.styleGreen table.grid
+{
+    background:#E7F4E1;
+}
+
+body.styleGreen .bttab
+{
+    background: #4F7340;
+    color:white;
+}
+body.styleGreen .bttab:hover
+{
+    background: #CBF4BA;
+    color: #204410;
+}
+
+body.styleGreen .current
+{
+    background: #204410;
+    color:white;
+}
+body.styleGreen .current:hover
+{
+    background: #204410;
+    color:white;
+}
+
+
+body.styleGreen input,textarea,select
+{
+    background:white;
+    color: black;
+}
+
+
+body.styleBlue .bt
+{
+    background: #354259;
+    color: #BED0F2;
+}
+body.styleBlue
+{
+    background: #BED0F2;
+}
+
+body.styleBlue table.grid
+{
+    background:#E1E7F2;
+}
+
+body.styleBlue .bttab
+{
+    background: #354259;
+    color:white;
+}
+body.styleBlue .bttab:hover
+{
+    background: #BED0F2;
+    color: #0D1B35;
+}
+
+body.styleBlue .current
+{
+    background: #0D1B35;
+    color:white;
+}
+body.styleBlue .current:hover
+{
+    background: #0D1B35;
+    color:white;
+}
+
+body.styleBlue input,textarea,select
+{
+    background:white;
+    color: black;
+}
+
+

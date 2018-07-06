@@ -86,7 +86,7 @@ module.exports = class CConnect extends require("./transfer-msg")
     }
 
 
-    FindRunNodeContext(addrArr,ip,port)
+    FindRunNodeContext(addrArr,ip,port,bUpdate)
     {
         var Node,addrStr;
 
@@ -107,6 +107,11 @@ module.exports = class CConnect extends require("./transfer-msg")
                     Node.addrStrTemp=addrStr;
                 }
             }
+        }
+        if(bUpdate)
+        {
+            Node.ip=ip;
+            Node.port=port;
         }
 
         return Node;
@@ -224,7 +229,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
 
         Node.LastTime=GetCurrentTime();
-
+        Node.NextConnectDelta=1000;//connection is good
 
 
 
@@ -485,7 +490,6 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(Node.addrStr===this.addrStr
             || Node.IsBan
             || !Node.DirectIP
-            //|| Node.TryConnectCount>=2
             || Node.Self
             || Node.DoubleConnection)
             return false;
@@ -1344,7 +1348,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             return 0;
     }
 
-    GetActualsServerIP()
+    GetActualsServerIP(bFlag)
     {
         var arr=this.GetActualNodes();
         var arr2=[];
@@ -1352,7 +1356,10 @@ module.exports = class CConnect extends require("./transfer-msg")
         {
             arr2.push(arr[i].ip);
         }
-        return JSON.stringify(arr2);
+        if(bFlag)
+            return JSON.stringify(arr2);
+        else
+            return arr2;
     }
 
 }
@@ -1361,7 +1368,5 @@ module.exports = class CConnect extends require("./transfer-msg")
 /*
 TODO:
 Сортировать NodesArr каждые 5 сек после получения пинга
-
-TODO: DeleteNodeFromActive - в т.ч. по таймауту
 */
 

@@ -737,7 +737,7 @@ module.exports = class CBlock extends require("./db/block-db")
         //=====================================
         var CountSend=arr.length-BLOCK_PROCESSING_LENGTH2;
         var BufWrite;
-        if(CountSend<0)
+        if(CountSend<0 || StartNum===undefined)
         {
             BufWrite=BufLib.GetNewBuffer(10);
         }

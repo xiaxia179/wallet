@@ -1,0 +1,194 @@
+﻿
+/*Списки*/
+table
+{
+    border-collapse: collapse;
+    width:100%;
+    max-width: 800px
+}
+.grid th, .grid td
+{
+    border: 1px solid #264378;
+    padding: 4px;
+}
+.grid td
+{
+    width: 60px;
+    text-align: right;
+}
+
+td.sum
+{
+    text-align: right;
+    width: 150px;
+    font-weight: 700;
+}
+td.num
+{
+    text-align: right;
+    width: 50px;
+}
+
+td.cur
+{
+    text-align: left;
+    width: 50px;
+}
+
+td.txt
+{
+    text-align: left;
+    width: 100px;
+}
+td.desc
+{
+    text-align: left;
+    width: 300px;
+}
+td.name
+{
+    text-align: center;
+    width: 300px;
+}
+
+td.date
+{
+    text-align: left;
+    width: 400px;
+    font-size: small;
+}
+
+
+
+
+
+/*TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader TabHeader*/
+.bttab
+{
+    border: 2px solid black;
+    padding: 0px;
+    width: 100%;
+    height: 30px;
+    margin: 0px;
+    font-weight: 700;
+}
+.current
+{
+    border: 0px solid black;
+}
+
+
+/*SEND SEND SEND SEND SEND SEND SEND SEND SEND SEND */
+
+table.form_input
+{
+   border-collapse: collapse;
+   width: 600px;
+}
+.form_input td
+{
+    width: 20%;
+}
+.form_input td:nth-child(2)
+{
+    width: 80%;
+}
+
+.form_input input, .form_input select
+{
+    width: 98%;
+    text-align: right;
+}
+
+.form_input textarea
+{
+    width: 98%;
+    text-align: left;
+}
+.form_input .bsend
+{
+    width: 33%;
+    height: 30px;
+    text-align: center;
+    float: left;
+}
+.short_input input
+{
+    width: 120px;
+}
+
+
+/*CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG*/
+/*Просмотр ключей*/
+table.keys
+{
+    border-collapse: collapse;
+    width: 800px;
+}
+/*Редактирование приватного ключа*/
+#grid_edit_key .bt
+{
+    width: 80px;
+    height: 30px;
+    line-height: 20px;
+    margin: 10px;
+    text-align: center;
+}
+#idTypeKey,#idShortNameText
+{
+    width: 250px;
+    height: 20px;
+    text-align: left;
+}
+
+/*Редактирование new acc description*/
+#grid_edit_newacc .bt, #grid_mining_set .bt, #idTablePassword .bt
+{
+    width: 80px;
+    height: 30px;
+    line-height: 20px;
+    margin: 10px;
+    text-align: center;
+}
+#idAutoSetMining
+{
+    width: 16px;
+    height: 16px;
+    text-align: left;
+    top: 3px;
+    position:relative;
+}
+
+
+/*idStatus Log operations*/
+#idStatus
+{
+    z-index:1000;
+    position:absolute;
+    top:40px;
+    left:10px;
+    text-align: left;
+    width:800px; /* ширина блока */
+    color:blue;
+}
+
+#idServerLog
+{
+    width:100%;
+    max-width: 800px;
+    text-align: left;
+
+    border: 1px solid black;
+    height: 200px;
+    padding: 1px;
+    margin: 0px;
+}
+
+#idTransaction
+{
+    width:100%;
+    max-width: 800px;
+    text-align: left;
+    color:#204410;
+}
+

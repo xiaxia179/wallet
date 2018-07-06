@@ -1,0 +1,26 @@
+﻿/*Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons Buttons*/
+
+/*User action*/
+.btdoit
+{
+    width: 130px;
+    height: 30px;
+    line-height: 20px;
+    margin: 10px;
+}
+
+
+/*All buttons*/
+.bt
+{
+    background: transparent;
+    font-weight: 600;
+}
+
+
+.bold
+{
+    font-weight: 600;
+}
+
+
