@@ -35,10 +35,10 @@
     var CanSendTransaction=1;
     var Net_Work_Mode;
     var MiningAccount=0;
-    var min_power_pow_acc_create;
+    var min_power_pow_acc_create=0;
     var WalletStatus;
     var BLOCK_PROCESSING_LENGTH=8;
-    var AvgSumPowBit=16;
+    var AvgSumPowBit=17;
     var PubKeyStr;
     var PrivKeyStr;
     var WalletOpen;
@@ -56,6 +56,7 @@
     MapCurrency[0]="TER";
 
     var MaxAccID=0;
+    var HistoryMaxNum=0;
     var MaxBlockNum=0;
     var StartDateBlock=0;
 
@@ -705,6 +706,91 @@
     }
 
 
+
+    //Pagination
+    var itemViewAccountStart,itemViewHistoryNum;
+    var CountViewRows=20;
+    function InitPagination()
+    {
+        itemViewAccount=document.getElementById("idViewAccountNum");
+        itemViewHistoryNum=document.getElementById("idViewHistoryNum");
+    }
+    //Accounts
+    function ViewAccounts(serverpath,nameid,revert,bTotal)
+    {
+        SetVisibleBlock("idPaginationAccount",true);
+
+        ViewGrid(serverpath+"/"+itemViewAccount.value+"/"+CountViewRows,nameid,revert,bTotal);
+    }
+    function ViewPrevAccounts(serverpath,nameid,revert,bTotal)
+    {
+        var Num=parseInt(itemViewAccount.value);
+        if(isNaN(Num))
+            Num=0;
+        Num-=CountViewRows;
+        if(Num<0)
+            Num=0;
+        itemViewAccount.value=Num;
+
+        ViewAccounts(serverpath,nameid,revert,bTotal);
+    }
+    function ViewNextAccounts(serverpath,nameid,revert,bTotal)
+    {
+        var Num=parseInt(itemViewAccount.value);
+        if(isNaN(Num))
+            Num=0;
+        Num+=CountViewRows;
+
+        if(Num<MaxAccID)
+        {
+            itemViewAccount.value=Num;
+        }
+        ViewAccounts(serverpath,nameid,revert,bTotal);
+    }
+
+    //History
+    var WasInitHistory;
+    function ViewHistory()
+    {
+        if(!WasInitHistory)
+        {
+            if(HistoryMaxNum===0)
+                return;
+            WasInitHistory=1;
+            itemViewHistoryNum.value=HistoryMaxNum-(HistoryMaxNum%CountViewRows);
+        }
+
+
+
+        SetVisibleBlock("idPaginationHistory",true);
+        ViewGrid("/GetAct/"+itemViewHistoryNum.value+"/"+CountViewRows,"grid_history",1);
+    }
+    function ViewPrevHistory()
+    {
+        var Num=parseInt(itemViewHistoryNum.value);
+        if(isNaN(Num))
+            Num=0;
+        Num-=CountViewRows;
+        if(Num<0)
+            Num=0;
+        itemViewHistoryNum.value=Num;
+
+        ViewHistory();
+    }
+    function ViewNextHistory()
+    {
+        var Num=parseInt(itemViewHistoryNum.value);
+        if(isNaN(Num))
+            Num=0;
+        Num+=CountViewRows;
+
+        if(Num<HistoryMaxNum)
+        {
+            itemViewHistoryNum.value=Num;
+        }
+        ViewHistory();
+    }
+
 </script>
 
 
@@ -852,6 +938,7 @@
         WalletOpen=Data.WalletOpen;
         SetVisibleBlock("idOpenWallet",WalletOpen===false);
         SetVisibleBlock("wallet_config_tab",WalletOpen!==false);
+        HistoryMaxNum=Data.HistoryMaxNum;
 
 
 
@@ -1244,10 +1331,6 @@
 
     }
 
-    function ViewHistory()
-    {
-        ViewGrid("/GetAct/0/100/","grid_receive",1);
-    }
     function SelectTab(name)
     {
         CurTabName=name;
@@ -1369,6 +1452,7 @@
     window.onload=function()
     {
         InitPasItems();
+        InitPagination();
 
         UpdatesConfigData();
         UpdatesData();
@@ -1388,7 +1472,10 @@
         setTimeout(CheckNameAccTo,100);
 
         if(CurTabName==="TabHistory")
-            ViewHistory();
+            setTimeout(function ()
+            {
+                ViewHistory();
+            },500)
 
 
 
@@ -1746,8 +1833,14 @@
 
 
     <DIV id="TabHistory" style="display: none">
-        <INPUT type="button" onclick="ViewHistory()" class="btdoit bt" value="Refresh history">
-        <table id="grid_receive" class="grid">
+        <!--<INPUT type="button" onclick="ViewHistory()" class="btdoit bt" value="Refresh history">-->
+        <DIV id="idPaginationHistory" style="display: none">
+            <INPUT type="button" onclick="ViewPrevHistory()" class="btdoit bt" value="<< Prev">
+            <INPUT type="number" id="idViewHistoryNum" style="text-align: center" value="0" min=0 max=1000000000>
+            <INPUT type="button" onclick="ViewNextHistory()" class="btdoit bt" value="Next >>">
+        </DIV>
+
+        <table id="grid_history" class="grid">
             <tr>
                 <th id="Item.Direct">Direct</th>
                 <th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>
@@ -1838,12 +1931,18 @@
 
     <DIV id="TabExplorer" style="display: none">
 
-        <INPUT type="button" onclick="ViewGrid('/GetAccountsAll/0/50','grid_accounts_all',0,1)" class="btdoit bt" value="View Accounts">
+        <INPUT type="button" onclick="ViewAccounts('/GetAccountsAll','grid_accounts_all',0,1)" class="btdoit bt" value="View Accounts">
         <INPUT type="button" onclick="window.Open('./HTML/stat.html')" class="btdoit bt" value="Counters">
         <INPUT type="button" onclick="window.Open('./HTML/stat-diagram.html',1030)" class="btdoit bt" value="Diagrams">
         <INPUT type="button" onclick="window.Open('./HTML/monitor.html',1200)" class="btdoit bt" value="Monitor">
         <INPUT type="button" onclick="window.Open('./HTML/console.html')" class="btdoit bt" value="Console">
         <BR>
+        <DIV id="idPaginationAccount" style="display: none">
+            <INPUT type="button" onclick="ViewPrevAccounts('/GetAccountsAll','grid_accounts_all',0,1)" class="btdoit bt" value="<< Prev">
+            <INPUT type="number" id="idViewAccountNum" style="text-align: center" value="0" min=0 max=1000000000>
+            <INPUT type="button" onclick="ViewNextAccounts('/GetAccountsAll','grid_accounts_all',0,1)" class="btdoit bt" value="Next >>">
+        </DIV>
+
         <table id="grid_accounts_all" class="grid">
             <tr>
                 <th id="Item.Num" class="num">ID</th>
@@ -1857,6 +1956,7 @@
         </table>
         <BR>
         <B><DIV id="idTotalSum"></DIV></B>
+
 
 
         <!--<INPUT type="button" onclick="ViewGrid('/GetActsAll/0/100','grid_acts_all')" class="btdoit bt" value="View All Acts"><BR>-->

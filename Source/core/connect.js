@@ -18,7 +18,7 @@ global.CODE_VERSION={VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoa
 
 const MAX_PERIOD_GETNODES=60*1000;
 
-var MAX_PING_FOR_CONNECT=150;//ms
+var MAX_PING_FOR_CONNECT=300;//ms
 var TIME_AUTOSORT_GRAY_LIST=5000;//ms
 var MAX_TIME_CORRECT=10000*1000;//ms TODO сделать настраиваемым, т.е. чем больше времени запущена программа, тем меньше изменение времени. Если более часа и уже была выполнена синхронизация, то макс изменение 250 мс
 

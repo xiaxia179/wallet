@@ -307,13 +307,18 @@ class CApp
         return this.GetSignFromArr(Buf)
     }
 
-    GetAct(id,count,Direct)
+    GetHistoryMaxNum()
+    {
+        return this.DBAct.GetMaxNum();
+    }
+    GetHistoryAct(start,count,Direct)
     {
         if(count>1000)
             count=1000;
 
         var arr=[];
-        for(var num=this.DBAct.GetMaxNum();num>=0;num--)
+        //for(var num=this.GetHistoryMaxNum();num>=0;num--)
+        for(var num=start;num<start+count;num++)
         {
             var Item=this.DBAct.Read(num);
             if(!Item)
@@ -327,9 +332,10 @@ class CApp
             if(Item.Direct==="-" && this.AccountMap[Item.FromID]===undefined)
                 continue;
 
-            arr.unshift(Item);
-            if(arr.length>count)
-                break;
+            arr.push(Item);
+            //arr.unshift(Item);
+            // if(arr.length>count)
+            //     break;
         }
         return arr;
     }

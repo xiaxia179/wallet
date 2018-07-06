@@ -195,8 +195,10 @@ HTTPCaller.GetAct=function (num,count,Direct)
 {
     num=parseInt(num);
     count=parseInt(count);
+    if(!Direct)
+        Direct="";
 
-    var arr=WALLET.GetAct(num,count,Direct);
+    var arr=WALLET.GetHistoryAct(num,count,Direct);
     return {arr:arr,result:1};
 }
 
@@ -230,6 +232,7 @@ HTTPCaller.GetWalletInfo=function ()
             ip:SERVER.ip,
             port:SERVER.port,
             NET_WORK_MODE:global.NET_WORK_MODE,
+            HistoryMaxNum:WALLET.GetHistoryMaxNum(),
         };
 
 
@@ -1085,8 +1088,8 @@ if(HTTP_PORT_NUMBER)
         var host=request.headers.host;
         if(typeof host!=="string")
             return;
-        if(host.substr(0,4)!=="test" && host!=="localhost")
-            return;
+        // if(host.substr(0,4)!=="test" && host!=="localhost" && host!=="127.0.0.1")
+        //     return;
 
         let RESPONSE=response0;
         var response=

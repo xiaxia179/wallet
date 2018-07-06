@@ -159,6 +159,12 @@ table.keys
     position:relative;
 }
 
+#grid_accounts_all, #grid_history
+{
+    font-size: smaller;
+}
+
+
 
 /*idStatus Log operations*/
 #idStatus
