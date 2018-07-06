@@ -43,3 +43,11 @@ Notes:
 * Protection against DDoS: PoW (hash calculation)
 * Platform: Node.JS
 
+
+
+
+Refs:
+Btt: https://bitcointalk.org/index.php?topic=4573801.0
+Twitter: https://twitter.com/terafoundation
+Telegram: @Terafoundation
+Discord: https://discord.gg/CvwrbeG
