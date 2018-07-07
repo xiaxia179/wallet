@@ -132,10 +132,30 @@ function CreateHashBody(body,Num,Nonce)
     return shaarr(body);
 }
 
-
-
-function CreateHashBodyPOWInnerMinPower(arr,BlockNum,MinPow)
+window.SetBlockChainConstant=function(Data)
 {
+    window.DELTA_CURRENT_TIME=Data.DELTA_CURRENT_TIME;
+    if(!window.DELTA_CURRENT_TIME)
+        window.DELTA_CURRENT_TIME=0;
+    window.FIRST_TIME_BLOCK=Data.FIRST_TIME_BLOCK;
+    window.CONSENSUS_PERIOD_TIME=Data.CONSENSUS_PERIOD_TIME;
+    window.GetCurrentBlockNumByTime=function()
+    {
+        var Time=(new Date)-(-DELTA_CURRENT_TIME);
+        var CurTimeNum=Time-FIRST_TIME_BLOCK-CONSENSUS_PERIOD_TIME/2;
+        var StartBlockNum=Math.floor((CurTimeNum+CONSENSUS_PERIOD_TIME)/CONSENSUS_PERIOD_TIME);
+        return StartBlockNum;
+    }
+}
+window.GetCurrentBlockNumByTime=function()
+{
+    return 0;
+}
+
+function CreateHashBodyPOWInnerMinPower(arr,MinPow)
+{
+    var BlockNum=GetCurrentBlockNumByTime()+1;
+
     var nonce=0;
     while(1)
     {
@@ -146,7 +166,10 @@ function CreateHashBodyPOWInnerMinPower(arr,BlockNum,MinPow)
             return nonce;
         }
         nonce++;
+        if(nonce%10000===0)
+        {
+            BlockNum=GetCurrentBlockNumByTime();
+        }
     }
 }
-
 /////////////////////////////////////////////////////

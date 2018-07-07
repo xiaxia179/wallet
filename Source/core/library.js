@@ -274,7 +274,7 @@ global.LoadParams=function(filename,EmptyValue)
     }
     catch (err)
     {
-        TO_ERROR_LOG("MAINLIB",100,err);
+        TO_ERROR_LOG("MAINLIB",100,"Error in file:"+filename+"\n"+err);
     }
     return EmptyValue;
 }

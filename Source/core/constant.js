@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
 global.UPDATE_CODE_VERSION_NUM=19;
-"update 19";
+"update 19-3";
 
 require("./startlib.js");
 
@@ -55,9 +55,9 @@ global.MIN_POWER_POW_ACC_CREATE=16;
 
 
 //Работа с памятью:
-global.BLOCK_COUNT_IN_MEMORY=240;
-global.HISTORY_BLOCK_COUNT=240;
-global.MAX_STAT_PERIOD=3*3600;
+global.BLOCK_COUNT_IN_MEMORY=40;
+global.HISTORY_BLOCK_COUNT=40;
+global.MAX_STAT_PERIOD=1*3600;
 global.MAX_SIZE_LOG=200*1024*1024;
 //global.INTERVAL_FOR_DUMP_MEM=0;
 

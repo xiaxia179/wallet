@@ -38,7 +38,6 @@
     var min_power_pow_acc_create=0;
     var WalletStatus;
     var BLOCK_PROCESSING_LENGTH=8;
-    var AvgSumPowBit=17;
     var PubKeyStr;
     var PrivKeyStr;
     var WalletOpen;
@@ -48,7 +47,7 @@
 
     var CurTabName;
     var TabArr=[{name:"TabAccounts",log:1},{name:"TabSend",log:1},{name:"TabHistory"},{name:"TabExplorer"}];
-    var SaveIdArr=["idAccount","idTo","idSumTER","idSumCENT","idDescription","idSelStyle"];
+    var SaveIdArr=["idAccount","idTo","idSumTER","idSumCENT","idDescription","idSelStyle","idViewAccountNum","idWalletPow"];
     var LoadMapAfter={};
 
 
@@ -58,7 +57,6 @@
     var MaxAccID=0;
     var HistoryMaxNum=0;
     var MaxBlockNum=0;
-    var StartDateBlock=0;
 
 
     var CurrentTR={};
@@ -110,7 +108,7 @@
         }
         else
         {
-            MiningAccount=parseInt(document.getElementById("idMiningAccount").value);
+            MiningAccount=ParseNum(document.getElementById("idMiningAccount").value);
         }
         GetData("/SetMining/"+MiningAccount,function (Data)
         {
@@ -688,7 +686,10 @@
 
         Body.length+=12;
 
-        SendTransaction(Body,AvgSumPowBit,TR,true);
+        var SumPow = ParseNum(document.getElementById("idWalletPow").value);
+        if(SumPow===0)
+            SumPow=16;
+        SendTransaction(Body,SumPow,TR,true);
     }
 
 
@@ -724,9 +725,7 @@
     }
     function ViewPrevAccounts(serverpath,nameid,revert,bTotal)
     {
-        var Num=parseInt(itemViewAccount.value);
-        if(isNaN(Num))
-            Num=0;
+        var Num=ParseNum(itemViewAccount.value);
         Num-=CountViewRows;
         if(Num<0)
             Num=0;
@@ -736,9 +735,7 @@
     }
     function ViewNextAccounts(serverpath,nameid,revert,bTotal)
     {
-        var Num=parseInt(itemViewAccount.value);
-        if(isNaN(Num))
-            Num=0;
+        var Num=ParseNum(itemViewAccount.value);
         Num+=CountViewRows;
 
         if(Num<MaxAccID)
@@ -763,13 +760,11 @@
 
 
         SetVisibleBlock("idPaginationHistory",true);
-        ViewGrid("/GetAct/"+itemViewHistoryNum.value+"/"+CountViewRows,"grid_history",1);
+        ViewGrid("/GetAct/"+itemViewHistoryNum.value+"/"+CountViewRows,"grid_history",0);
     }
     function ViewPrevHistory()
     {
-        var Num=parseInt(itemViewHistoryNum.value);
-        if(isNaN(Num))
-            Num=0;
+        var Num=ParseNum(itemViewHistoryNum.value);
         Num-=CountViewRows;
         if(Num<0)
             Num=0;
@@ -779,9 +774,7 @@
     }
     function ViewNextHistory()
     {
-        var Num=parseInt(itemViewHistoryNum.value);
-        if(isNaN(Num))
-            Num=0;
+        var Num=ParseNum(itemViewHistoryNum.value);
         Num+=CountViewRows;
 
         if(Num<HistoryMaxNum)
@@ -896,6 +889,8 @@
             return;
 
         document.title="TEREONUS 1."+Data.VersionNum;
+        SetBlockChainConstant(Data);
+        MaxBlockNum=GetCurrentBlockNumByTime();
 
         if(Data.RelayMode || !Data.CurBlockNum || !Data.BlockNumDB || Data.CurBlockNum>Data.BlockNumDB+BLOCK_PROCESSING_LENGTH*2)
         {
@@ -928,8 +923,9 @@
 
         MiningAccount=Data.MiningAccount;
         MaxAccID=Data.MaxAccID;
-        MaxBlockNum=Data.CurBlockNum;
-        StartDateBlock=Data.StartDateBlock;
+        //MaxBlockNum=Data.CurBlockNum;
+//        if(MaxBlockNum!==Data.CurBlockNum)
+//            SetStatus("Client num="+MaxBlockNum+"  server num="+Data.CurBlockNum)
 
 
         min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE;
@@ -988,9 +984,8 @@
                 if(Account)
                 {
                     delete MapCheckTransaction[Item.key];
-                    //delete MapSendTransaction[Item.key];
                     Account.NextSendTime=0;
-                    SetStatus(info);
+                    SetStatus("# "+info);
                 }
             }
 
@@ -1045,7 +1040,7 @@
             Net_Work_Mode={};
         Net_Work_Mode.UseDirectIP=document.getElementById("idUseDirectIP").checked;
         Net_Work_Mode.ip=document.getElementById("idIP").value;
-        Net_Work_Mode.port=parseInt(document.getElementById("idPort").value);
+        Net_Work_Mode.port=ParseNum(document.getElementById("idPort").value);
         Net_Work_Mode.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
 
         Net_Work_Mode.RestartNode=!bNoRestart;
@@ -1083,9 +1078,9 @@
     function DateFromBlock(BlockNum)
     {
         var Str;
-        if(StartDateBlock)
+        if(window.FIRST_TIME_BLOCK)
         {
-            var now=new Date(StartDateBlock+BlockNum*1000);
+            var now=new Date(window.FIRST_TIME_BLOCK+BlockNum*1000);
             Str=now.toISOString();
             Str=Str.substr(0,Str.indexOf("."));
             Str=Str.replace("T"," ");
@@ -1233,13 +1228,14 @@
         glTrSendNum++;
         SetStatus("Prepare to sending...");
 
-        CreateNonceAndSend(1,0);
-        function CreateNonceAndSend(bCreateNonce,startnonce)
+
+        CreateNonceAndSend(1,0,BlockSend);
+        function CreateNonceAndSend(bCreateNonce,startnonce,BlockSend)
         {
             var CurTrNum=glTrSendNum;
             var nonce=startnonce;
             if(bCreateNonce)
-                nonce=CreateHashBodyPOWInnerMinPower(Body,MaxBlockNum,SumPow)
+                nonce=CreateHashBodyPOWInnerMinPower(Body,SumPow)
 
             var StrHex=GetHexFromArr(Body);
 
@@ -1252,7 +1248,7 @@
 
                     if(Data.text==="Not add")
                     {
-                        CreateNonceAndSend(1,nonce+1);
+                        CreateNonceAndSend(1,nonce+1,BlockSend);
                     }
                     else
                     if(Data.text==="Bad time")
@@ -1261,7 +1257,7 @@
                         setTimeout(function ()
                         {
                             if(CurTrNum===glTrSendNum)
-                                CreateNonceAndSend(0,nonce);
+                                CreateNonceAndSend(0,nonce,BlockSend);
                         },100);
                     }
                     else
@@ -1403,7 +1399,7 @@
 
     function LoadValues()
     {
-        if(localStorage["VerSave"]!=="1")
+        if(localStorage["VerSave"]!=="2")
             return;
         CurTabName=localStorage["CurTabName"];
         for(var i=0;i<SaveIdArr.length;i++)
@@ -1425,7 +1421,7 @@
     }
     function SaveValues()
     {
-        localStorage["VerSave"]="1";
+        localStorage["VerSave"]="2";
         localStorage["CurTabName"]=CurTabName;
         for(var i=0;i<SaveIdArr.length;i++)
         {
@@ -1896,7 +1892,7 @@
             <td>
             <INPUT type="button" onclick="ClearTransaction()" class="bsend bt" value="Clear">
             <INPUT type="button" onclick="EditJSONTransaction()" class="bsend bt" value="Edit JSON">
-            <INPUT type="button" onclick="SendMoney()" class="bsend bt" value="Send" id="idSendButton">
+            <INPUT type="button" onclick="SendMoney()" class="bsend bt" id="idSendButton" value="Send" >
             </td>
         </tr>
     </table>
@@ -1905,6 +1901,7 @@
             <BR>
             <INPUT type="button" onclick="SignJSON()" class="btdoit bt" value="Sign JSON" id="idSignJSON">
             <INPUT type="button" onclick="SendMoneyJSON()" class="btdoit bt" value="Send from JSON">
+            POW:<INPUT type="number" id="idWalletPow" value="16">
         </DIV>
 
 

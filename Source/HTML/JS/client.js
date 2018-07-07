@@ -389,6 +389,8 @@ function ReadArr(arr,length)
 function ParseNum(Str)
 {
     var Res=parseInt(Str)
+    if(isNaN(Res))
+        Res=0;
     if(!Res)
         Res=0;
     if(Res<0)

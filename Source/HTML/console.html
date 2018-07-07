@@ -34,21 +34,16 @@
         id.innerHTML=Str;
     }
 
-    var MaxBlockNum=0;
-    var addrArr;
     var WasTitle;
 
     function UpdateData()
     {
 
-        GetData("/getnetparams/", function (Data)
+        GetData("/GetWalletInfo", function (Data)
         {
             if(Data && Data.result)
             {
-                if(Data.CurBlockNum>MaxBlockNum)
-                    MaxBlockNum=Data.CurBlockNum;
-                addrArr=Data.addrArr.data;
-                //SetStatus("addrArr="+addrArr)
+                SetBlockChainConstant(Data);
                 if(!WasTitle)
                 {
                     WasTitle=1;
@@ -106,6 +101,8 @@
 
     function SendTRCode(Value)
     {
+        var MaxBlockNum=GetCurrentBlockNumByTime();
+
         var DeltaBlockNum = parseInt(document.getElementById("idConsoleDeltaBlockNum").value);
 
         var Body=[];
@@ -161,7 +158,7 @@
             var CurTrNum=glTrSendNum;
             var nonce=startnonce;
             if(bCreateNonce)
-                nonce=CreateHashBodyPOWInnerMinPower(Body,MaxBlockNum,SumPow)
+                nonce=CreateHashBodyPOWInnerMinPower(Body,SumPow)
 
             var StrHex=GetHexFromArr(Body);
             SetStatus2(StrHex.substr(0,100));
@@ -171,7 +168,7 @@
                 if(Data)
                 {
                     var key=GetHexFromArr(shaarr(Body));
-                    SetStatus("Send '"+key.substr(0,8)+"' to block: "+MaxBlockNum+" result:"+Data.text);
+                    SetStatus("Send '"+key.substr(0,8)+"' result:"+Data.text);
 
                     if(Data.text==="Not add")
                     {

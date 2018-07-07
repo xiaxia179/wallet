@@ -221,7 +221,6 @@ HTTPCaller.GetWalletInfo=function ()
             MiningAccount:global.GENERATE_BLOCK_ACCOUNT,
             AccountMap:WALLET.AccountMap,
 
-            StartDateBlock:FIRST_TIME_BLOCK,
             ArrLog:ArrLogClient,
             MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
             MaxAccID:DApps.Accounts.GetMaxAccount(),
@@ -233,6 +232,11 @@ HTTPCaller.GetWalletInfo=function ()
             port:SERVER.port,
             NET_WORK_MODE:global.NET_WORK_MODE,
             HistoryMaxNum:WALLET.GetHistoryMaxNum(),
+
+            DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
+            FIRST_TIME_BLOCK:FIRST_TIME_BLOCK,
+            CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME,
+
         };
 
 
