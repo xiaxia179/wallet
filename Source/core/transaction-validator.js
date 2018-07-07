@@ -26,19 +26,13 @@ module.exports = class CSmartContract extends require("./block-exchange")
     {
         if(!Tr.hashPow)
         {
-            //Tr.num=Tr.body.readUIntLE(Tr.body.length-12,6);
             Tr.body.len=Tr.body.length-12;
             Tr.num=ReadUintFromArr(Tr.body);
             Tr.hashPow=shaarr(Tr.body);
             Tr.HASH=Tr.hashPow;
-            Tr.time=Tr.num;
+            // Tr.time=Tr.num;
             Tr.power=GetPowPower(Tr.hashPow);
-            Tr.TimePow=Tr.time + Tr.power*128/Tr.body.length;
-            //Tr.TimePow=Tr.time + Tr.power/256/256
-            // ToLog('CurrentBlockNum='+Tr.time)
-            // ToLog('Tr.body='+Tr.body.length+":"+Tr.body)
-            // ToLog('Tr.HASH='+Tr.HASH)
-            // ToLog("Tr.power="+(Tr.power/256/256))
+            Tr.TimePow=Tr.num + Tr.power - Math.log2(Tr.body.length/128);
         }
     }
 
@@ -52,12 +46,13 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
 
         //1. Минимальный PoW
-        //if(Tr.power/256/256<MIN_POWER_POW_TR)
-        if(Tr.power*128/Tr.body.length<MIN_POWER_POW_TR)
+        // if(Tr.power*128/Tr.body.length<MIN_POWER_POW_TR)
+        //     return -2;
+        if(Tr.power-Math.log2(Tr.body.length/128)<MIN_POWER_POW_TR)
             return -2;
 
         //2. Валидное время (не из будущего)
-        if(Tr.time>BlockNum)
+        if(Tr.num>BlockNum)
             return -3;
 
         return 1;

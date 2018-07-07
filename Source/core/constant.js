@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=19;
-"update 19-3";
+global.UPDATE_CODE_VERSION_NUM=20;
+"update 20";
 
 require("./startlib.js");
 
@@ -42,7 +42,7 @@ global.MAX_TRANSACTION_COUNT=2000;
 global.AVG_TRANSACTION_COUNT=Math.floor(MAX_TRANSACTION_COUNT/2);
 //global.MIN_TRANSACTION_COUNT=global.AVG_TRANSACTION_COUNT*4;
 
-global.MIN_POWER_POW_TR=13;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+global.MIN_POWER_POW_TR=15;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(global.MIN_POWER_POW_BL===undefined)
     global.MIN_POWER_POW_BL=6;
 global.GENERATE_BLOCK_ACCOUNT=0;
@@ -82,7 +82,7 @@ InitParams();
 
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=1530783132785;//(new Date)-0;//1530781502576+(1)*1000;//
+    global.START_NETWORK_DATE=1530962287311;//(new Date)-0;//1530781502576+(1)*1000;//
     NETWORK="TEST-R3";
 }
 

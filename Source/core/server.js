@@ -2369,7 +2369,7 @@ module.exports = class CTransport extends require("./connect")
                 {
                     SELF.Server.close();
                     SELF.RunListenServer();
-                }, 1000);
+                }, 5000);
                 return;
             }
 

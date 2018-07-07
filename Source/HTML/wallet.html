@@ -985,7 +985,7 @@
                 {
                     delete MapCheckTransaction[Item.key];
                     Account.NextSendTime=0;
-                    SetStatus("# "+info);
+                    //SetStatus("# "+info);
                 }
             }
 
@@ -1243,8 +1243,9 @@
             {
                 if(Data)
                 {
+                    var BlockNum=GetCurrentBlockNumByTime();
                     var key=GetHexFromArr(shaarr(Body));
-                    SetStatus("Send '"+key.substr(0,8)+"' to block: "+MaxBlockNum+" result:"+Data.text);
+                    SetStatus("Send TR:'"+key.substr(0,12)+"' to block: "+BlockNum+" result:"+Data.text);
 
                     if(Data.text==="Not add")
                     {
@@ -1253,7 +1254,7 @@
                     else
                     if(Data.text==="Bad time")
                     {
-                        SetStatus("Next send...");
+                        SetStatus("Next send TR:'"+key.substr(0,12)+"'...");
                         setTimeout(function ()
                         {
                             if(CurTrNum===glTrSendNum)
@@ -1272,7 +1273,7 @@
                             if(Item)
                             {
                                 Item.LastTransactionText=GetTransactionText(TR);
-                                Item.NextSendTime=MaxBlockNum+10;
+                                Item.NextSendTime=BlockNum+10;
 
                                 MapCheckTransaction[key]=Item;
                                 CheckSending();
@@ -1901,7 +1902,7 @@
             <BR>
             <INPUT type="button" onclick="SignJSON()" class="btdoit bt" value="Sign JSON" id="idSignJSON">
             <INPUT type="button" onclick="SendMoneyJSON()" class="btdoit bt" value="Send from JSON">
-            POW:<INPUT type="number" id="idWalletPow" value="16">
+            POW:<INPUT type="number" id="idWalletPow" value="15">
         </DIV>
 
 

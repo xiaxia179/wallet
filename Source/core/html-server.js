@@ -321,7 +321,10 @@ HTTPCaller.SendTransactionHex=function(ValueHex,nonce,Num)
     var Res=WALLET.AddTransaction({body:body});
     Result.sessionid=sessionid;
     Result.text=AddTrMap[Res];
-    ToLogClient("Send: "+Result.text,GetHexFromArr(shaarr(body)),(Res<1?true:false));
+    var final=false;
+    if(Res<1 && Res>-3)
+        final=true;
+    ToLogClient("Send: "+Result.text,GetHexFromArr(shaarr(body)),final);
     return Result;
 }
 

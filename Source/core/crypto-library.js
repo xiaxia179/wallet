@@ -326,31 +326,6 @@ function GetPowPower(arrhash)
             break;
     }
     return SumBit;
-
-    //
-    // //чем меньше значение массива, тем больше сила
-    // var index=0;
-    // var arrsum=[0,0,0];
-    // for(var i=0;i<arrhash.length;i++)
-    // {
-    //     var byte=arrhash[i];
-    //     for(var b=7;b>=0;b--)
-    //     {
-    //         if((byte>>b) & 1)
-    //         {
-    //             index++;
-    //             if(index>=3)
-    //             {
-    //                 return (arrsum[0]<<16)+(arrsum[1]<<8)+arrsum[2];
-    //             }
-    //         }
-    //         else
-    //         {
-    //             arrsum[index]++;
-    //         }
-    //     }
-    // }
-    // return 0;
 }
 
 
