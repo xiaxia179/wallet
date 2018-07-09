@@ -22,13 +22,15 @@ module.exports = class CNode
         this.addrStr=addrStr;
         this.ip=ip;
         this.port=port;
-        this.UserConnect=0;
+        this.StartFindList=0;
+        this.WhiteConnect=0;
+        this.GrayConnect=0;
 
         this.LastTime=0;
         this.DeltaTime=0;
 
         //this.TryConnectCount=0;
-        this.DirectIP=0;
+        //this.DirectIP=0;
         this.FromIP=undefined;
         this.FromPort=undefined;
 
@@ -84,10 +86,13 @@ module.exports = class CNode
 
         this.ErrCount=0;
         var Prioritet=(new Date)-0;
-        // if(!this.IsInternetIP())
-        // {
-        //     Prioritet+=100000000000;
-        // }
+        if(this.WhiteConnect)
+            Prioritet-=START_NETWORK_DATE;
+        else
+        if(this.StartFindList)
+            Prioritet-=START_NETWORK_DATE/2;
+
+
         SERVER.SetNodePrioritet(this,Prioritet);
 
         this.SendPacketNum=0;
@@ -123,29 +128,6 @@ module.exports = class CNode
             return 0;
     }
 
-    CalcIPType()
-    {
-        this.DirectIP=this.IsInternetIP();
-    }
-    IsInternetIP()
-    {
-        if(this.Socket)
-        {
-            if(this.Socket.ConnectToServer)
-                return 1;
-            else
-            if(this.FromIP && this.FromPort)
-            {
-                //var SockAddr=this.Socket.address();
-                //if(this.FromIP===SockAddr.address && this.FromPort===SockAddr.port)
-                if(this.FromIP===this.Socket.remoteAddress)
-                {
-                    return 1;
-                }
-            }
-        }
-        return 0;
-    }
 
     CreateConnect()
     {
@@ -260,7 +242,7 @@ module.exports = class CNode
                     var Res=NODE.SendPOWClient(SOCKET,Buf.Data);
                     if(Res)
                     {
-                        NODE.DirectIP=1;
+                        //NODE.DirectIP=1;
                         return;//ok
                     }
                 }
@@ -385,7 +367,7 @@ module.exports = class CNode
             var Pow=this.GetPOWClientData(0);
             Pow.Reconnect=1;
 
-            var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1200,{});
+            var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER2,1200,{});
             var BufAll=SERVER.GetBufFromData("POW_CONNECT7",BufWrite,1);
             Socket.write(BufAll);
             return 1;
@@ -457,7 +439,7 @@ module.exports = class CNode
             SetSocketStatus(this.Socket,200);
         }
 
-        var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1200,{});
+        var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER2,1200,{});
         var BufAll=SERVER.GetBufFromData("POW_CONNECT6",BufWrite,1);
         Socket.write(BufAll);
         return 1;
@@ -479,6 +461,7 @@ module.exports = class CNode
         Pow.nonce=nonce;
         Pow.Reconnect=0;
         Pow.SendBytes=0;
+        Pow.Reserv=[];
         return Pow;
     }
 

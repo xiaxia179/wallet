@@ -133,7 +133,6 @@ if(global.CODE_PATH===undefined)
 
 
 
-
 //Отладка
 if(global.DEBUG_MODE===undefined)
     global.DEBUG_MODE=0;

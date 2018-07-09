@@ -160,7 +160,7 @@ function ReconnectingFromServer()
     if(!SERVER || SERVER.CanSend<2)
         return;
 
-    if(!global.NET_WORK_MODE || !NET_WORK_MODE.UseDirectIP)
+    if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
         return;
 
     if(ArrReconnect.length)
@@ -186,14 +186,22 @@ function ConnectToNodes()
     if(!SERVER || SERVER.CanSend<2)
         return;
 
-    if(!global.NET_WORK_MODE || !NET_WORK_MODE.UseDirectIP)
-        return;
-
     if(!SERVER.NodesArr || !SERVER.NodesArr.length)
         return;
 
     var Num=glCurNumFindArr%SERVER.NodesArr.length;
     var Node=SERVER.NodesArr[Num];
+    if(Num===0)
+        glCurNumFindArr=0;
+    glCurNumFindArr++;
+
+
+    if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
+    {
+        if(!Node.StartFindList)
+            return;
+    }
+
 
     if(global.TEST_DEVELOP_MODE && !Node.StartFindList)
     {
@@ -202,6 +210,9 @@ function ConnectToNodes()
     else
     if(GetSocketStatus(Node.Socket)===100)
     {
+        if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
+            return;
+
         SERVER.StartGetNodes(Node);
     }
     else
@@ -209,10 +220,6 @@ function ConnectToNodes()
         SERVER.StartConnectTry(Node);
     }
 
-    if(Num===0)
-        glCurNumFindArr=0;
-
-    glCurNumFindArr++;
 
     //connect to next node on another time
 }
@@ -222,7 +229,7 @@ function RunServer(bVirtual)
 {
     ToLog("CODE_VERSION_NUM:"+UPDATE_CODE_VERSION_NUM);
 
-    if(global.NET_WORK_MODE && NET_WORK_MODE.UseDirectIP)
+    if(global.NET_WORK_MODE)// && NET_WORK_MODE.UseDirectIP)
     {
         global.START_IP=NET_WORK_MODE.ip;
         global.START_PORT_NUMBER=NET_WORK_MODE.port;
@@ -267,7 +274,7 @@ function DoStartFindList()
         var addrStr=GetHexFromAddres(crypto.randomBytes(32));
         var Node=SERVER.GetNewNode(addrStr,item.ip,item.port);
         Node.addrStrTemp=addrStr;
-        Node.DirectIP=1;
+        //Node.DirectIP=1;
         Node.StartFindList=1;
     }
 }

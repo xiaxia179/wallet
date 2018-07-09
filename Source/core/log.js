@@ -39,6 +39,8 @@ global.ToErrorTrace=function (Str)
 }
 global.ToLog=function (Str)
 {
+    if(global.SendLogToClient)
+        ToLogClient(Str,undefined,undefined,1);
     ToLogFile(file_name_log,Str);
 }
 global.ToInfo=function (Str)
@@ -65,12 +67,13 @@ function ToLogFile(file_name,Str)
 
 
 global.ArrLogClient=[];
-function ToLogClient(Str,StrKey,bFinal)
+function ToLogClient(Str,StrKey,bFinal,bNoLog)
 {
     if(!Str)
         return;
 
-    ToLog(Str);
+    if(!bNoLog)
+        ToLog(Str);
 
     if(!StrKey)
         StrKey="";
@@ -126,21 +129,29 @@ function GetCurrentStatIndex()
 {
     return CurStatIndex%DefMaxStatPeriod;;
 }
+
 global.ADD_TO_STAT=function(Key,Count)
 {
-    AddToStatContext(CONTEXT_STATS,Key,Count);
+    if(global.STAT_MODE)
+    {
+        AddToStatContext(CONTEXT_STATS,Key,Count);
+    }
 }
 
 global.ADD_TO_STAT_TIME=function(Name,startTime)
 {
-    var Time = process.hrtime(startTime);
-    var deltaTime=Time[0]*1000 + Time[1]/1e6;//ms
-    ADD_TO_STAT(Name,deltaTime);
+    if(global.STAT_MODE)
+    {
+        var Time = process.hrtime(startTime);
+        var deltaTime=Time[0]*1000 + Time[1]/1e6;//ms
+        ADD_TO_STAT(Name,deltaTime);
+    }
 }
 
 
 global.GET_STATS=function(Key)
 {
+
     var now=GetCurrentTime();
     var index=GetCurrentStatIndex();
 
@@ -214,6 +225,23 @@ global.GET_STATDIAGRAMS=function(Keys)
 
     return Data;
 }
+
+global.StartCommonStat=function()
+{
+    for(var key in CONTEXT_STATS.Total)
+        return;
+    ClearCommonStat();
+}
+
+global.ClearCommonStat=function()
+{
+    CurStatIndex=0;
+    StartStatTime=undefined;
+    CONTEXT_STATS={Total:{},Interval:[]};
+    CONTEXT_ERRORS={Total:{},Interval:[]};
+}
+
+
 
 function ResizeArr(arr)
 {

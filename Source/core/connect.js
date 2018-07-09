@@ -156,12 +156,16 @@ module.exports = class CConnect extends require("./transfer-msg")
     }
     GetPingData()
     {
+        var GrayAddres=0;
+        if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
+            GrayAddres=1;
+
         var Ret=
             {
                 VERSIONMAX:DEF_VERSION,
                 FIRST_TIME_BLOCK:0,
-                PingVersion:0,
-                Reserve1:0,
+                PingVersion:2,
+                GrayConnect:GrayAddres,
                 Reserve2:0,
                 Time:(GetCurrentTime()-0),
                 BlockNumDB:this.BlockNumDB,
@@ -169,16 +173,22 @@ module.exports = class CConnect extends require("./transfer-msg")
                 CanStart:global.CAN_START,
                 CheckPoint:CHECK_POINT,
                 CodeVersion:CODE_VERSION,
+                TrafficFree:this.SendTrafficFree,
+                MemoryUsage:Math.trunc(process.memoryUsage().heapTotal/1024/1024),
+                Reserve:[],
             };
+
         return Ret;
     }
 
-    static PING_F()
+    static PING_F(bSend)
     {
-        return "{\
+        if(!bSend)
+        {
+            return "{\
                 VERSIONMAX:str15,\
                 PingVersion:byte,\
-                Reserve1:byte,\
+                GrayConnect:byte,\
                 Reserve2:uint32,\
                 Time:uint,\
                 BlockNumDB:uint,\
@@ -186,12 +196,31 @@ module.exports = class CConnect extends require("./transfer-msg")
                 CanStart:byte,\
                 CheckPoint:{BlockNum:uint,Hash:hash,Sign:arr64},\
                 CodeVersion:{VersionNum:uint,Hash:hash,Sign:arr64},\
-                }"
+                }";
+        }
+        else
+        {
+            return "{\
+                VERSIONMAX:str15,\
+                PingVersion:byte,\
+                GrayConnect:byte,\
+                Reserve2:uint32,\
+                Time:uint,\
+                BlockNumDB:uint,\
+                LoadHistoryMode:byte,\
+                CanStart:byte,\
+                CheckPoint:{BlockNum:uint,Hash:hash,Sign:arr64},\
+                CodeVersion:{VersionNum:uint,Hash:hash,Sign:arr64},\
+                TrafficFree:uint,\
+                MemoryUsage:uint,\
+                Reserve:arr100\
+                }";
+        }
     }
 
-    static PONG_F()
+    static PONG_F(bSend)
     {
-        return CConnect.PING_F();
+       return CConnect.PING_F(bSend);
     }
 
     PING(Info,CurTime)
@@ -212,6 +241,8 @@ module.exports = class CConnect extends require("./transfer-msg")
     PONG(Info,CurTime)
     {
         var Data=this.DataFromF(Info);
+        if(Data.PingVersion===2)
+            Data=this.DataFromF(Info,true);
         var Node=Info.Node;
 
         //load time from meta
@@ -230,6 +261,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         Node.LastTime=GetCurrentTime();
         Node.NextConnectDelta=1000;//connection is good
+        Node.GrayConnect=Data.GrayConnect;
 
 
 
@@ -458,7 +490,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                             addrStr:str64,\
                             ip:str30,\
                             port:uint16,\
-                            UserConnect:uint16,\
+                            Reserve:uint16,\
                             LastTime:uint,\
                             DeltaTime:uint\
                         }\
@@ -486,8 +518,6 @@ module.exports = class CConnect extends require("./transfer-msg")
         var Node=new CNode(addrStr,ip,port);
         this.AddToArrNodes(Node,false);
 
-
-
         return Node;
     }
 
@@ -495,12 +525,12 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         if(Node.addrStr===this.addrStr
             || Node.IsBan
-            || !Node.DirectIP
+            //|| (!Node.DirectIP && !Node.WhiteConnect)
             || Node.Self
             || Node.DoubleConnection)
             return false;
 
-        if(Node.ip===this.ip &&Node.port===this.port)
+        if(Node.ip===this.ip && Node.port===this.port)
             return false;
 
         if(this.addrStr===Node.addrStr)
@@ -512,6 +542,20 @@ module.exports = class CConnect extends require("./transfer-msg")
     GetDirectNodesArray(bAll)
     {
         var ret=[];
+        var Value=
+            {
+                addrStr:this.addrStr,
+                ip:this.ip,
+                port:this.port,
+                LastTime:0,
+                DeltaTime:0
+            };
+        ret.push(Value);
+        if(global.NET_WORK_MODE && (!NET_WORK_MODE.UseDirectIP))
+            return ret;
+
+
+
         var len=this.NodesArr.length;
         var UseRandom=0;
         if(len>MAX_NODES_RETURN && !bAll)
@@ -541,35 +585,24 @@ module.exports = class CConnect extends require("./transfer-msg")
 
             if(!this.IsCanConnect(Item))
                 continue;
+            if(Item.GrayConnect)
+                continue;
+
+            if(Item.LastTime || Item.NextConnectDelta>10*1000)
+            if(Item.LastTime-0<(new Date)-3600*1000)
+                continue;
 
             var Value=
             {
                 addrStr:Item.addrStr,
                 ip:Item.ip,
                 port:Item.port,
-                UserConnect:Item.UserConnect,
                 LastTime:Item.LastTime,
                 DeltaTime:Item.DeltaTime
             };
 
             ret.push(Value);
         }
-
-
-        var UserConnect=0;
-        if(global.NET_WORK_MODE && NET_WORK_MODE.UseIncomeGrayIP)
-            UserConnect=1;
-
-        var Value=
-            {
-                addrStr:this.addrStr,
-                ip:this.ip,
-                port:this.port,
-                UserConnect:UserConnect,
-                LastTime:0,
-                DeltaTime:0
-            };
-        ret.push(Value);
 
         return ret;
     }
@@ -612,8 +645,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
         if(bFromGetNodes)
         {
-            Node.DirectIP=true;
-            Node.UserConnect=Item.UserConnect;//???? can update??
+            //Node.DirectIP=true;
         }
 
         this.NodesMap[Node.addrStr]=Node;
@@ -688,6 +720,14 @@ module.exports = class CConnect extends require("./transfer-msg")
         );
     }
 
+    AddrLevelNode(Node)
+    {
+        if(Node.GrayConnect)
+            return MAX_LEVEL_SPECIALIZATION-1;//TODO с учетом номера серого соединения
+
+        return AddrLevelArr(this.addrArr,Node.addrArr);;
+    }
+
     ADDLEVELCONNECT(Info,CurTime)
     {
         var ret;
@@ -696,7 +736,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
-        var Level=AddrLevelArr(this.addrArr,Info.Node.addrArr);
+        var Level=this.AddrLevelNode(Info.Node);
 
         var arr=this.LevelNodes[Level];
         if(!arr)
@@ -822,7 +862,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                             addrStr:str64,\
                             ip:str30,\
                             port:uint16,\
-                            UserConnect:uint16,\
+                            Reserve:uint16,\
                             LastTime:uint,\
                             DeltaTime:uint\
                         }]\
@@ -968,7 +1008,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(!this.IsCanConnect(Child) || Child.Hot)
                 continue;
 
-            var Level=AddrLevelArr(this.addrArr,Child.addrArr);
+            var Level=this.AddrLevelNode(Child);
 
 
 
@@ -1009,7 +1049,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
         //отсоедняем все дочерние узлы, имеющие более одного соединения
-        var Level=AddrLevelArr(this.addrArr,Node.addrArr);
+        var Level=this.AddrLevelNode(Node);
 
         this.CheckDisconnectChilds(Level);
 
@@ -1074,7 +1114,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(Node.addrStr===this.addrStr)
                 continue;
 
-            var Level=AddrLevelArr(this.addrArr,Node.addrArr);
+            var Level=this.AddrLevelNode(Node);
 
             if(Level!==L)
                 continue;
@@ -1284,7 +1324,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         Node.ResetNode();
         Node.Active=true;
         Node.Stage=0;
-        Node.NextConnectDelta=1;
+        Node.NextConnectDelta=1000;
 
 
         ADD_TO_STAT("AddToActive");

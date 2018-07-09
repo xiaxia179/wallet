@@ -137,7 +137,7 @@ module.exports = class CDB extends require("../code")
         return 0;
     }
 
-    CheckBlocksOnStartFoward(StartNum,bCheckBody)
+    CheckBlocksOnStartFoward(StartNum,bCheckBody,bToClient)
     {
         var PrevBlock;
         if(StartNum<BLOCK_PROCESSING_LENGTH2)
@@ -159,7 +159,7 @@ module.exports = class CDB extends require("../code")
                 var TreeHash=this.CalcTreeHashFromArrBody(Block.arrContent);
                 if(CompareArr(Block.TreeHash,TreeHash)!==0)
                 {
-                    ToLog("BAD TreeHash block="+Block.BlockNum);
+                    ToLog("BAD TreeHash block="+Block.BlockNum,bToClient);
                     return num>0?num-1:0;
                 }
             }
@@ -189,7 +189,7 @@ module.exports = class CDB extends require("../code")
 
                 if(CompareArr(Hash,Block.Hash)!==0)
                 {
-                    ToLog("=================== FIND ERR Hash in "+Block.BlockNum)
+                    ToLog("=================== FIND ERR Hash in "+Block.BlockNum,bToClient)
                     return num>0?num-1:0;
                 }
 
@@ -197,7 +197,7 @@ module.exports = class CDB extends require("../code")
                 var SumHash=shaarr2(PrevBlock.SumHash,Block.Hash);
                 if(CompareArr(SumHash,Block.SumHash)!==0)
                 {
-                    ToLog("=================== FIND ERR SumHash in "+Block.BlockNum)
+                    ToLog("=================== FIND ERR SumHash in "+Block.BlockNum,bToClient);
                     return num>0?num-1:0;
                 }
             }
@@ -263,6 +263,7 @@ module.exports = class CDB extends require("../code")
                 if(USE_CHECK_KEY_DB)
                     this.CheckKeyDB(Block.BlockNum);
 
+                //TODO - may be write to disk after use transactions???
                 this.OnWriteBlock(Block);
 
                 this.BlockNumDB=Block.BlockNum;

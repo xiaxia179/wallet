@@ -408,11 +408,12 @@ global.CompareItemTimePow=function(a,b)
 
 
 
-var const_name_arr=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NUM_CODE_COPY","NET_WORK_MODE"];
+var const_name_arr=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NUM_CODE_COPY","NET_WORK_MODE","STAT_MODE"];
 global.DELTA_CURRENT_TIME=0;
 global.NUM_CODE_COPY=0;
 global.SERVER_PRIVATE_KEY_HEX=undefined;
 global.NET_WORK_MODE=undefined;
+global.STAT_MODE=0;
 
 
 global.LOAD_CONST=function ()

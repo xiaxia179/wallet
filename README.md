@@ -4,20 +4,21 @@
 
 Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe
 * This  assembly file is an SFX rar-file that contains the source code + node-webkit
+* Select the FOLDER where you want to install the program (by default, the program is installed to the CURRENT folder).
 * If you have already installed the assembly data, you can download only the updates and install them in the same directory:
  https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
 
-## Custon run whith Sorce code
+## Custom run whith Sorce code
 * Download nodejs (recommended ver v8.11.1):  https://nodejs.org/en
 * Download Source dir
 * Goto dir Source and run command: npm install
 * Run: node run-node.js
-* Start the browser with the address: 127.0.0.1/wallet
+* Start the browser with the address: 127.0.0.1
 
 
 Notes: 
 * When the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js
-* nodejs uses the default http port for node 80, but you can change it when you start with the command: node run-node.js "httpport: 81"
+* Nodejs uses the default http port for node 80, but you can change it when you start with the command: node run-node.js "httpport: 81"
 
 
 

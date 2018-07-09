@@ -52,6 +52,26 @@ global.FORMAT_POW_TO_SERVER=
     SendBytes:uint\
 }";
 
+global.FORMAT_POW_TO_CLIENT2="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint,Reserve:arr100}";
+global.FORMAT_POW_TO_SERVER2=
+    "{\
+        DEF_NETWORK:str15,\
+        DEF_VERSION:str9,\
+        DEF_CLIENT:str16, \
+        addrArr:addres, \
+        ToIP:str26,\
+        ToPort:uint16, \
+        FromIP:str26,\
+        FromPort:uint16, \
+        nonce:uint,\
+        Reconnect:byte,\
+        SendBytes:uint,\
+        Reserve:arr100\
+    }";
+
+
+
+
 const WorkStructPacketSend={};
 const FORMAT_PACKET_SEND_TCP=
     "{\
@@ -321,9 +341,10 @@ module.exports = class CTransport extends require("./connect")
         this.CurrentTimeValues={};
     }
 
-    GetF(Method)
+    GetF(Method,bSend)
     {
-        var format=this.SendFormatMap[Method];
+        var name=Method+"-"+bSend;
+        var format=this.SendFormatMap[name];
         if(!format)
         {
             var F=this.constructor[Method+"_F"];
@@ -331,7 +352,7 @@ module.exports = class CTransport extends require("./connect")
             {
                 format=
                     {
-                        struct: F(),
+                        struct: F(bSend),
                         length: 8096,
                         wrk:{}
                     };
@@ -340,22 +361,22 @@ module.exports = class CTransport extends require("./connect")
             {
                 format="{}";
             }
-            this.SendFormatMap[Method]=format;
+            this.SendFormatMap[name]=format;
         }
         return format;
     }
     SendF(Node,Info,Length)
     {
-        var format=this.GetF(Info.Method);
+        var format=this.GetF(Info.Method,true);
         if(!Length)
             Length=format.length;
         Info.Data=BufLib.GetBufferFromObject(Info.Data,format.struct,Length,format.wrk)
 
         this.Send(Node,Info,1);
     }
-    DataFromF(Info)
+    DataFromF(Info,bSendFormat)
     {
-        var format=this.GetF(Info.Method);
+        var format=this.GetF(Info.Method,bSendFormat);
         try
         {
             var Data=BufLib.GetObjectFromBuffer(Info.Data,format.struct,format.wrk);
@@ -2074,7 +2095,7 @@ module.exports = class CTransport extends require("./connect")
 
 
 
-    CheckPOWorTicketConnect(Socket,data)
+    CheckPOWTicketConnect(Socket,data)
     {
         try
         {
@@ -2112,7 +2133,7 @@ module.exports = class CTransport extends require("./connect")
             {
                 Node.NextConnectDelta=1000;
                 Node.WaitConnectFromServer=0;
-                Node.DirectIP=1;
+                //Node.DirectIP=1;
                 ToLog("3. ******************** SERVER OK CONNECT  for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
                 this.AddNodeToActive(Node);
                 Node.Socket=Socket;
@@ -2160,6 +2181,33 @@ module.exports = class CTransport extends require("./connect")
         {
 
             Node=this.FindRunNodeContext(Pow.addrArr,Pow.FromIP,Pow.FromPort,true);
+
+
+            if(global.NET_WORK_MODE && NET_WORK_MODE.NodeWhiteList)//WhiteConnect by filter
+            {
+                var Index=NET_WORK_MODE.NodeWhiteList.indexOf(Node.addrStr);
+
+
+                if(Index>=0)
+                {
+                    Node.WhiteConnect=1;
+                    Node.NextConnectDelta=1000;
+                    Node.WaitConnectFromServer=0;
+                    //Node.DirectIP=1;
+                    ToLog("3. ******************** SERVER OK CONNECT  for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
+                    this.AddNodeToActive(Node);
+                    Node.Socket=Socket;
+                    SetSocketStatus(Socket,3);
+                    SetSocketStatus(Socket,100);
+                    Socket.Node=Node;
+
+                    Socket.write(this.GetBufFromData("POW_CONNECT5","OK",2));
+                    return;
+
+                }
+
+            }
+
 
             ToLog("1. -------------------- SERVER OK POW for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
 
@@ -2245,6 +2293,13 @@ module.exports = class CTransport extends require("./connect")
     }
     StartServer()
     {
+        if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
+        {
+            this.CanSend++;
+            return;
+        }
+
+
         if(!USE_TCP)
         {
             this.StartServerUDP();
@@ -2276,7 +2331,7 @@ module.exports = class CTransport extends require("./connect")
 
 
             SOCKET.HashRND=crypto.randomBytes(32);
-            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr,HashRND:SOCKET.HashRND,MIN_POWER_POW:MIN_POWER_POW_HANDSHAKE},FORMAT_POW_TO_CLIENT,300,{});
+            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr,HashRND:SOCKET.HashRND,MIN_POWER_POW:MIN_POWER_POW_HANDSHAKE, Reserve:[]},FORMAT_POW_TO_CLIENT2,300,{});
             var BufWrite=SELF.GetBufFromData("POW_CONNECT5",BufData,1);
             try
             {
@@ -2302,7 +2357,7 @@ module.exports = class CTransport extends require("./connect")
                     var Buf=SELF.GetDataFromBuf(data);
                     if(Buf)
                     {
-                        SELF.CheckPOWorTicketConnect(SOCKET,Buf.Data);
+                        SELF.CheckPOWTicketConnect(SOCKET,Buf.Data);
                         SOCKET.ConnectToServer=0;
                         return;//ok or was close
                     }

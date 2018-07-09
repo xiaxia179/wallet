@@ -222,12 +222,15 @@ global.RestartNode=function()
     if(global.nw)
     {
         //window only
-        var StrRun='"'+process.argv[0]+'" .';
+        var StrRun='"'+process.argv[0]+'" .\n';
+        StrRun+='"'+process.argv[0]+'" .\n';//A some of magic for reliable work
         SaveToFile("run-next.bat",StrRun);
 
 
         const child_process = require('child_process');
-        child_process.exec("run-next.bat");
+        //child_process.exec("run-next.bat",{shell :true});
+        child_process.spawn("run-next.bat",[],{detached  :true});
+        child_process.unref();
     }
     else
     {

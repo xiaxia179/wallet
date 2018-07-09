@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Console</title>
+    <link rel="shortcut icon" href="/HTML/PIC/console.png" type="image/png">
 
     <link rel="stylesheet" type="text/css" href="../HTML/CSS/buttons.css">
     <link rel="stylesheet" type="text/css" href="../HTML/CSS/style.css">
@@ -34,8 +35,6 @@
         id.innerHTML=Str;
     }
 
-    var WasTitle;
-
     function UpdateData()
     {
 
@@ -44,11 +43,6 @@
             if(Data && Data.result)
             {
                 SetBlockChainConstant(Data);
-                if(!WasTitle)
-                {
-                    WasTitle=1;
-                    document.title+=":"+Data.ip;
-                }
             }
         });
     }
@@ -263,8 +257,30 @@
 
 </script>
 
-<style type="text/css">
 
+<script>
+    //Utilites
+    //Utilites
+    //Utilites
+    function RewriteTransactions()
+    {
+        SetStatus("Start rewrite transactions")
+        GetData("/RewriteTransactions",0, function (Data)
+        {
+            if(Data && Data.result)
+            {
+                SetStatus("Rewriting completed OK");
+            }
+        });
+    }
+</script>
+
+
+<style type="text/css">
+    #idRewriteTransactions
+    {
+        width: 200px;
+    }
 </style>
 
 
@@ -294,9 +310,16 @@
         RESULT:
         <BR>
         </textarea>
-        <textarea rows="20" cols="98"  name="result" id="result">
+        <textarea rows="30" cols="98"  name="result" id="result">
         </textarea>
     </DIV>
+
+    <!--<HR>-->
+    <!--UTILITES:-->
+    <!--<DIV align='left'>-->
+    <!--<INPUT type="button" onclick="RewriteTransactions()" id="idRewriteTransactions" class="bt btdoit" value="RewriteTransactions">-->
+    <!--</DIV>-->
+
 </DIV>
 </body>
 </html>

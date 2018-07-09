@@ -4,15 +4,19 @@
 
 if(window.nw)
 {
-    window.Open=function (name,width,height)
+    window.Open=function (path,iconname,width,height)
     {
         width = width || 820;
         height = height || 1000;
-        window.nw.Window.open(name,
+        var params=
             {
                 width: width,
                 height: height
-            }, function(win)
+            };
+        if(iconname)
+            params.icon="../HTML/PIC/"+iconname+".png";
+
+        window.nw.Window.open(path,params,function(win)
             {
             });
     }
@@ -53,7 +57,11 @@ if(window.nw)
 // }
 else
 {
-    window.Open=window.open;
+    window.Open=function (path,iconname,width,height)
+    {
+        window.open(path);
+    };
+
     window.GetData=
     function (Method, ObjPost, Func)
     {
@@ -69,7 +77,7 @@ else
         var serv=new XMLHttpRequest();
         //serv.open("GET", Method, true);
 
-        if(ObjPost)
+        if(ObjPost!==null)
         {
             StrPost=JSON.stringify(ObjPost);
             serv.open("POST", Method, true);

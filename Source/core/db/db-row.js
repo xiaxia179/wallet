@@ -63,7 +63,7 @@ module.exports = class CDBState extends require("./db")
 
     Read(Num)
     {
-        if(Num<0 || Num>this.GetMaxNum())
+        if(isNaN(Num) || Num<0 || Num>this.GetMaxNum())
         {
             return undefined;
         }
@@ -98,6 +98,8 @@ module.exports = class CDBState extends require("./db")
     Truncate(LastNum)
     {
         var Position=(LastNum+1)*this.DataSize;
+        if(Position<0)
+            Position=0;
 
         var FI=this.OpenDBFile(this.FileName);
         if(Position<FI.size)

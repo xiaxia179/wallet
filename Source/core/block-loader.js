@@ -88,7 +88,7 @@ module.exports = class CBlock extends require("./db/block-db")
     StopNode()
     {
         global.glStopNode=true;
-        console.trace();
+        //console.trace();
         //this.MemKeyFlush();
     }
 
@@ -291,35 +291,6 @@ module.exports = class CBlock extends require("./db/block-db")
 
         return true;
     }
-    ChainBindMethods(chain)
-    {
-        function GetRootChain()
-        {
-            var Count=0;
-            var root_chain=this;
-            while(root_chain.RootChain)
-            {
-                Count++;
-                root_chain=root_chain.RootChain;
-                if(Count>MAX_COUNT_CHAIN_LOAD)
-                {
-                    TO_ERROR_LOG("BLOCK",10,"Error COUNT GetRootChain");
-                    break;
-                }
-            }
-            return root_chain;
-        }
-        function GetFindDB()
-        {
-            return this.GetRootChain().FindBlockDB;
-        }
-
-        chain.GetRootChain=GetRootChain.bind(chain);
-        chain.GetFindDB=GetFindDB.bind(chain);
-        chain.AddInfo=AddInfoChain.bind(chain);
-
-
-    }
 
     LoopHistoryLoad()
     {
@@ -357,7 +328,18 @@ module.exports = class CBlock extends require("./db/block-db")
                     "Data":{Foward:1, BlockNum:Context.BlockNum,Hash:BlockDB.SumHash}
                 }
             );
-        };
+        }
+        else
+        {
+            if(!Ret.timewait)
+            {
+                if(!Context.RestartGetNextNode)
+                {
+                    Context.RestartGetNextNode=1;
+                    Context.MapSend={};
+                }
+            }
+        }
     }
 
     SetChainNum(chain)
@@ -377,17 +359,17 @@ module.exports = class CBlock extends require("./db/block-db")
         if(glStopNode)
             return;
 
-        var min_num_history=this.CurrentBlockNum-COUNT_HISTORY_BLOCKS_FOR_LOAD;
+
 
         if(this.LoadHistoryMode)
         {
             this.LoopHistoryLoad()
             return;
         }
-        if(this.BlockNumDB<min_num_history)
+        if(this.BlockNumDB<this.CurrentBlockNum-BLOCK_PROCESSING_LENGTH*2)
         {
-            //this.FREE_ALL_MEM_CHAINS();
-            //this.TruncateBlockDB(this.BlockNumDB);
+
+
             this.StartLoadHistory();
             return;
         }
@@ -421,7 +403,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 //если нет отслеживаемых запросов корневой цепочки и текущий элемент устарел
                 if(chain.BlockHead)
                 {
-                    if(chain.BlockNum<min_num_history)
+                    if(chain.BlockNum<this.CurrentBlockNum-COUNT_HISTORY_BLOCKS_FOR_LOAD)
                     {
                         ToLog("Very long length of blocks to load history, stop chain with id="+chain.id+"  ("+chain.BlockNum+"-"+chain.BlockNumMax+")");
                         chain.StopSend=true;
@@ -627,6 +609,15 @@ module.exports = class CBlock extends require("./db/block-db")
                 //break;
             }
         }
+
+        //TODO:
+        // if(!timewait && !task.RestartGetNextNode)
+        // {
+        //     task.RestartGetNextNode=1;
+        //     task.MapSend={};
+        //     return {Result:false,timewait:true};
+        // }
+
         return {Result:false,timewait:timewait};
     }
 
@@ -907,6 +898,12 @@ module.exports = class CBlock extends require("./db/block-db")
                     break;
                 }
             }
+            if(Block.BlockNum<SERVER.BlockNumDB)
+            {
+                ToLog("*************************************************************************Block.BlockNum<SERVER.BlockNumDB : "+Block.BlockNum+" < "+SERVER.BlockNumDB);
+                break;
+            }
+
 
 
             if(!bFindDB)
@@ -1500,7 +1497,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
         //smart-contracrs
         //Отправляем сигнал об удалении старых блоков
-        this.OnTruncate(arr[0]);
+        //this.OnTruncate(arr[0]);
 
         var CurrentBlockNum=GetCurrentBlockNumByTime()
 
@@ -1548,7 +1545,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
 
         //удаляем более поздние блоки как возможно не валидные
-        //this.TruncateBlockDB(Block,true);
+
 
         var CurNum=Block.BlockNum+1;
         while(true)
@@ -2192,6 +2189,35 @@ module.exports = class CBlock extends require("./db/block-db")
 
 
 
+    ChainBindMethods(chain)
+    {
+        function GetRootChain()
+        {
+            var Count=0;
+            var root_chain=this;
+            while(root_chain.RootChain)
+            {
+                Count++;
+                root_chain=root_chain.RootChain;
+                if(Count>MAX_COUNT_CHAIN_LOAD)
+                {
+                    TO_ERROR_LOG("BLOCK",10,"Error COUNT GetRootChain");
+                    break;
+                }
+            }
+            return root_chain;
+        }
+        function GetFindDB()
+        {
+            return this.GetRootChain().FindBlockDB;
+        }
+
+        chain.GetRootChain=GetRootChain.bind(chain);
+        chain.GetFindDB=GetFindDB.bind(chain);
+        chain.AddInfo=AddInfoChain.bind(chain);
+
+
+    }
 
     //LIB
     GetMemoryStamp(Str)

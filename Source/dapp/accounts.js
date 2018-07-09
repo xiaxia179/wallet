@@ -396,7 +396,7 @@ class CApp extends require("./dapp")
         if(TR.Currency!==Data.Currency)
             return "Error sender currency";
         if(TR.OperationID!==Data.Value.OperationID)
-            return "Error OperationID (expected "+Data.Value.OperationID+"). Create new transaction!";
+            return "Error OperationID (expected: "+Data.Value.OperationID+" for ID: "+TR.FromID+"). Create new transaction!";
 
         //calc sum
         var TotalSum={SumTER:0,SumCENT:0};
@@ -658,17 +658,11 @@ class CApp extends require("./dapp")
                 //but delete now
 
                 if(!NumTruncateState)
-                    NumTruncateState=Item.ID-1;
+                    NumTruncateState=Item.ID;
             }
             else
             {
                 var Data=this.DBState.Read(Item.ID);
-                if(!Data)
-                {
-                    ToLog("=======!Data  = this.DBState.Read(Item.ID)")
-                    continue;
-                }
-
                 Data.Value=Item.PrevValue;
                 this.WriteState(Data);
             }
@@ -680,7 +674,7 @@ class CApp extends require("./dapp")
             if(NumTruncateState)
             {
                 ToLog("********DBState Truncate: "+NumTruncateState)
-                this.DBState.Truncate(NumTruncateState);
+                this.DBState.Truncate(NumTruncateState-1);
             }
             ToLog("*********"+DBAct.FileName+" Truncate: "+(StartNum));
             DBAct.Truncate(StartNum-1);
@@ -753,13 +747,18 @@ class CApp extends require("./dapp")
     }
 
 
-    GetActsAll(num,count)
+    GetActsMaxNum()
+    {
+        return this.DBActPrev.GetMaxNum()+this.DBAct.GetMaxNum();
+    }
+    GetActsAll(start,count)
     {
         if(count>1000)
             count=1000;
 
         var arr=[];
-        for(var num=0;true;num++)
+        var num;
+        for(num=start;num<start+count;num++)
         {
             var Item=this.DBActPrev.Read(num);
             if(!Item)
@@ -769,7 +768,9 @@ class CApp extends require("./dapp")
             if(arr.length>count)
                 return arr;
         }
-        for(var num=0;true;num++)
+        start=num-this.DBActPrev.GetMaxNum()-1;
+
+        for(num=start;num<start+count;num++)
         {
             var Item=this.DBAct.Read(num);
             if(!Item)

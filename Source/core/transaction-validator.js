@@ -58,17 +58,17 @@ module.exports = class CSmartContract extends require("./block-exchange")
         return 1;
     }
 
-    ReWriteDAppTransactions(StartNum)
+    ReWriteDAppTransactions(StartNum,bToLogClient)
     {
         if(StartNum===undefined)
             return;
-        ToLog("Rewrite from: "+StartNum+" to "+this.BlockNumDB);
+        ToLog("Rewrite from: "+StartNum+" to "+this.BlockNumDB,bToLogClient);
         for(var Num=StartNum;Num<=this.BlockNumDB;Num++)
         {
             var Block=this.ReadBlockDB(Num);
             this.OnWriteBlock(Block);
         }
-        ToLog("Rewriting complite");
+        ToLog("Rewriting complete",bToLogClient);
     }
 
 
@@ -101,13 +101,13 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
      }
 
-    OnTruncate(Block)
-    {
-        for(var key in DApps)
-        {
-            DApps[key].OnTruncateBlock(Block);
-        }
-    }
+    // OnTruncate(Block)
+    // {
+    //     for(var key in DApps)
+    //     {
+    //         DApps[key].OnTruncateBlock(Block);
+    //     }
+    // }
 
 
 

@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>TEREONUS</title>
+    <link rel="shortcut icon" href="/HTML/PIC/wallet.png" type="image/png">
 
     <link rel="stylesheet" type="text/css" href="../HTML/CSS/wallet.css">
     <link rel="stylesheet" type="text/css" href="../HTML/CSS/buttons.css">
@@ -47,7 +48,7 @@
 
     var CurTabName;
     var TabArr=[{name:"TabAccounts",log:1},{name:"TabSend",log:1},{name:"TabHistory"},{name:"TabExplorer"}];
-    var SaveIdArr=["idAccount","idTo","idSumTER","idSumCENT","idDescription","idSelStyle","idViewAccountNum","idWalletPow"];
+    var SaveIdArr=["idAccount","idTo","idSumTER","idSumCENT","idDescription","idSelStyle","idViewAccountNum","idViewActNum","idWalletPow"];
     var LoadMapAfter={};
 
 
@@ -55,19 +56,13 @@
     MapCurrency[0]="TER";
 
     var MaxAccID=0;
+    var MaxActNum=0;
     var HistoryMaxNum=0;
     var MaxBlockNum=0;
 
 
     var CurrentTR={};
 
-    function  TestTest()
-    {
-        GetData("/TestTest/133445",function (Data)
-        {
-            UpdatesData();
-        });
-    }
 </script>
 
 <script>
@@ -245,14 +240,14 @@
     //ACCOUNTS
     //ACCOUNTS
     //ACCOUNTS
-    function FindMyAccounts()
-    {
-        GetData("/FindMyAccounts",function (Data)
-        {
-           UpdatesData();
-        });
-
-    }
+//    function FindMyAccounts()
+//    {
+//        GetData("/FindMyAccounts",function (Data)
+//        {
+//           UpdatesData();
+//        });
+//
+//    }
 
     function NewAccount()
     {
@@ -695,35 +690,35 @@
 
 
     //EXPLORER
-    function ViewGrid(serverpath,nameid,revert,bTotal)
+    function ViewGrid(serverpath,nameid,bTotal,bClear)
     {
         GetData(serverpath, function (Data)
         {
             if(!Data || !Data.result)
                 return;
-            SetGridData(Data.arr,nameid,revert,bTotal);
+            SetGridData(Data.arr,nameid,bTotal,bClear);
         });
-
     }
 
 
 
+
     //Pagination
-    var itemViewAccountStart,itemViewHistoryNum;
+    var itemViewAccountStart,itemViewHistoryNum,itemViewActNum;
     var CountViewRows=20;
     function InitPagination()
     {
         itemViewAccount=document.getElementById("idViewAccountNum");
         itemViewHistoryNum=document.getElementById("idViewHistoryNum");
+        itemViewActNum=document.getElementById("idViewActNum");
     }
     //Accounts
-    function ViewAccounts(serverpath,nameid,revert,bTotal)
+    function ViewAccounts()
     {
         SetVisibleBlock("idPaginationAccount",true);
-
-        ViewGrid(serverpath+"/"+itemViewAccount.value+"/"+CountViewRows,nameid,revert,bTotal);
+        ViewGrid("/GetAccountsAll/"+ParseNum(itemViewAccount.value)+"/"+CountViewRows,"grid_accounts_all",1,1);
     }
-    function ViewPrevAccounts(serverpath,nameid,revert,bTotal)
+    function ViewPrevAccounts()
     {
         var Num=ParseNum(itemViewAccount.value);
         Num-=CountViewRows;
@@ -731,9 +726,9 @@
             Num=0;
         itemViewAccount.value=Num;
 
-        ViewAccounts(serverpath,nameid,revert,bTotal);
+        ViewAccounts();
     }
-    function ViewNextAccounts(serverpath,nameid,revert,bTotal)
+    function ViewNextAccounts()
     {
         var Num=ParseNum(itemViewAccount.value);
         Num+=CountViewRows;
@@ -742,7 +737,7 @@
         {
             itemViewAccount.value=Num;
         }
-        ViewAccounts(serverpath,nameid,revert,bTotal);
+        ViewAccounts();
     }
 
     //History
@@ -760,7 +755,7 @@
 
 
         SetVisibleBlock("idPaginationHistory",true);
-        ViewGrid("/GetAct/"+itemViewHistoryNum.value+"/"+CountViewRows,"grid_history",0);
+        ViewGrid("/GetAct/"+ParseNum(itemViewHistoryNum.value)+"/"+CountViewRows,"grid_history",0,1);
     }
     function ViewPrevHistory()
     {
@@ -782,6 +777,67 @@
             itemViewHistoryNum.value=Num;
         }
         ViewHistory();
+    }
+
+
+    //Acts
+    function ViewActs()
+    {
+        SetVisibleBlock("idPaginationAct",true);
+        ViewGrid("/GetActsAll/"+ParseNum(itemViewActNum.value)+"/"+CountViewRows,"grid_acts_all",0,1);
+    }
+    function ViewPrevActs()
+    {
+        var Num=ParseNum(itemViewActNum.value);
+        Num-=CountViewRows;
+        if(Num<0)
+            Num=0;
+        itemViewActNum.value=Num;
+
+        ViewActs();
+    }
+    function ViewNextActs()
+    {
+        var Num=ParseNum(itemViewActNum.value);
+        Num+=CountViewRows;
+
+        if(Num<MaxActNum)
+        {
+            itemViewActNum.value=Num;
+        }
+        ViewActs();
+    }
+
+    //UTIL
+    function RewriteTransactions()
+    {
+        var BlockNum=ParseNum(document.getElementById("idBlockNum").value);
+
+        SetVisibleBlock("idServerBlock",1);
+        SetStatus("Start rewrite transactions from: "+BlockNum);
+
+        GetData("/RewriteTransactions",BlockNum, function (Data)
+        {
+            if(Data && Data.result)
+            {
+                SetStatus("Rewriting completed ");
+            }
+        });
+    }
+    function CheckBlocks()
+    {
+        var BlockNum=ParseNum(document.getElementById("idBlockNum").value);
+
+        SetVisibleBlock("idServerBlock",1);
+        SetStatus("Start CheckBlocks from: "+BlockNum);
+
+        GetData("/CheckBlocks",BlockNum, function (Data)
+        {
+            if(Data && Data.result)
+            {
+                SetStatus("CheckBlocks completed");
+            }
+        });
     }
 
 </script>
@@ -923,6 +979,7 @@
 
         MiningAccount=Data.MiningAccount;
         MaxAccID=Data.MaxAccID;
+        MaxActNum=Data.MaxActNum;
         //MaxBlockNum=Data.CurBlockNum;
 //        if(MaxBlockNum!==Data.CurBlockNum)
 //            SetStatus("Client num="+MaxBlockNum+"  server num="+Data.CurBlockNum)
@@ -942,6 +999,11 @@
 
         if(document.getElementById("idPubKey").innerText!==PubKeyStr)
             document.getElementById("idPubKey").innerText=PubKeyStr;
+        if(document.getElementById("idDataPath").innerText!==Data.DATA_PATH)
+            document.getElementById("idDataPath").innerText=Data.DATA_PATH;
+        if(document.getElementById("idNodeAddr").innerText!==Data.NodeAddrStr)
+            document.getElementById("idNodeAddr").innerText=Data.NodeAddrStr;
+
         document.getElementById("idTo").max=MaxAccID;
         document.getElementById("idAdviser").max=MaxAccID;
 
@@ -1012,38 +1074,45 @@
                     document.getElementById("idIP").value=Net_Work_Mode.ip;
                 if(Net_Work_Mode.port)
                     document.getElementById("idPort").value=Net_Work_Mode.port;
-                document.getElementById("idUseIncomeGrayIP").checked=Net_Work_Mode.UseIncomeGrayIP;
+//                document.getElementById("idUseIncomeGrayIP").checked=Net_Work_Mode.UseIncomeGrayIP;
+                if(Net_Work_Mode.NodeWhiteList)
+                    document.getElementById("idNodeWhiteList").value=Net_Work_Mode.NodeWhiteList;
             }
             else
             {
                 if(Data.NET_WORK_MODE.StunIP && !Net_Work_Mode.WasSets && !document.getElementById("idIP").value)
                 {
-                    Net_Work_Mode.WasSets=true;
+                    if(Data.ip)
+                        document.getElementById("idIP").value=Data.ip;
+                    if(Data.port)
+                        document.getElementById("idPort").value=Data.port;
 
-                    document.getElementById("idUseDirectIP").checked=true;
-                    document.getElementById("idIP").value=Data.ip;
-                    document.getElementById("idPort").value=Data.port;
-                    document.getElementById("idUseIncomeGrayIP").checked=false;
-
-                    if(Net_Work_Mode.ip===undefined)
+                    if(Data.ip && Data.port)
                     {
-                        SetNetworkParams(true);
+                        Net_Work_Mode.WasSets=true;
+                        document.getElementById("idUseDirectIP").checked=true;
+                        if(Net_Work_Mode.ip===undefined)
+                        {
+                            SetNetworkParams(0);
+                        }
                     }
                 }
             }
         }
     }
 
-    function SetNetworkParams(bNoRestart)
+    function SetNetworkParams(bRestart)
     {
         if(!Net_Work_Mode)
             Net_Work_Mode={};
         Net_Work_Mode.UseDirectIP=document.getElementById("idUseDirectIP").checked;
         Net_Work_Mode.ip=document.getElementById("idIP").value;
         Net_Work_Mode.port=ParseNum(document.getElementById("idPort").value);
-        Net_Work_Mode.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
+        //Net_Work_Mode.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
+        Net_Work_Mode.NodeWhiteList=document.getElementById("idNodeWhiteList").value;
 
-        Net_Work_Mode.RestartNode=!bNoRestart;
+
+        Net_Work_Mode.RestartNode=bRestart;
 
         GetData("/SetNetMode",Net_Work_Mode, function (Data)
         {
@@ -1093,11 +1162,17 @@
 
 
     var glWorkNum=0;
-    function SetGridData(arr,id_name,revert,btotal)
+    function SetGridData(arr,id_name,btotal,bclear,revert)
     {
         var htmlTable=document.getElementById(id_name);
+
+        if(bclear)
+            ClearTable(htmlTable);
+
+
         if(!htmlTable.ItemsMap)
             htmlTable.ItemsMap={};
+
         var map=htmlTable.ItemsMap;
 
         glWorkNum++;
@@ -1163,17 +1238,11 @@
 
     function ClearTable(htmlTable)
     {
-        if(htmlTable.ItemsMap)
-        {
-            for(var key in htmlTable.ItemsMap)
-            {
-                var item=htmlTable.ItemsMap[key];
-                htmlTable.deleteRow(item.rowIndex);
-            }
-        }
+        for(var i=htmlTable.rows.length-1;i>0;i--)
+            htmlTable.deleteRow(i);
         htmlTable.ItemsMap={};
         htmlTable.RowCount=0;
-    }
+     }
 
     function ToLogServer(Str)
     {
@@ -1656,18 +1725,23 @@
     {
         z-index:1001;
         position:absolute;
-        top:46px;
+        top:42px;
         left:660px;
-        padding: 3px;
+        padding: 0 0 0 20px;
         text-align: center;
         box-shadow: 0 0 0 1px;
 
         width: 130px;
-        height: 30px;
+        height: 40px;
         line-height: 20px;
         margin: 10px;
         background: transparent;
         font-weight: 600;
+
+        background-image: url('/HTML/PIC/key.png');
+        background-repeat: no-repeat;
+        background-size: 20%;
+        cursor: pointer;
 
     }
     #idBlockPassword
@@ -1682,6 +1756,11 @@
         background: #d9d9d9;
         text-align: left;
         box-shadow: 0 0 0 1px;
+
+        background-image: url('/HTML/PIC/key.png');
+        background-repeat: no-repeat;
+        background-size: 10%;
+
     }
 
 </style>
@@ -1693,10 +1772,10 @@
 
     <table id="TabHeader" onclick="SelectTab">
         <tr>
-            <th><INPUT id="MTabAccounts" type="button" onclick="SelectTab('TabAccounts')" class="bttab bt" value="CONFIG"></th>
-            <th><INPUT id="MTabSend" type="button" onclick="SelectTab('TabSend')" class="bttab bt" value="SEND"></th>
-            <th><INPUT id="MTabHistory" type="button" onclick="SelectTab('TabHistory')" class="bttab bt" value="HISTORY"></th>
-            <th><INPUT id="MTabExplorer" type="button" onclick="SelectTab('TabExplorer')" class="bttab bt" value="EXPLORER"></th>
+            <th><INPUT id="MTabAccounts" type="button" onclick="SelectTab('TabAccounts')" class="bttab" value="CONFIG"></th>
+            <th><INPUT id="MTabSend" type="button" onclick="SelectTab('TabSend')" class="bttab" value="SEND"></th>
+            <th><INPUT id="MTabHistory" type="button" onclick="SelectTab('TabHistory')" class="bttab" id="idHistory" value="HISTORY"></th>
+            <th><INPUT id="MTabExplorer" type="button" onclick="SelectTab('TabExplorer')" class="bttab" value="EXPLORER"></th>
         </tr>
     </table>
 
@@ -1706,9 +1785,11 @@
     <BR><BR><BR>
 
     <DIV id="TabAccounts" style="display: block">
-
-        Public key:<B><DIV id="idPubKey"></DIV></B>
         <BR>
+        Wallet data path: <B id="idDataPath"></B><BR>
+        Public key: <B id="idPubKey"></B><BR>
+        Node addr: <B id="idNodeAddr"></B>
+
         <DIV id="wallet_config_tab" style="display: none">
         <INPUT type="button" onclick="NewAccount()" class="btdoit bt" value="New account...">
         <INPUT type="button" onclick="EditPrivateKey()" class="btdoit bt" value="Edit Key..." id="idEditPrivKey">
@@ -1794,13 +1875,18 @@
 
         <HR>
         Network connections:<BR>
-        <INPUT type="checkbox" id="idUseDirectIP">Use this direct IPv4 address on this computer (recommended):<BR>
-        ip:<INPUT  maxlength="16" id="idIP" required pattern="\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"> port:<INPUT maxlength="9" id="idPort" required pattern="^[ 0-9]+$"><BR>
-        <INPUT type="checkbox" disabled id="idUseIncomeGrayIP">Allow connection users without a direct address<BR>
-        <INPUT type="button" onclick="SetNetworkParams()" class="btdoit bt" value="Set and Restart">
+        <INPUT type="checkbox" id="idUseDirectIP">Run server and use direct IPv4 address on this computer (recommended):<BR>
+        IP:<INPUT  maxlength="16" id="idIP"> Port:<INPUT maxlength="9" id="idPort"><BR>
+        <!--<INPUT type="checkbox" id="idUseIncomeGrayIP">Allow connection users without a direct ip:<BR>-->
+        White list nodes (HEX-format):<BR>
+        <TEXTAREA id="idNodeWhiteList" rows="4" cols="110"> </TEXTAREA>
+        <BR>
+
+        <INPUT type="button" onclick="SetNetworkParams(0)" class="btdoit bt" value="Save">
+        <INPUT type="button" onclick="SetNetworkParams(1)" class="btdoit bt" value="Save and Restart">
 
         <DIV id="idDevelopService" style="display: none">
-
+            <HR>
             <H3>Developer service:</H3>
 
             <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit bt" value="Create check point">
@@ -1817,7 +1903,7 @@
 
         </DIV>
 
-
+        <BR>
         Style:
         <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
             <option value="styleBrown">Brown</option>
@@ -1830,10 +1916,9 @@
 
 
     <DIV id="TabHistory" style="display: none">
-        <!--<INPUT type="button" onclick="ViewHistory()" class="btdoit bt" value="Refresh history">-->
         <DIV id="idPaginationHistory" style="display: none">
             <INPUT type="button" onclick="ViewPrevHistory()" class="btdoit bt" value="<< Prev">
-            <INPUT type="number" id="idViewHistoryNum" style="text-align: center" value="0" min=0 max=1000000000>
+            <INPUT type="number" id="idViewHistoryNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewHistory()">
             <INPUT type="button" onclick="ViewNextHistory()" class="btdoit bt" value="Next >>">
         </DIV>
 
@@ -1866,8 +1951,6 @@
             <select size="1" id="idAccount" onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()">
             </select>
 
-            <!--<INPUT type="number" list="tri" id="idAccount" value="" onkeyup="CreateTransaction()" onchange="CreateTransaction()"-->
-            <!--placeholder="Your account (required)">-->
         </td>
         </tr>
         <tr><td>&nbsp;</td><td><DIV id="idNameTo" class="bold"></DIV></td></tr>
@@ -1906,21 +1989,6 @@
         </DIV>
 
 
-    <!--History:-->
-    <!--<table id="grid_act_send" class="grid">-->
-        <!--<tr>-->
-            <!--<th id="Item.Direct">Direct</th>-->
-            <!--<th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>-->
-            <!--<th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>-->
-            <!--<th id="SUM_TO_STRING(Item)" class="sum">Amount</th>-->
-            <!--<th id="MapCurrency[Item.Currency]" class="cur">Currency</th>-->
-            <!--<th id="Item.Description"class="desc">Description</th>-->
-            <!--<th id="Item.FromID" class="num">From</th>-->
-            <!--<th id="Item.ToID" class="num">To</th>-->
-            <!--<th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>-->
-            <!--<th id="Item.BlockNum" class="num">Block</th>-->
-        <!--</tr>-->
-    <!--</table>-->
 
     </DIV>
 
@@ -1929,47 +1997,60 @@
 
     <DIV id="TabExplorer" style="display: none">
 
-        <INPUT type="button" onclick="ViewAccounts('/GetAccountsAll','grid_accounts_all',0,1)" class="btdoit bt" value="View Accounts">
-        <INPUT type="button" onclick="window.Open('./HTML/stat.html')" class="btdoit bt" value="Counters">
-        <INPUT type="button" onclick="window.Open('./HTML/stat-diagram.html',1030)" class="btdoit bt" value="Diagrams">
-        <INPUT type="button" onclick="window.Open('./HTML/monitor.html',1200)" class="btdoit bt" value="Monitor">
-        <INPUT type="button" onclick="window.Open('./HTML/console.html')" class="btdoit bt" value="Console">
+        <INPUT type="button" onclick="ViewAccounts()" class="btdoit bt" id="idViewAccounts" value="Accounts...">
+        <INPUT type="button" onclick="window.Open('./HTML/stat.html','counters')" class="btdoit bt" id="idCounters" value="Counters">
+        <INPUT type="button" onclick="window.Open('./HTML/chains.html','chains',1030)" class="btdoit bt" id="idChains" value="Chains">
+        <INPUT type="button" onclick="window.Open('./HTML/monitor.html','monitor',1200)" class="btdoit bt" id="idMonitor" value="Monitor">
+        <INPUT type="button" onclick="window.Open('./HTML/console.html','console')" class="btdoit bt" id="idConsole" value="Console">
+
+
+
         <BR>
         <DIV id="idPaginationAccount" style="display: none">
-            <INPUT type="button" onclick="ViewPrevAccounts('/GetAccountsAll','grid_accounts_all',0,1)" class="btdoit bt" value="<< Prev">
-            <INPUT type="number" id="idViewAccountNum" style="text-align: center" value="0" min=0 max=1000000000>
-            <INPUT type="button" onclick="ViewNextAccounts('/GetAccountsAll','grid_accounts_all',0,1)" class="btdoit bt" value="Next >>">
-        </DIV>
+            <INPUT type="button" onclick="ViewPrevAccounts()" class="btdoit bt" value="<< Prev">
+            <INPUT type="number" id="idViewAccountNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewAccounts()">
+            <INPUT type="button" onclick="ViewNextAccounts()" class="btdoit bt" value="Next >>">
 
-        <table id="grid_accounts_all" class="grid">
-            <tr>
-                <th id="Item.Num" class="num">ID</th>
-                <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
-                <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
-                <th id="Item.Description"class="name">Account name</th>
-                <th id="Item.PubKey.substr(0,66)">PubKey</th>
-                <th id="Item.Value.OperationID" class="num">Operation</th>
-                <th id="Item.BlockNumCreate" class="num">Block Num</th>
-            </tr>
-        </table>
+            <table id="grid_accounts_all" class="grid">
+                <tr>
+                    <th id="Item.Num" class="num">ID</th>
+                    <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
+                    <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+                    <th id="Item.Description"class="name">Account name</th>
+                    <th id="Item.PubKey.substr(0,66)">PubKey</th>
+                    <th id="Item.Value.OperationID" class="num">Operation</th>
+                    <th id="Item.BlockNumCreate" class="num">Block Num</th>
+                </tr>
+            </table>
+        </DIV>
         <BR>
         <B><DIV id="idTotalSum"></DIV></B>
 
 
+        <BR>
+        <INPUT type="button" onclick="ViewActs()" class="btdoit btlong bt" value="Accounts acts..."><BR>
+        <DIV id="idPaginationAct" style="display: none">
+            <INPUT type="button" onclick="ViewPrevActs()" class="btdoit bt" value="<< Prev">
+            <INPUT type="number" id="idViewActNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewActs()">
+            <INPUT type="button" onclick="ViewNextActs()" class="btdoit bt" value="Next >>">
+            <table id="grid_acts_all" class="grid">
+            <tr>
+            <th id="Item.Num" class="num">Num</th>
+            <th id="Item.ID" class="num">Account</th>
+            <th id="Item.Mode">Mode</th>
+            <th id="Item.BlockNum">Block</th>
 
-        <!--<INPUT type="button" onclick="ViewGrid('/GetActsAll/0/100','grid_acts_all')" class="btdoit bt" value="View All Acts"><BR>-->
-        <!--<table id="grid_acts_all" class="grid">-->
-            <!--<tr>-->
-                <!--<th id="Item.Num" class="num">Num</th>-->
-                <!--<th id="Item.ID" class="num">Account</th>-->
-                <!--<th id="Item.Mode">Mode</th>-->
-                <!--<th id="Item.BlockNum">Block</th>-->
+            <th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>
+            <th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>
+            <th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>
+            </tr>
+            </table>
+            Block num:<INPUT type="number" id="idBlockNum" value="0">
+            <INPUT type="button" onclick="RewriteTransactions()"  class="bt btdoit btlong" value="Rewrite Transactions">
+            <INPUT type="button" onclick="CheckBlocks()"  class="bt btdoit btlong" value="Check Blocks">
 
-                <!--<th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>-->
-                <!--<th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>-->
-                <!--<th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>-->
-            <!--</tr>-->
-        <!--</table>-->
+        </DIV>
+
 
     </DIV>
 

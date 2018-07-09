@@ -1,8 +1,10 @@
 <!doctype html>
 <html>
 <head>
-    <title>TERA COUNTERS</title>
+    <title>Counters</title>
     <meta charset='utf-8' />
+    <link rel="shortcut icon" href="/HTML/PIC/counters.png" type="image/png">
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/style.css">
 </head>
 <body>
 
@@ -110,14 +112,68 @@
         }
     }
 
+
+
+    var bPause;
+    var StatMode;
+    function SetPause(SetMode)
+    {
+        if(SetMode===undefined)
+        {
+            bPause=!bPause;
+        }
+        else
+        {
+            bPause=SetMode;
+        }
+        var item = document.getElementById("idRun");
+        if(bPause)
+            item.value="Continue view";
+        else
+            item.value="Pause view";
+    }
+
+    function SetStatMode()
+    {
+        GetData("/SetStatMode",!StatMode,function (Data)
+        {
+        });
+    }
+    function ClearStat()
+    {
+        GetData("/ClearStat",function (Data)
+        {
+        });
+    }
+    function SetStatInfo(Data)
+    {
+        var item = document.getElementById("idStatInfo");
+        var button = document.getElementById("idStatButton");
+        StatMode=Data.STAT_MODE;
+        if(StatMode)
+        {
+            item.innerText=" =Stat ON=";
+            button.value="Stop stat"
+        }
+        else
+        {
+            item.innerText=" =Stat OFF=";
+            button.value="Start stat"
+        }
+
+    }
+
+
+
     //LIB
-
-
     function GetStat()
     {
+        if(bPause)
+            return;
         GetData("/GetAllCounters",function (Data)
         {
             SetResult(Data);
+            SetStatInfo(Data);
         });
     }
 
@@ -125,8 +181,11 @@
 
     window.onload=function()
     {
+        SetPause(0);
         GetStat();
         setInterval(GetStat,1000);
+
+        //document.body.className=localStorage["idSelStyle"];
     }
 
 
@@ -157,18 +216,34 @@
     }
 
 
-    #topframe
+    #topframeFind
     {
         z-index:1000;
         position:fixed;
-        top:10px;
+        top:80px;
         left:10px;
         text-align: left;
-        width:1200px; /* ширина блока */
+        width:1200px;
         opacity: .7;
         color: blue;
 
     }
+
+    #topframe
+    {
+        z-index:1000;
+        position:absolute;
+        top:0px;
+        left:0px;
+        text-align: center;
+        width:600px;
+    }
+
+    #idRun, #idStatButton
+    {
+        width:100px;
+    }
+
 
 </style>
 
@@ -179,7 +254,7 @@
 
 <h2 align='center' >Performance counters</h2>
 
-<DIV id="topframe">
+<DIV id="topframeFind">
     Filter: <INPUT type="search" style="width: 292px" id="idFilter" autofocus onkeyup="GetStat()" value="">
 </DIV>
 
@@ -220,6 +295,15 @@
 
 
 <div id="chart_div" style="width: 900px; height: 500px;"></div>
+
+
+<DIV id="topframe">
+    <INPUT type="button" style="float:left" onclick="SetPause()" id="idRun">
+    <INPUT type="button" style="float:left" onclick="ClearStat()" id="idClearStat" value="Clear stat">
+    <INPUT type="button" style="float:left" onclick="SetStatMode()" id="idStatButton">
+    <DIV align='left'><B id="idStatInfo"></B></DIV>
+</DIV>
+
 
 </body>
 </html>

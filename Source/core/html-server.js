@@ -103,25 +103,23 @@ function DoCommand(response,Path,params)
 
 
             var type=Path.substr(Path.length-3,3);
-            if(type===".js")
+            switch (type)
             {
-                if(path==="constant.js")
-                {
-                    path="constant.js";
-                }
-                else
-                {
+                case ".js":
                     path="./HTML/JS/"+path;
-                }
-            }
-            else
-            if(type==="css")
-            {
-                path="./HTML/CSS/"+path;
-            }
-            else
-            {
-                path="./HTML/"+path;
+                    break;
+                case "css":
+                    path="./HTML/CSS/"+path;
+                    break;
+                case "png":
+                case "gif":
+                case "jpg":
+                case "ico":
+                    path="./HTML/PIC/"+path;
+                    break;
+                default:
+                    path="./HTML/"+path;
+                    break;
             }
 
             SendFileHTML(response,path,Path);
@@ -224,6 +222,7 @@ HTTPCaller.GetWalletInfo=function ()
             ArrLog:ArrLogClient,
             MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
             MaxAccID:DApps.Accounts.GetMaxAccount(),
+            MaxActNum:DApps.Accounts.GetActsMaxNum(),
 
 
             NeedRestart:global.NeedRestart,
@@ -236,6 +235,10 @@ HTTPCaller.GetWalletInfo=function ()
             DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
             FIRST_TIME_BLOCK:FIRST_TIME_BLOCK,
             CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME,
+
+            DATA_PATH:GetNormalPathString(process.cwd()+"/"+DATA_PATH),
+            NodeAddrStr:SERVER.addrStr,
+            STAT_MODE:global.STAT_MODE,
 
         };
 
@@ -455,9 +458,45 @@ HTTPCaller.GetAllCounters=function (SetObj)
     var Result=GET_STATS();
     Result.result=1;
     Result.sessionid=sessionid;
+    Result.STAT_MODE=global.STAT_MODE;
     return Result;
 }
+HTTPCaller.SetStatMode=function (flag)
+{
+    if(flag)
+        StartCommonStat();
 
+    global.STAT_MODE=flag;
+    SAVE_CONST(true);
+    return {result:1,sessionid:sessionid,STAT_MODE:global.STAT_MODE};
+}
+HTTPCaller.ClearStat=function (flag)
+{
+    global.ClearCommonStat();
+    return {result:1,sessionid:sessionid,STAT_MODE:global.STAT_MODE};
+}
+
+
+HTTPCaller.RewriteTransactions=function (StartNum)
+{
+    if(!StartNum)
+        StartNum=0;
+    global.SendLogToClient=1;
+    SERVER.ReWriteDAppTransactions(StartNum);
+    global.SendLogToClient=0;
+    return {result:1,sessionid:sessionid};
+}
+
+
+HTTPCaller.CheckBlocks=function (StartNum)
+{
+    if(!StartNum)
+        StartNum=0;
+    global.SendLogToClient=1;
+    SERVER.CheckBlocksOnStartFoward(StartNum,0);
+    global.SendLogToClient=0;
+    return {result:1,sessionid:sessionid};
+}
 
 
 //MONITOR
@@ -491,7 +530,7 @@ HTTPCaller.GetNodes=function ()
 HTTPCaller.GetArrStats=function (Keys)
 {
     var arr=GET_STATDIAGRAMS(Keys);
-    return {result:1,sessionid:sessionid,arr:arr};
+    return {result:1,sessionid:sessionid,arr:arr,STAT_MODE:global.STAT_MODE};
 }
 
 
@@ -1016,20 +1055,31 @@ function SendFileHTML(response,name)
         }
         else
         {
-            if(type==="ico")
+            switch (type)
             {
-                response.writeHead(200, { 'Content-Type': 'image/vnd.microsoft.icon'});
+                case ".js":
+                    response.writeHead(200, { 'Content-Type': 'application/javascript'});
+                    break;
+                case "css":
+                    response.writeHead(200, { 'Content-Type': 'text/css'});
+                    break;
+                case "ico":
+                    response.writeHead(200, { 'Content-Type': 'image/vnd.microsoft.icon'});
+                    break;
+                case "png":
+                    response.writeHead(200, { 'Content-Type': 'image/png'});
+                    break;
+                case "gif":
+                    response.writeHead(200, { 'Content-Type': 'image/gif'});
+                    break;
+                case "jpg":
+                    response.writeHead(200, { 'Content-Type': 'image/jpeg'});
+                    break;
+                default:
+                    response.writeHead(200, { 'Content-Type': 'text/html'});
+                    break;
             }
-            else
-            if(type===".js")
-                response.writeHead(200, { 'Content-Type': 'application/javascript'});
-            else
-            if(type==="css")
-                response.writeHead(200, { 'Content-Type': 'text/css'});
-            else
-                response.writeHead(200, { 'Content-Type': 'text/html'});
-
-        }
+         }
 
         response.end(data);
     });
@@ -1194,10 +1244,12 @@ function RunConsole()
     }
     catch (e)
     {
-        ret=""+e;
+        //ret=""+e;
+        ret=e.message+"\n"+e.stack;
     }
     return ret;
 }
+
 
 //GetHexFromArr
 

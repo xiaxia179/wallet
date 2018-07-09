@@ -1,0 +1,1278 @@
+<!doctype html>
+<html>
+<head>
+    <title>Chains</title>
+    <meta charset='utf-8' />
+    <link rel="shortcut icon" href="/HTML/PIC/chains.png" type="image/png">
+</head>
+<body>
+
+<script>
+    window.RUN_CLIENT=1;
+    window.RUN_SERVER=0;
+    if(typeof global === 'object')
+    {
+        global.RUN_CLIENT=1;
+        global.RUN_SERVER=0;
+    }
+</script>
+
+<script type="text/javascript" src="../HTML/JS/client.js"></script>
+
+<script type="text/javascript">
+    var sessionid;
+    function SetNewSession(cursessionid)
+    {
+        sessionid=cursessionid;
+    }
+
+
+    window.onload=function()
+    {
+        InitStartData();
+
+
+
+        var obj = document.getElementById("BlockChainGraph");
+        obj.addEventListener('mousedown', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+            DoBlockInfo(mouse.x,mouse.y, event);
+        }, false);
+        obj.addEventListener('mouseup', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+            DoBlockInfoUp(mouse.x,mouse.y, event);
+        }, false);
+
+
+        obj.addEventListener('dblclick', function(event)
+        {
+
+            event.preventDefault();
+            var mouse=getMouse(obj,event);
+            DoDblClick(mouse.x,mouse.y, event);
+        }, false);
+
+        InitViewBlock();
+        InitMoveBlock();
+
+        //COMMON MOUSE MOVING
+        window.onmousemove = function(event)
+        {
+            moveBlock(event);
+        }
+
+    }
+
+
+
+     function InitStartData()
+    {
+        //TestTest(); return;
+
+        SetPause(0);
+        //InitNodes();
+
+        setInterval(UpdateData,900);
+    }
+
+
+
+
+    var Colorlist=
+        [
+            "LightCyan",
+            "Lavender",
+            "Moccasin",
+            "Honeydew",
+            "Honeydew",
+            "OldLace",
+            "PaleGoldenrod",
+            "#bffb70",
+        ];
+
+
+    var domenlist=
+        [
+//            {name:"http://test.ru",color:"LightCyan"},
+            {name:"",color:"LightCyan",port:0},
+//            {name:"http://test.ru:8001",color:"Lavender"},
+//            {name:"http://test.ru:8002",color:"Moccasin"},
+//            {name:"http://test.ru:8003",color:"Honeydew"},
+//            {name:"http://test.ru:8007",color:"Honeydew"},
+//            {name:"http://test2.ru",color:"OldLace"},
+//        {name:"http://test2.ru:8006",color:"PaleGoldenrod"},
+//            {name:"http://test2.ru:8007",color:"#bffb70"},
+        ];
+
+
+
+    function SetStatus(Str)
+    {
+        var id = document.getElementById("status");
+
+        //id.innerText+=Str+"\n";
+        id.innerHTML=Str;
+    }
+
+
+    var GlErr="";
+    var MaxRed=0;
+
+    var SET_MAX_NUM=0;
+    var COLUMN_WIDTH=55;
+    var BLOCK_WIDTH_COUNT=0;
+    var LineWidth=2;
+    var AllDrawArray=[];
+    var AllDrawMapXY={};
+    var MaxZ=0;
+    var nWork=0;
+
+    function InitNodes()
+    {
+        SetPause(1);
+        setTimeout(function ()
+        {
+            GetData("/GetNodes",function (Data,Str)
+            {
+                if(!Data || !Data.result)
+                    return;
+
+                document.title+=":"+Data.port;
+                domenlist=[{name:"",color:Colorlist[0] ,webport:80 ,port:Data.port}];
+                var arr=Data.Nodes;
+
+                for(var i=0;i<Math.min(Colorlist.length-1,arr.length);i++)
+                {
+                    var Node=arr[i];
+                    var webport;
+                    if(Node.port%100===0)
+                        webport="80";
+                    else
+                        webport="80"+Rigth(""+Node.port,2);
+                    if(Node.ip==="192.168.1.1" || (Node.ip==="195.211.195.236" && Node.port<"32000"))
+                        Node.ip="test.ru";
+                    else
+                    if(Node.ip==="195.211.195.236" && Node.port>="32000")
+                    {
+                        Node.ip="test2.ru";
+                    }
+                    else
+                    if(Node.ip==="194.1.237.94")
+                    {
+                        Node.ip="test3.ru";
+                    }
+                    else
+                    if(Node.ip==="91.235.136.81")
+                    {
+                        Node.ip="test5.ru";
+                    }
+
+                    var Item={name:"http://"+Node.ip+":"+webport,color:Colorlist[i+1],webport:webport,port:Node.port,Hot:Node.Hot};
+                    domenlist.push(Item);
+                }
+
+
+
+                SetPause(0);
+            });
+        },500);
+    }
+
+    function InitDrawPaper()
+    {
+        AllDrawArray=[];
+        AllDrawMapXY={};
+        var obj = document.getElementById("BlockChainGraph");
+        var ctx     = obj.getContext('2d');
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect(0, 0, obj.width, obj.height);
+        BLOCK_WIDTH_COUNT=obj.width/COLUMN_WIDTH;
+    }
+
+    function PrepareDrawResult(ResArr,MaxNum)
+    {
+        var MaxRedLocal=0;
+        var DomenArr=[];
+        for(var m=0;m<ResArr.length;m++)
+        {
+            var arr=[];
+            if(!ResArr[m])
+                continue;
+
+            var BlockChain=ResArr[m].BlockChain;
+            for(var i=0;i<BlockChain.length;i++)
+            {
+                var Block=BlockChain[i];
+                if(Block)
+                {
+                    var num=MaxNum-Block.BlockNum;
+                    if(num>=0)
+                        arr[num]=Block;
+                }
+            }
+            DomenArr.push(arr);
+        }
+
+
+        var BlockChain=DomenArr[0];
+        if(BlockChain)
+        for(var i=BlockChain.length;i>=0;i--)
+        {
+            var Block=BlockChain[i];
+            if(Block)
+            {
+                var HashStr=GetHName(Block,MaxNum);
+                var Count=1;
+                for(var m=1;m<DomenArr.length;m++)
+                {
+                    if(HashStr===GetHName(DomenArr[m][i],MaxNum))
+                    {
+                        Count++;
+                    }
+
+                }
+                //MaxRed
+                var HashCountErr=(Count!==DomenArr.length);
+                if(HashCountErr)
+                {
+                    var num=MaxNum-Block.BlockNum;
+                    if(num<=40)
+                    if(num>=MaxRedLocal)
+                    {
+                        MaxRedLocal=num;
+                    }
+                }
+
+                for(var m=0;m<DomenArr.length;m++)
+                {
+                    var CurBlock=DomenArr[m][i];
+                    if(CurBlock)
+                    {
+                        CurBlock.HashCountErr=HashCountErr;
+                    }
+                }
+            }
+        }
+        if(MaxRedLocal<40 && MaxRedLocal>MaxRed)
+            MaxRed=MaxRedLocal;
+    }
+    function GetHName(Block,MaxNum)
+    {
+        if(!Block)
+            return ""
+        if(Block.BlockNum<MaxNum-8)
+            return GetStrFromHash(Block.SumHash);
+        else
+        if(Block.BlockNum<MaxNum-4)
+            return "S:"+GetStrFromHash(Block.SeqHash);
+        else
+            return "T:"+GetStrFromHash(Block.TreeHash);
+    }
+
+    function CopyBlockParam(BlockNew,BlockOld)
+    {
+        if(BlockNew && BlockOld)
+        {
+            BlockNew.z=BlockOld.z;
+            //BlockNew.guid=BlockOld.guid;
+            BlockNew.View=BlockOld.View;
+        }
+
+        BlockNew.SumPow=BlockNew.SumPow;
+    }
+    function SetResult(Data,MaxBlockNum,NodeNum)
+    {
+        if(!Data)
+            return;
+        if(!Data.BlockChain)
+            return;
+
+        var NodeParam=domenlist[NodeNum];
+        if(NodeParam.sessionid!=Data.sessionid)
+        {
+            SetNewSession(Data.sessionid);
+
+            NodeParam.MapBlockLoaded={};
+            NodeParam.ChainList=[];
+            NodeParam.MapBlockChain={};
+            NodeParam.sessionid=Data.sessionid;
+            MaxRed=0;
+        }
+
+
+        var MinBlockNum=MaxBlockNum-BLOCK_WIDTH_COUNT;
+        if(MinBlockNum<0)
+            MinBlockNum=0;
+
+
+        for(var i=0;i<Data.LoadedBlocks.length;i++)
+        {
+            var Block=Data.LoadedBlocks[i];
+            if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                continue;
+
+            var BlockOld=NodeParam.MapBlockLoaded[Block.guid];
+            CopyBlockParam(Block,BlockOld);
+
+            NodeParam.MapBlockLoaded[Block.guid]=Block;
+        }
+
+        for(var i=0;i<Data.LoadedChainList.length;i++)
+        {
+            var chain=Data.LoadedChainList[i];
+            if(!chain || chain.BlockNum<MinBlockNum || chain.BlockNum>MaxBlockNum+BLOCK_WIDTH_COUNT)
+                continue;
+
+            var chainOld=NodeParam.ChainList[chain.id];
+            CopyBlockParam(chain,chainOld)
+            NodeParam.ChainList[chain.id]=chain;
+        }
+        //NodeParam.ChainList=Data.LoadedChainList;
+
+        var Map2={};
+        for(var i=0;i<Data.BlockChain.length;i++)
+        {
+            var Block=Data.BlockChain[i];
+            if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                continue;
+
+            Map2[Block.BlockNum]=Block;
+
+            var BlockOld=NodeParam.MapBlockChain[Block.BlockNum];
+            CopyBlockParam(Block,BlockOld)
+        }
+        NodeParam.MapBlockChain=Map2;
+
+
+        DrawChannels(NodeParam,NodeNum,MinBlockNum,MaxBlockNum,Data.BlockChain,Data.LoadedChainList);
+    }
+
+    function DrawChannels(NodeParam,NodeNum,MinBlockNum,MaxBlockNum,BlockChain,ChainList)
+    {
+        var color=NodeParam.color;
+
+        var obj = document.getElementById("BlockChainGraph");
+        var ctx     = obj.getContext('2d');
+
+        var arrBlocks=[];
+
+        //Основная цепочка из БД
+        var CountBlock=0;
+        var LastBlock;
+        for(var i=BlockChain.length;i>=0;i--)
+        {
+            var Block=BlockChain[i];
+            if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                continue;
+
+            CountBlock++;
+            if(CalcDrawBlock(obj,ctx,MaxBlockNum,"H",0,NodeNum,Block,100,color))
+            {
+                LastBlock=Block;
+                arrBlocks.push(Block);
+            }
+            else
+            {
+                break;
+            }
+        }
+        if(LastBlock)
+        {
+            var MaxCount=3;
+            var DY=0;
+            DY+=(LastBlock.height+10)*domenlist.length;
+            DY+=(LastBlock.height+10)*MaxCount*NodeNum;
+
+            //Загружаемые цепочки из других нод
+            var CountChain=0;
+            for(var n=0;n<ChainList.length;n++)
+            {
+                var Chain=ChainList[n];
+                if(!Chain || Chain.BlockNum<MinBlockNum || Chain.BlockNum>MaxBlockNum+BLOCK_WIDTH_COUNT)
+                    continue;
+
+                CountChain++;
+
+
+                //загруженные блоки
+                var CountBlock=0;
+                var bWas=false;
+                var Block=NodeParam.MapBlockLoaded[Chain.HashMaxStr];
+                while(Block)
+                {
+                    if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
+                        break;
+
+                    if(CalcDrawBlock(obj,ctx,MaxBlockNum,"B",DY,Block.chainid,Block,MaxCount,color))
+                    {
+                        bWas=true;
+                        arrBlocks.push(Block);
+                    }
+                    CountBlock++;
+                    if(CountBlock>500)
+                    {
+                        GlErr="ERROR: CountBlock>500";
+                        break;
+                    }
+
+                    Block=NodeParam.MapBlockLoaded[Block.BlockDown];
+                }
+
+            }
+
+            for(var n=0;n<ChainList.length;n++)
+            {
+                var Chain=ChainList[n];
+                if(!Chain || Chain.BlockNum<MinBlockNum)
+                    continue;
+
+                //Заголовок цепочки
+                if(CalcDrawBlock(obj,ctx,MaxBlockNum,"C",DY,Chain.id,Chain,MaxCount,color))//!bWas &&
+                {
+                    arrBlocks.push(Chain);
+                }
+            }
+
+
+
+            for(var i=0;i<arrBlocks.length;i++)
+            {
+                Block=arrBlocks[i];
+                var PrevBlock=NodeParam.MapBlockLoaded[Block.BlockDown];
+                if(PrevBlock && PrevBlock.nWork===nWork && PrevBlock.Type===Block.Type)
+                {
+                    ctx.strokeStyle = "rgb(0,0,0)";//color;
+                    ctx.lineWidth=LineWidth;
+                    ctx.beginPath();
+                    ctx.moveTo(PrevBlock.x+PrevBlock.width/2, PrevBlock.y+PrevBlock.height/2);
+                    ctx.lineTo(Block.x+Block.width/2, Block.y+Block.height/2);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        arrBlocks.sort(function (a,b)
+        {
+            return a.z-b.z;
+        });
+        for(var i=0;i<arrBlocks.length;i++)
+        {
+            Block=arrBlocks[i];
+            DrawBlock(ctx,Block);
+        }
+    }
+
+
+    function CalcDrawBlock(obj,ctx,MaxBlockNum,Type,DY,Line,Block,MaxCount,colorFill)
+    {
+        if(Block.nWork===nWork)
+            return true;
+        //Block.Comment1="W="+Block.nWork;
+
+        Block.MaxBlockNum=MaxBlockNum;
+
+        var Pos=MaxBlockNum-Block.BlockNum;
+        var width=COLUMN_WIDTH-10;
+        var height=60;
+
+        var x=obj.width-((Pos+1)*(COLUMN_WIDTH));
+        if(x<0)
+        {
+            return false;
+        }
+
+        Block.nWork=nWork;
+        var y=(Line%MaxCount)*(height+25)+1+DY;
+
+        while(true)
+        {
+            var keyXY=""+x+":"+y;
+            if(!AllDrawMapXY[keyXY])
+            {
+                AllDrawMapXY[keyXY]=1;
+                break;
+            }
+            y=y+15;
+            x=x+5;
+        }
+
+        Block.x=x;
+        Block.y=y;
+        Block.width=width;
+        Block.height=height;
+        if(Type==="H")
+        {
+            Block.height=height+16;
+        }
+        else
+        if(Type==="C")
+        {
+            Block.x+=10;
+            Block.y-=12;
+        }
+        else
+        if(Type==="B")
+        {
+            Block.height-=16;
+            Block.width-=10;
+        }
+
+        Block.Type=Type;
+        Block.colorFill=colorFill;
+
+        if(!Block.z)
+        {
+            MaxZ++;
+            Block.z=MaxZ;
+        }
+
+        return true;
+    }
+
+
+    function DrawBlock(ctx,Block)//------------------------------------------------------------------------------------ DrawBlock
+    {
+        if(x<0)
+            return;
+        if(Block.nWork!==nWork)
+            return;
+
+        var x=Block.x;
+        var y=Block.y;
+        ctx.lineWidth=2;
+
+        ctx.strokeStyle="#000";
+//        if(Block.Type==="C")
+//            ctx.strokeStyle="rgb(200,200,0)";
+//        else
+        if(Block.bSave)
+            ctx.strokeStyle="rgb(10,200,10)";
+        else
+        {
+            if(Block.Prepared)
+                ctx.strokeStyle="rgb(100,100,250)";
+            else
+            if(Block.Type==="H" && !Block.Active)
+                ctx.strokeStyle="#e6bd40";
+            else
+                ctx.strokeStyle="#ca00ca";
+        }
+        //Block.Comment2=" "+(1*Block.bSave)+" "+(1*Block.Prepared)+" "+(1*Block.Active)
+
+        if(Block.Type==="B" && (Block.TreeLoaded || Block.FindBlockDB))
+            ctx.strokeStyle="green";
+        else
+        if(Block.Type==="B" && Block.AddToLoad && !Block.TreeLoaded)
+            ctx.strokeStyle="red";
+//        if(Block.Type==="C" && Block.CountWasLoad===Block.CountForLoad && Block.CountForLoad!=0)
+//            ctx.strokeStyle="green";
+//        else
+//        if(Block.Type==="C" && Block.CountWasLoad!=Block.CountForLoad && Block.CountForLoad!=0)
+//            ctx.strokeStyle="red";
+
+
+        ctx.beginPath();
+
+        ctx.fillStyle = Block.colorFill;
+        if((Block.Type==="B" || Block.Type==="C") && !Block.Main)
+            ctx.fillStyle = "#FFF";
+
+
+        ctx.fillRect(x, y, Block.width, Block.height);
+        ctx.strokeRect(x, y, Block.width, Block.height);
+        if(Block.Type==="C")
+        {
+            ctx.moveTo(Block.x+Block.width-10, Block.y+Block.height);
+            ctx.lineTo(Block.x+Block.width, Block.y+Block.height-10);
+        }
+
+
+        var header=GetHName(Block,Block.MaxBlockNum)
+
+
+        ctx.fillStyle = "#000";
+        if(Block.Type==="H" && Block.HashCountErr)
+        {
+            ctx.fillStyle="#F00";
+        }
+        ctx.font="12px sans-serif";
+        ctx.fillText(header,x+2,y+10);
+        ctx.font="10px sans-serif";
+
+        ctx.fillStyle = "#000";
+
+        ctx.fillText(""+Block.BlockNum,x+2,y+10+16);
+
+        if(Block.Type==="H")
+        {
+            ctx.fillText("TH:"+GetStrFromHash(Block.TreeHash),x+2,y+10+32);
+
+//            if(Block.Comment1)
+//                ctx.fillText(Block.Comment1,x+2,y+10+48);
+            ctx.fillText("Tr:"+Block.TrCount,x+2,y+10+48);
+
+            //ctx.fillText("P:"+Block.SumPow.toFixed(0),x+2,y+10+48+16);
+
+            ctx.fillText("M:"+Block.Miner1,x+2,y+10+48+16);
+
+        }
+        else
+        if(Block.Type==="C")
+        {
+            ctx.fillText("id:"+Block.chainid,x+2,y+10+32);
+            ctx.fillText(Block.Comment2,x+2,y+10+32+16);
+        }
+        else
+        if(Block.Type==="B")
+        {
+            ctx.fillText("id:"+Block.chainid,x+2,y+10+32);
+        }
+
+
+        ctx.stroke();
+
+        AllDrawArray.push(Block);
+
+        if(Block.View)
+            UpdateBlockView(Block);
+    }
+
+    //LIB FROM INET
+    function wrapText(context, text, marginLeft, marginTop, maxWidth, lineHeight)
+    {
+        //Exmpl:wrapText(ctx, text, x, y+20, Block.width, 12);
+        var words = text.split(" ");
+        var countWords = words.length;
+        var line = "";
+
+        for (var n = 0; n < countWords; n++)
+        {
+            var testLine = line + words[n] + " ";
+            var testWidth = context.measureText(testLine).width;
+            if (testWidth > maxWidth)
+            {
+                context.fillText(line, marginLeft, marginTop);
+                line = words[n] + " ";
+                marginTop += lineHeight;
+            }
+            else {
+                line = testLine;
+            }
+        }
+        context.fillText(line, marginLeft, marginTop);
+    }
+
+
+    //MOVE DIV
+    var blockMove;
+    var delta_x = 0;
+    var delta_y = 0;
+    function InitMoveBlock()
+    {
+        window.onmouseup = clearMoveXY;
+        window.addEventListener("onmouseup", clearMoveXY, false);
+        window.addEventListener("onmousemove", moveBlock, false);
+
+        window.onmousedown = saveMoveXY;
+        window.addEventListener("onmousedown", saveMoveXY, false);
+
+    }
+    /* При нажатии кнопки мыши попадаем в эту функцию */
+    function saveMoveXY(obj_event)
+    {
+        blockMove=undefined;
+
+        /* Получаем текущие координаты курсора */
+        if (obj_event)
+        {
+            if(obj_event.srcElement && obj_event.srcElement.className.indexOf("header")>=0)
+            {
+                obj_event.preventDefault();
+                blockMove=obj_event.srcElement.parentNode;
+
+                x = obj_event.pageX;
+                y = obj_event.pageY;
+
+                /* Узнаём текущие координаты блока */
+                var x_block = blockMove.offsetLeft;
+                var y_block = blockMove.offsetTop;
+                /* Узнаём смещение */
+                delta_x = x_block - x;
+                delta_y = y_block - y;
+
+                SetMaxZIndex(blockMove)
+            }
+            if(obj_event.srcElement && obj_event.srcElement.className.indexOf("vdata")>=0)
+            {
+                //obj_event.preventDefault();
+                SetMaxZIndex(obj_event.srcElement.parentNode)
+            }
+        }
+    }
+    function clearMoveXY()
+    {
+        //window.onmousedown = undefined;
+        blockMove=undefined;
+    }
+    function moveBlock(obj_event)
+    {
+        if(!blockMove)
+            return;
+
+        /* Получаем новые координаты курсора мыши */
+        if (obj_event)
+        {
+            x = obj_event.pageX;
+            y = obj_event.pageY;
+        }
+        else
+        {
+            x = window.event.clientX;
+            y = window.event.clientY;
+            if (ie)
+            {
+                y -= 2;
+                x -= 2;
+            }
+        }
+        /* Вычисляем новые координаты блока */
+        new_x = delta_x + x;
+        new_y = delta_y + y;
+        blockMove.style.top = new_y + "px";
+        blockMove.style.left = new_x + "px";
+    }
+
+
+    //LIB
+    //LIB
+    //LIB
+    //LIB
+    function GetStrFromHash(Str)
+    {
+        if(typeof Str==="string")
+            //return Str.substr(2,4);
+            return Str.substr(0,4);
+        else
+            return "";
+    }
+
+    function getMouse(canvas,e)
+    {
+
+        var x = e.clientX - getTrueOffsetLeft(canvas);
+        if(window.pageXOffset)
+            x=x+window.pageXOffset;
+
+        var y = e.clientY - getTrueOffsetTop(canvas);
+        if(window.pageYOffset)
+            y=y+window.pageYOffset
+        var coord= {x:x,y:y};
+        return coord;
+    };
+    function getTrueOffsetLeft(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetLeft || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+    function getTrueOffsetTop(ele)
+    {
+        var n = 0;
+        while (ele)
+        {
+            n += ele.offsetTop || 0;
+            ele = ele.offsetParent;
+        }
+        return n;
+    }
+
+
+    function random(max)
+    {
+        ret=Math.floor(Math.random()*max);
+        return ret;
+    }
+
+
+
+
+    //DIALOG
+    //DIALOG
+    //DIALOG
+
+
+    var bPause;
+    function SetPause(SetMode)
+    {
+        if(SetMode===undefined)
+        {
+            bPause=!bPause;
+        }
+        else
+        {
+            bPause=SetMode;
+        }
+        var item = document.getElementById("idRun");
+        if(bPause)
+            item.value="Continue view";
+        else
+            item.value="Pause view";
+    }
+
+    function SetWidth()
+    {
+        var id = document.getElementById("LineWidth");
+        LineWidth=id.value;
+    }
+
+
+    //VIEW BLOCK
+
+    var ArrViewBlock=[];
+    var MaxZIndex=10;
+    function SetMaxZIndex(Block)
+    {
+        MaxZIndex++;
+        Block.style["z-index"]=MaxZIndex;
+    }
+    function InitViewBlock()
+    {
+        window.onkeydown = cancelViewBlock;
+    }
+    function cancelViewBlock(e)
+    {
+        if(e.keyCode===27 && ArrViewBlock.length)
+        {
+            var name=ArrViewBlock[ArrViewBlock.length-1];
+            ArrViewBlock.length=ArrViewBlock.length-1;
+            CloseView(name);
+        }
+
+        if(!ArrViewBlock.length)
+            MaxZIndex=10;
+    }
+
+
+    function AddView(Str)
+    {
+        var id = document.getElementById("viewer");
+        id.innerHTML+=Str;
+    }
+    function CloseView(id)
+    {
+        var name="b"+id;
+        var parentElem = document.getElementById("viewer");
+        var child=document.getElementById(name);
+        if(child)
+            parentElem.removeChild(child)
+    }
+    function SetViewBlock(Block,event)
+    {
+        var name=Block.Type.trim()+Block.guid;
+        var coord=getMouse(window,event);
+        var x=coord.x;
+        var y=coord.y;
+        if(x<=0 && y<=0)
+            return;
+
+        var element = document.getElementById("b"+name);
+        if(!element)
+        {
+            var Str='<DIV id="b'+name+'" class="vblock"> ' +
+                '<DIV id="h'+name+'" class="header"></DIV> ' +
+                '<INPUT id="c'+name+'" type="button" class="vclose" onclick=CloseView("'+name+'") value="X"> ' +
+                '<DIV id="d'+name+'" class="vdata"></DIV> ' +
+                '</DIV>';
+            AddView(Str);
+            ArrViewBlock.push(name);
+
+            element = document.getElementById("b"+name);
+        }
+        var header=document.getElementById("h"+name);
+        var closer=document.getElementById("c"+name);
+        var data = document.getElementById("d"+name);
+
+        element.style.left=""+x+ "px";
+        element.style.top=""+y+ "px";
+        element.style.height="100px";
+        SetMaxZIndex(element);
+
+
+
+        header.style.background=Block.colorFill;
+        closer.style.background=Block.colorFill;
+        data.style.background=Block.colorFill;
+
+        UpdateBlockView(Block);
+    }
+
+    function UpdateBlockView(Block)
+    {
+        var name=Block.Type+Block.guid;
+        var header=document.getElementById("h"+name);
+        if(!header)
+            return;
+
+        var data = document.getElementById("d"+name);
+
+        Block.View=1;
+        var Str0;
+        if(Block.SumHash)
+        {
+            Str0=GetStrFromHash(Block.SumHash)+" : "+Block.Type;
+        }
+        else
+        {
+            Str0="H:"+GetStrFromHash(Block.Hash)+" : "+Block.Type;
+        }
+
+        header.innerText=Str0;
+
+
+        var Str = ""+Block.BlockNum;
+        Str+="\nSave:"+Block.bSave;
+
+
+
+        var rootinfo;
+        if(Block.Type==="C")
+        {
+            var rootid="";
+            if(Block.root)
+            {
+                rootid=""+Block.root.id;
+                if(Block.root.StopSend)
+                    rootid=rootid+" StopSend";
+                if(Block.root.GetFindDB)
+                    rootid=rootid+" FindDB";
+
+                rootinfo=Block.root.Info;
+            }
+            Str+="\nid:"+Block.id;//+"  num:"+Block.num;
+            Str+="\nrootid:"+rootid;
+            Str+="\nStopSend:"+Block.StopSend;
+            Str+="\nFindDB:"+Block.GetFindDB;
+            Str+="\nHashMaxStr:"+Block.HashMaxStr;
+        }
+        else
+        {
+            if(Block.chainid)
+                Str+="\nid:"+Block.chainid;
+            else
+            if(Block.id)
+                Str+="\nid:"+Block.id;
+
+            Str+="\nTrCount:"+Block.TrCount;
+            Str+="\nTH:"+GetStrFromHash(Block.TreeHash);
+            Str+="\nTrDataLen:"+Block.TrDataLen;
+
+
+            Str+="\nPow:"+Block.SumPow.toFixed(4);
+            if(!Block.TreeLoaded)
+                Block.TreeLoaded="";
+            if(!Block.AddToLoad)
+                Block.AddToLoad="";
+            if(!Block.LoadDB)
+                Block.LoadDB="";
+
+
+            //Str+="\nArrLength:"+Block.ArrLength;
+
+            if(Block.Type==="B")
+            {
+                Str+="\nTreeLoaded:"+Block.TreeLoaded;
+//            Str+="\nAddToLoad:"+Block.AddToLoad;
+//            Str+="\nLoadDB:"+Block.LoadDB;
+                Str+="\nMain:"+Block.Main;
+                Str+="\nBlockDown:"+Block.BlockDown;
+            }
+        }
+        Str+="\nH:"+GetStrFromHash(Block.Hash);
+
+        if(!Block.Comment1)
+            Block.Comment1="";
+        if(!Block.Comment2)
+            Block.Comment2=""
+        Str+="\n"+Block.Comment1;
+        Str+="\n"+Block.Comment2;
+
+
+
+
+//        if(Block.Err)
+//            Str+="\n"+"=ERROR=";
+        if(Block.Info)
+            Str+="\n"+Block.Info;
+        if(rootinfo)
+            Str+="\n\n--------ROOT "+Block.root.id+" max:"+Block.root.BlockNumMax+":\n"+rootinfo;
+
+
+
+
+        data.innerText=Str;
+    }
+
+
+    //обработка нажатия кнопки мышки на узле
+    function DoBlockInfo(Fx,Fy,event)
+    {
+        var Block=GetBlockByXY(Fx,Fy);
+
+        if(Block)
+        {
+            MaxZ++;
+            Block.z=MaxZ;
+
+            var obj = document.getElementById("BlockChainGraph");
+            var ctx     = obj.getContext('2d');
+            DrawBlock(ctx,Block);
+        }
+    }
+    function DoBlockInfoUp(Fx,Fy,event)
+    {
+        var Block=GetBlockByXY(Fx,Fy);
+        if(Block)
+        {
+            SetViewBlock(Block, event)
+        }
+    }
+
+    function DoDblClick(Fx,Fy, event)
+    {
+        var Block=GetBlockByXY(Fx,Fy);
+        if(Block)
+        {
+            //SetViewBlock(Block, event)
+        }
+    }
+
+
+    function GetBlockByXY(Fx,Fy)
+    {
+        //ищем блок
+        var Array=AllDrawArray;
+        for(var i=0;i<Array.length;i++)
+        {
+            var item=Array[i];
+            if(item.x<=Fx && item.x+item.width>=Fx
+            && item.y<=Fy && item.y+item.height>=Fy)
+            {
+                return item;
+            }
+        }
+        return undefined;
+    }
+
+
+
+
+    //INIT
+    var strReload="reload/";
+    var ResDataArr=[];
+    function UpdateData()
+    {
+        if(bPause)
+            return;
+
+        if(ResDataArr.length)
+        {
+            var MaxNum=0;
+            if(!SET_MAX_NUM)
+            {
+                for(var n=0;n<ResDataArr.length;n++)
+                {
+                    var Data=ResDataArr[n];
+                    if(Data && Data.CurrentBlockNum>MaxNum)
+                        MaxNum=Data.CurrentBlockNum;
+                }
+            }
+            else
+            {
+                MaxNum=SET_MAX_NUM;
+            }
+
+            nWork++;
+            PrepareDrawResult(ResDataArr,MaxNum)
+            InitDrawPaper();
+
+            var StrInfo="";
+            StrInfo+="<DIV class='nodestatus'>"
+            StrInfo+=`Blocks:${MaxNum} ${GlErr}</B>`
+            StrInfo+="</DIV>"
+
+            for(var n=0;n<ResDataArr.length;n++)
+            {
+                var Data=ResDataArr[n];
+                if(Data)
+                {
+                    var Domen=domenlist[Data.NumArr];
+                    SetResult(Data,MaxNum,Data.NumArr);
+
+                    var mem=Math.floor(Data.memoryUsage.heapTotal/1000000);
+                    var color=Domen.color;
+
+
+                    StrInfo+=`<DIV class='nodestatus' style="background:${color}">`
+                    if(Domen.name!=="")
+                        StrInfo+=`<A href='${Domen.name}'>`;
+
+                    Data.DELTA_CURRENT_TIME=Math.floor(Data.DELTA_CURRENT_TIME)/1000;
+
+                    if(Domen.Hot)
+                    {
+                        StrInfo+=`dt:${Data.DELTA_CURRENT_TIME}`;
+                        if(Domen.name!=="")
+                            StrInfo+="</A>";
+                        StrInfo+=` Mem: <B>${mem}</B>Mb`;
+                    }
+                    else
+                    {
+                        StrInfo+=`dt:${Data.DELTA_CURRENT_TIME}`;
+                        if(Domen.name!=="")
+                            StrInfo+="</A>";
+                        StrInfo+=` Mem: ${mem}Mb`;
+                    }
+                    StrInfo+="</DIV>"
+
+
+                }
+            }
+            SetStatus(StrInfo);
+//            var mem=Math.floor(window.performance.memory.usedJSHeapSize/1000)/1000;
+//            var memfree=Math.floor(window.performance.memory.totalJSHeapSize/1000)/1000;
+            //SetStatus("MaxNum:"+MaxNum+" memory="+mem+" Mb   free="+memfree+" Mb")
+        }
+        ResDataArr=[];
+
+        for(var i=0;i<domenlist.length;i++)
+        {
+            CallDataChain(ResDataArr,i,strReload);
+        }
+        strReload="";
+    }
+
+    function CallDataChain(ResDataArr,NumArr,strReload)
+    {
+        GetData(domenlist[NumArr].name+"/GetBlockChain/"+strReload,function (Data,Str)
+        {
+            if(typeof Data==="object" && Data.result)
+            {
+                Data.NumArr=NumArr;
+                ResDataArr[NumArr]=Data;
+            }
+        });
+    }
+
+
+
+</script>
+
+
+<style type="text/css">
+    #topframe
+    {
+        z-index:1000;
+        position:fixed;
+        top:0px;
+        left:0px;
+        text-align: center;
+        width:1200px;
+    }
+
+    #status
+    {
+        width:1700px;
+        height:20px;
+        text-align: left;
+    }
+
+    #idRun
+    {
+        width:100px;
+    }
+
+    #BlockChainGraph
+    {
+        z-index:0;
+    }
+    div.vblock
+    {
+        z-index:10;
+        position: absolute;
+    }
+    div.header
+    {
+        cursor: move;
+        float:left;
+        width:175px;
+        height: 20px;
+        text-align: center;
+        border: 1px solid #000;
+        background: #DEE1AE;
+    }
+    input.vclose
+    {
+        right: 0px;
+        width:25px;
+        height: 21px;
+        background: #c6c996;
+    }
+    div.vdata
+    {
+        position: relative;
+        cursor:auto;
+        padding: 5px;
+        top:20;
+        width:190px;
+        border: 1px solid #000;
+        background2: #DEE1AE;
+        height2:150px;
+    }
+    div.nodestatus
+    {
+        position: relative;
+        float:left;
+        padding: 1px;
+        height:16px;
+        width:300px;
+        border: 1px solid #d1e3fe;
+        background: #f0f7fe;
+        text-align: center;
+    }
+
+</style>
+
+<DIV id="topframe">
+    <INPUT type="button" style="float:left" onclick="SetPause()" id="idRun">
+
+
+    <DIV id="status">  </DIV>
+</DIV>
+<DIV id="viewer">
+</DIV>
+
+
+<BR>
+<BR>
+<DIV id="diargams">
+</DIV>
+
+
+
+
+<canvas  width='1150' height='500' id='BlockChainGraph'></canvas>
+</body>
+</html>
+
+

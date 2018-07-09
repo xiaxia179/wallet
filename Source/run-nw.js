@@ -2,7 +2,8 @@
 nw.Window.open('./HTML/wallet.html',
     {
         width: 820,
-        height: 1000
+        height: 1000,
+        icon: "../HTML/PIC/wallet.png",
     }, function(win)
     {
         //win.showDevTools();
