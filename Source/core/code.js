@@ -4,6 +4,7 @@
 **/
 
 var fs = require("fs");
+const ZIP = require("zip");
 
 
 module.exports = class CCode extends require("./base")
@@ -54,7 +55,7 @@ module.exports = class CCode extends require("./base")
         var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");
         if(fs.existsSync(fname))
         {
-            this.UseCode();
+            this.UseCode(VersionNum,false);
             return;
         }
 
@@ -112,7 +113,7 @@ module.exports = class CCode extends require("./base")
                 fs.writeSync(file_handle, Info.Data,0,Info.Data.length);
                 fs.closeSync(file_handle);
 
-                this.UseCode(global.USE_AUTO_UPDATE);
+                this.UseCode(VersionNum,global.USE_AUTO_UPDATE);
 
 
             }
@@ -128,11 +129,11 @@ module.exports = class CCode extends require("./base")
         //установить флаг перезапуска приложения
     }
 
-    UseCode(bRestart)
+    UseCode(VersionNum,bRestart)
     {
         if(bRestart)
         {
-            UpdateCodeFiles();
+            UpdateCodeFiles(VersionNum);
         }
 
 
@@ -183,25 +184,6 @@ module.exports = class CCode extends require("./base")
 }
 
 
-function UpdateCodeFiles()
-{
-    if(global.NWMODE)
-    {
-        process.send({cmd:"update",message:{NUM_CODE_COPY:global.NUM_CODE_COPY, DATA_PATH:DATA_PATH, CODE_PATH:global.CODE_PATH}});
-    }
-    else
-    {
-        const updater=require("./updater.js");
-        var Num=updater.UpdateCodeFiles(global.NUM_CODE_COPY+1);
-        if(Num)
-        {
-            global.NUM_CODE_COPY=Num;
-            SAVE_CONST(true);
-        }
-    }
-
-    RestartNode();
-}
 
 
 global.RestartNode=function()
@@ -228,9 +210,9 @@ global.RestartNode=function()
 
 
         const child_process = require('child_process');
-        //child_process.exec("run-next.bat",{shell :true});
-        child_process.spawn("run-next.bat",[],{detached  :true});
-        child_process.unref();
+        child_process.exec("run-next.bat",{shell :true});
+        // child_process.spawn("run-next.bat",[],{detached  :true});
+        // child_process.unref();
     }
     else
     {
@@ -238,5 +220,92 @@ global.RestartNode=function()
     }
 
     process.exit();
+}
+
+
+
+function UpdateCodeFiles(StartNum)
+{
+    var fname=GetDataPath("Update");
+    if(!fs.existsSync(fname))
+        return 0;
+
+    var arr=fs.readdirSync(fname);
+    var arr2=[];
+    for(var i=0;i<arr.length;i++)
+    {
+        if(arr[i].substr(0,7)==="wallet-")
+        {
+            arr2.push(parseInt(arr[i].substr(7)));
+        }
+    }
+    arr2.sort(function (a,b)
+    {
+        return a-b;
+    });
+
+
+    for(var i=0;i<arr2.length;i++)
+    {
+        var Num=arr2[i];
+        var Name="wallet-"+Num+".zip";
+        var Path=fname+"/"+Name;
+
+        ToLog("Check file:"+Name);
+
+        if(fs.existsSync(Path))
+        {
+            if(StartNum===Num)
+            {
+                ToLog("UnpackCodeFile:"+Name);
+                UnpackCodeFile(Path);
+                RestartNode();
+                return 1;
+            }
+            else
+            {
+                ToLog("Delete old file update:"+Name);
+                fs.unlinkSync(Path);
+            }
+        }
+
+    }
+
+
+
+    return 0;
+}
+
+
+
+
+function UnpackCodeFile(fname)
+{
+
+    var data = fs.readFileSync(fname);
+    var reader = ZIP.Reader(data);
+
+    reader.forEach(function (entry)
+    {
+        var Name=entry.getName();
+        var Path=GetCodePath(Name);
+
+        if (entry.isFile())
+        {
+            //ToLog("unpack: "+Path);
+
+            var buf = entry.getData();
+            CheckCreateDir(Path,true,true);
+
+            var file_handle=fs.openSync(Path, "w");
+            fs.writeSync(file_handle, buf,0,buf.length);
+            fs.closeSync(file_handle);
+        }
+        else
+        {
+            //console.log(entry.getName(), entry.lastModified(), entry.getMode());
+        }
+    });
+    reader.close();
 }
 

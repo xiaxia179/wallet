@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=21;
-"update 21";
+global.UPDATE_CODE_VERSION_NUM=25;
+"update 25";
 
 require("./startlib.js");
 

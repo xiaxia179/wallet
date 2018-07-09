@@ -210,7 +210,7 @@ HTTPCaller.GetWalletInfo=function ()
 
             WalletOpen:WALLET.WalletOpen,
 
-            VersionNum:Math.max(CODE_VERSION.VersionNum,global.NUM_CODE_COPY),
+            VersionNum:Math.max(CODE_VERSION.VersionNum,global.UPDATE_CODE_VERSION_NUM),
             RelayMode:SERVER.RelayMode,
             BlockNumDB:SERVER.BlockNumDB,
             CurBlockNum:GetCurrentBlockNumByTime(),
