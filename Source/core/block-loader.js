@@ -1497,7 +1497,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
         //smart-contracrs
         //Отправляем сигнал об удалении старых блоков
-        //this.OnTruncate(arr[0]);
+        this.OnTruncate(arr[0]);
 
         var CurrentBlockNum=GetCurrentBlockNumByTime()
 

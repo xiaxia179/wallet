@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TEREONUS</title>
+    <title>TERA</title>
     <link rel="shortcut icon" href="/HTML/PIC/wallet.png" type="image/png">
 
     <link rel="stylesheet" type="text/css" href="../HTML/CSS/wallet.css">
@@ -452,7 +452,8 @@
 
         var TR=
             {
-                Type:105,
+                Type:110,
+                Version:2,
                 Currency:0,
                 FromID:FromID,
                 OperationID:OperationID,
@@ -474,7 +475,7 @@
         CurrentTR=TR;
 
 
-        GetData("/GetSignTransaction/",CurrentTR, function (Data)
+        GetData("/GetSignTransaction",CurrentTR, function (Data)
         {
             if(Data && Data.result===1)
             {
@@ -581,7 +582,7 @@
 
         CurrentTR=TR;
 
-        GetData("/GetSignTransaction/",CurrentTR, function (Data)
+        GetData("/GetSignTransaction",CurrentTR, function (Data)
         {
             if(Data && Data.result===1)
             {
@@ -607,7 +608,7 @@
                 Str="New account "+TR.Description.substr(0,20);
             }
             else
-            if(TR.Type===105)
+            if(TR.Type===110)
             {
                 var MapItem={};
                 var ValueTotal={SumTER:0,SumCENT:0};
@@ -653,6 +654,7 @@
     {
         var Body=[];
         WriteByte(Body,TR.Type)
+        WriteByte(Body,TR.Version)
         WriteUint(Body,TR.Currency)
         WriteUint(Body,TR.FromID)
         WriteUint32(Body,TR.To.length);
@@ -944,7 +946,7 @@
         if(!Data || !Data.result)
             return;
 
-        document.title="TEREONUS 1."+Data.VersionNum;
+        document.title="TERA 1."+Data.VersionNum;
         SetBlockChainConstant(Data);
         MaxBlockNum=GetCurrentBlockNumByTime();
 

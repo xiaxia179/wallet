@@ -1,7 +1,7 @@
 "use strict";
 //Consensus
 /*
- * TEREONUS project
+ * TERA.FOUNDATION project
  * Copyright: Yuriy Ivanov, 2017 e-mail: progr76@gmail.com
  * Created by vtools on 18.12.2017.
  */

@@ -18,6 +18,7 @@ global.MAX_ACT_ROW_LENGTH=TRANSACTION_PROOF_COUNT*2;//130Mb (for proof=1 млн)
 const TYPE_TRANSACTION_CREATE=100;
 //const TYPE_TRANSACTION_CHANGE=102;
 const TYPE_TRANSACTION_TRANSFER=105;
+const TYPE_TRANSACTION_TRANSFER2=110;
 
 
 global.FORMAT_MONEY_TRANSFER=
@@ -33,6 +34,20 @@ global.FORMAT_MONEY_TRANSFER=
 const WorkStructTransfer={};
 global.FORMAT_MONEY_TRANSFER_BODY=FORMAT_MONEY_TRANSFER.replace("Sign:arr64,","");
 
+
+global.FORMAT_MONEY_TRANSFER2=
+    "{\
+    Type:byte,\
+    Version:byte,\
+    Currency:uint,\
+    FromID:uint,\
+    To:[{ID:uint,SumTER:uint,SumCENT:uint32}],\
+    Description:str,\
+    OperationID:uint,\
+    Sign:arr64,\
+    }";//1+6+6+4+2+16*N+64=87+16*N + str
+const WorkStructTransfer2={};
+global.FORMAT_MONEY_TRANSFER_BODY2=FORMAT_MONEY_TRANSFER2.replace("Sign:arr64,","");
 
 
 
@@ -191,7 +206,12 @@ class CApp extends require("./dapp")
 
             case TYPE_TRANSACTION_TRANSFER:
             {
-                Result=this.TRTransferMoney(Body,BlockNum);
+                Result=this.TRTransferMoney(Body,BlockNum,FORMAT_MONEY_TRANSFER,WorkStructTransfer);
+                break;
+            }
+            case TYPE_TRANSACTION_TRANSFER2:
+            {
+                Result=this.TRTransferMoney(Body,BlockNum,FORMAT_MONEY_TRANSFER2,WorkStructTransfer2);
                 break;
             }
         }
@@ -375,14 +395,14 @@ class CApp extends require("./dapp")
     }
 
 
-    TRTransferMoney(Body,BlockNum)
+    TRTransferMoney(Body,BlockNum,format_money_transfer,workstructtransfer)
     {
         if(Body.length<103)
             return "Error length transaction (retry transaction)";
 
         try
         {
-            var TR=BufLib.GetObjectFromBuffer(Body,FORMAT_MONEY_TRANSFER,WorkStructTransfer);
+            var TR=BufLib.GetObjectFromBuffer(Body,format_money_transfer,workstructtransfer);
         }
         catch (e)
         {
@@ -425,22 +445,11 @@ class CApp extends require("./dapp")
         if(Data.Value.SumTER<TotalSum.SumTER || (Data.Value.SumTER===TotalSum.SumTER && Data.Value.SumCENT<TotalSum.SumCENT))
             return "Not enough money on the account";
 
-        //check sign
-        var hash=shabuf(Body.slice(0,Body.length-64-12));
-        var Result=0;
-        if(Data.PubKey[0]===2 || Data.PubKey[0]===3)
-        try{Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);}catch (e){};
-        if(!Result)
-        {
-            return "Error sign transaction";
-        }
-
-
         //transfer sum
         var arr=[];
 
-
         MapItem={};
+        var arrpub=[];
         for(var i=0;i<TR.To.length;i++)
         {
             var Item=TR.To[i];
@@ -451,6 +460,8 @@ class CApp extends require("./dapp")
             if(TR.Currency!==DataTo.Currency)
                 return "Error receiver currency";
 
+            for(var j=0;j<33;j++)
+                arrpub[arrpub.length]=DataTo.PubKey[j];
 
             if(Item.ID===TR.FromID || MapItem[Item.ID])
                 continue;
@@ -469,6 +480,34 @@ class CApp extends require("./dapp")
         if(arr.length===0)
             return "No recipients";
 
+
+
+        //check sign
+        var hash;
+        if(TR.Version===2)
+        {
+            for(var j=0;j<Body.length-64-12;j++)
+                arrpub[arrpub.length]=Body[j];
+            hash=shabuf(arrpub);
+        }
+        else
+        if(!TR.Version)
+        {
+            hash=shabuf(Body.slice(0,Body.length-64-12));
+        }
+        else
+        {
+            return "Error transaction version";
+        }
+
+
+        var Result=0;
+        if(Data.PubKey[0]===2 || Data.PubKey[0]===3)
+        try{Result=secp256k1.verify(hash, TR.Sign, Data.PubKey);}catch (e){};
+        if(!Result)
+        {
+            return "Error sign transaction";
+        }
 
         Data.PrevValue=CopyObjValue(Data.Value);
         Data.ActDirect="-";
@@ -798,4 +837,5 @@ var App=new CApp;
 DApps["Accounts"]=App;
 DAppByType[TYPE_TRANSACTION_CREATE]=App;
 DAppByType[TYPE_TRANSACTION_TRANSFER]=App;
+DAppByType[TYPE_TRANSACTION_TRANSFER2]=App;
 

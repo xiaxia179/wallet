@@ -1,7 +1,7 @@
 {
-  "name": "Tereonus",
+  "name": "Tera",
   "version": "1.0.0",
-  "description": "Tereonus wallet",
+  "description": "Tera wallet",
   "main": "run-nw.js",
   "main2": "run-electron.js",
   "repository": "https://github.com/blockriver/wallet",

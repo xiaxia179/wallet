@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=25;
-"update 25";
+global.UPDATE_CODE_VERSION_NUM=26;
+"update 26";
 
 require("./startlib.js");
 
@@ -82,7 +82,7 @@ InitParams();
 
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=1530962287311;//(new Date)-0;//1530781502576+(1)*1000;//
+    global.START_NETWORK_DATE=1531166959647;//(new Date)-0;//1530781502576+(1)*1000;//
     NETWORK="TEST-R3";
 }
 

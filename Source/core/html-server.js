@@ -282,7 +282,7 @@ HTTPCaller.OpenWallet=function (Password)
 
 
 
-HTTPCaller.GetSignTransaction=function (TR,Param2,Param3)
+HTTPCaller.GetSignTransaction=function (TR)
 {
     var Sign=WALLET.GetSignTransaction(TR);
     return {Sign:Sign,result:1};

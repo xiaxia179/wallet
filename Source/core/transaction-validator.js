@@ -101,13 +101,13 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
      }
 
-    // OnTruncate(Block)
-    // {
-    //     for(var key in DApps)
-    //     {
-    //         DApps[key].OnTruncateBlock(Block);
-    //     }
-    // }
+    OnTruncate(Block)
+    {
+        for(var key in DApps)
+        {
+            DApps[key].OnTruncateBlock(Block);
+        }
+    }
 
 
 

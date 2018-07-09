@@ -2419,10 +2419,10 @@ module.exports = class CTransport extends require("./connect")
         {
             if (err.code === 'EADDRINUSE')
             {
-                ToLog('Port '+SELF.port+' in use, retrying...');
+                ToLogClient('Port '+SELF.port+' in use, retrying...');
+                SELF.Server.close();
                 setTimeout(() =>
                 {
-                    SELF.Server.close();
                     SELF.RunListenServer();
                 }, 5000);
                 return;
@@ -2446,6 +2446,7 @@ module.exports = class CTransport extends require("./connect")
     RunListenServer()
     {
         let SELF=this;
+        ToLogClient("Prepare to run TCP server on port: "+SELF.port);
         this.Server.listen(SELF.port, '0.0.0.0', () =>
         {
             SELF.CanSend++;

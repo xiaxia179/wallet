@@ -303,8 +303,36 @@ class CApp
 
     GetSignTransaction(TR)
     {
-        var Buf=BufLib.GetBufferFromObject(TR,FORMAT_MONEY_TRANSFER_BODY,MAX_TRANSACTION_SIZE,{});
-        return this.GetSignFromArr(Buf)
+        var Arr;
+        if(TR.Version===2)
+        {
+            Arr=[];
+            for(var i=0;i<TR.To.length;i++)
+            {
+                var Item=TR.To[i];
+
+                var DataTo=DApps.Accounts.ReadValue(Item.ID);
+                if(!DataTo)
+                    return "Error receiver account ID";
+                if(TR.Currency!==DataTo.Currency)
+                    return "Error receiver currency";
+
+                for(var j=0;j<33;j++)
+                    Arr[Arr.length]=DataTo.PubKey[j];
+            }
+
+            var Body=BufLib.GetBufferFromObject(TR,FORMAT_MONEY_TRANSFER_BODY2,MAX_TRANSACTION_SIZE,{});
+
+            for(var j=0;j<Body.length;j++)
+                Arr[Arr.length]=Body[j];
+
+
+        }
+        else
+        {
+            Arr=BufLib.GetBufferFromObject(TR,FORMAT_MONEY_TRANSFER_BODY,MAX_TRANSACTION_SIZE,{});
+        }
+        return this.GetSignFromArr(Arr)
     }
 
     GetHistoryMaxNum()

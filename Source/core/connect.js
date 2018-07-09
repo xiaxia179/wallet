@@ -286,6 +286,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             }
             else
             {
+                Node.NextConnectDelta=60*1000;
                 ToLog("Error Sign CheckPoint="+Data.CheckPoint.BlockNum+" from "+NodeInfo(Node));
                 this.AddCheckErrCount(Node,1,"Error Sign CheckPoint");
             }
@@ -308,6 +309,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             {
                 ToLog("Error Sign CodeVersion="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
                 this.AddCheckErrCount(Node,1,"Error Sign CodeVersion");
+                Node.NextConnectDelta=60*1000;
             }
         }
 
@@ -319,6 +321,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(CHECK_POINT.BlockNum!==Data.CheckPoint.BlockNum || CompareArr(CHECK_POINT.Hash,Data.CheckPoint.Hash)!==0)
             {
                 Node.CanHot=false;
+                Node.NextConnectDelta=60*1000;
             }
         }
         else
@@ -327,6 +330,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(Data.CodeVersion.VersionNum<CODE_VERSION.VersionNum)
             {
                 ToLog("ERR VersionNum="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
+                Node.NextConnectDelta=60*1000;
             }
         }
 
