@@ -1,5 +1,6 @@
 ﻿## TERA Smart money
 
+* WARNING: To connect to the network and start sync, you must have a static IP address and an open port
 
 
 Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe
