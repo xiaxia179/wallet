@@ -40,13 +40,14 @@ if(!FindList)
 
 if(global.LOCAL_RUN)
 {
-    FindList=[{"ip":"127.0.0.1","port":40000}];
+    FindList=[{"ip":"127.0.0.1","port":41000},{"ip":"127.0.0.1","port":41001}];
 }
 if(global.TEST_DEVELOP_MODE)
     FindList=[{"ip":"91.235.136.81","port":30002}];
 
 
 global.SERVER=undefined;
+var idRunOnUpdate;
 var Worker;
 
 
@@ -158,10 +159,16 @@ else
 function ReconnectingFromServer()
 {
     if(!SERVER || SERVER.CanSend<2)
+    {
+        //ToLog("Not can send")
         return;
+    }
 
     if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
+    {
+        //ToLog("!UseDirectIP")
         return;
+    }
 
     if(ArrReconnect.length)
     {
@@ -170,7 +177,10 @@ function ReconnectingFromServer()
         if(global.TEST_DEVELOP_MODE)
         {
             if(!Node.StartFindList)
+            {
+                ToLog("!StartFindList")
                 return;
+            }
         }
 
         Node.WasAddToReconnect=undefined;
@@ -227,7 +237,9 @@ function ConnectToNodes()
 
 function RunServer(bVirtual)
 {
-    ToLog("CODE_VERSION_NUM:"+UPDATE_CODE_VERSION_NUM);
+    idRunOnUpdate=setInterval(RunOnUpdate,100);
+    ToLog("NETWORK: "+GetNetworkName());
+    ToLog("VERSION: "+DEF_VERSION);
 
     if(global.NET_WORK_MODE)// && NET_WORK_MODE.UseDirectIP)
     {
@@ -279,4 +291,32 @@ function DoStartFindList()
     }
 }
 
+function RunOnUpdate()
+{
+    if(global.SERVER)
+    {
+        clearInterval(idRunOnUpdate);
+
+        if(UPDATE_NUM_COMPLETE!==UPDATE_CODE_VERSION_NUM)
+        {
+            global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
+            SAVE_CONST(true);
+
+            global.SendLogToClient=1;
+            ToLog("UPDATER Start");
+            //DO UPDATE
+            //DO UPDATE
+            //DO UPDATE
+            //----------------------------------------------------------------------------------------------------------
+
+            if(UPDATE_CODE_VERSION_NUM===27)
+                SERVER.ReWriteDAppTransactions(0);
+
+            //----------------------------------------------------------------------------------------------------------
+            ToLog("UPDATER Finish");
+            global.SendLogToClient=0;
+        }
+
+    }
+}
 

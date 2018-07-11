@@ -30,6 +30,10 @@ class DApp
         SERVER.AddTransaction(Body);
     }
 
+    GetScriptTransaction(Body)
+    {
+        return "";
+    }
 
 
 

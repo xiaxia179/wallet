@@ -21,16 +21,9 @@ global.BufLib=require("../core/buffer");
 
 //sha
 //global.sha = require('js-sha3').keccak512;
-const SHA=require('../HTML/JS/sha3.js');
+require('../HTML/JS/sha3.js');
 var jsSHA_CHECK;
 //jsSHA_CHECK = require("jssha");
-
-
-//global.sha  = SHA.sha3_256;
-//global.shaarr = SHA.sha3_array_256;
-//global.shabuf=function (data){ return Buffer.from(shaarr(data)) };
-
-
 function Sha_CheckStr(arr)
 {
     if(!jsSHA_CHECK)
@@ -89,6 +82,20 @@ global.ReadUintFromArr=function(arr)
     arr.len+=6;
     return value;
 }
+global.WriteUintToArr=function (arr,Num)
+{
+    var len=arr.length;
+    arr[len]=Num&0xFF;
+    arr[len+1]=(Num>>>8) & 0xFF;
+    arr[len+2]=(Num>>>16) & 0xFF;
+    arr[len+3]=(Num>>>24) & 0xFF;
+
+    var NumH=Math.floor(Num/4294967296);
+    arr[len+4]=NumH&0xFF;
+    arr[len+5]=(NumH>>>8) & 0xFF;
+
+}
+
 global.WriteUint32ToArr=function (arr,Num)
 {
     var len=arr.length;
@@ -96,6 +103,30 @@ global.WriteUint32ToArr=function (arr,Num)
     arr[len+1]=(Num>>>8) & 0xFF;
     arr[len+2]=(Num>>>16) & 0xFF;
     arr[len+3]=(Num>>>24) & 0xFF;
+}
+
+global.WriteArrToArr=function(arr,arr2,ConstLength)
+{
+    var len=arr.length;
+    for(var i=0;i<ConstLength;i++)
+    {
+        arr[len+i]=arr2[i];
+    }
+}
+
+global.ConvertBufferToStr=function(Data)
+{
+    for(var key in Data)
+    {
+        var item=Data[key];
+        if(item instanceof Buffer)
+        {
+            Data[key]=GetHexFromArr(item);
+        }
+        else
+        if(typeof item==="object")
+            ConvertBufferToStr(item);
+    }
 }
 
 
@@ -408,11 +439,12 @@ global.CompareItemTimePow=function(a,b)
 
 
 
-var const_name_arr=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE"];
+var const_name_arr=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE","UPDATE_NUM_COMPLETE"];
 global.DELTA_CURRENT_TIME=0;
 global.SERVER_PRIVATE_KEY_HEX=undefined;
 global.NET_WORK_MODE=undefined;
 global.STAT_MODE=0;
+global.UPDATE_NUM_COMPLETE=0;
 
 
 global.LOAD_CONST=function ()

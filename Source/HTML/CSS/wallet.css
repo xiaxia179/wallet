@@ -18,13 +18,14 @@ table
 .grid td
 {
     width: 60px;
-    text-align: right;
+    text-align2: right;
 }
+
 
 td.sum
 {
     text-align: right;
-    width: 150px;
+    width: 50px;
     font-weight: 700;
 }
 td.num
@@ -47,12 +48,12 @@ td.txt
 td.desc
 {
     text-align: left;
-    width: 300px;
+    width: 100px;
 }
 td.name
 {
     text-align: center;
-    width: 300px;
+    width: 100px;
 }
 
 td.date
@@ -107,6 +108,24 @@ table.form_input
     width: 120px;
 }
 
+
+
+
+
+.code
+{
+    width: 240px;
+    font-family: "courier new", "times new roman", monospace;
+    font-size: small;
+    align-content: left;
+    text-align: left;
+    word-break: break-all;
+}
+
+#idTotalSum
+{
+    text-align: left;
+}
 
 /*CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG CONFIG*/
 /*Просмотр ключей*/
@@ -194,3 +213,31 @@ table.keys
     font-weight: 700;
 }
 
+
+#view_header
+{
+    width: 800px;
+    font-weight: 600;
+    color: black;
+    text-align: center;
+}
+#view_header_tr
+{
+    width: 800px;
+    font-weight: 600;
+    color: black;
+    text-align: center;
+}
+
+
+#idPaginationHistory, #idPaginationBlock, #idPaginationAccount, #idPaginationAct, #idPaginationHash, #idUtilView
+{
+    width: 800px;
+    align-content: center;
+    text-align: center;
+}
+
+#MAIN
+{
+    align-content: left;
+}

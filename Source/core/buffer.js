@@ -156,6 +156,21 @@ function Write(buf,data,StringFormat,ParamValue,WorkStruct)
                 buf.len+=32;
                 break;
             }
+            case "buffer":
+            {
+                var length;
+                if(ParamValue===undefined)
+                    length=data.length;
+                else
+                    length=Math.min(ParamValue,data.length);
+
+                for(var i=0;i<length;i++)
+                {
+                    buf[buf.len+i]=data[i];
+                }
+                buf.len+=ParamValue;
+                break;
+            }
             case "arr":
             {
                 var length;
@@ -213,22 +228,7 @@ function Write(buf,data,StringFormat,ParamValue,WorkStruct)
                 buf.len+=length;
                 break;
             }
-            case "buffer":
-            {
-                var length;
-                if(ParamValue===undefined)
-                    length=data.length;
-                else
-                    length=Math.min(ParamValue,data.length);
-
-                for(var i=0;i<length;i++)
-                {
-                    buf[buf.len+i]=data[i];
-                }
-                buf.len+=ParamValue;
-                break;
-            }
-            case "hashSTR":
+             case "hashSTR":
             {
                 var Str=GetHexFromAddres(data);
                 buf.write(Str,buf.len,64);
@@ -311,47 +311,72 @@ function Read(buf,StringFormat,ParamValue,WorkStruct)
         //     else
         //         format=format+"STR";
         // }
-        if(format.substr(0,6)==="buffer" && format.length>6)
+        if(format.substr(0,6)==="buffer")
         {
-            ParamValue=parseInt(format.substr(6));
-            format="buffer";
-        }
-        else
-        if(format.substr(0,3)==="arr" && format.length>3)
-        {
-            ParamValue=parseInt(format.substr(3));
-            format="arr";
-        }
-        else
-        if(format.substr(0,3)==="str" && format.length>3)
-        {
-            //return Read(buf,ParamValue);
-            var length=parseInt(format.substr(3));
-            ret=buf.toString('utf8',buf.len,buf.len+length);
-            buf.len+=length;
-
-            var nEnd=-1;
-            for(var i=ret.length-1;i>=0;i--)
+            if(format.length>6)
             {
-                if(ret.charCodeAt(i)!==0)
-                {
-                    nEnd=i;
-                    break;
-                }
+                ParamValue=parseInt(format.substr(6));
+                format="buffer";
             }
-            if(nEnd>=0)
-                ret=ret.substr(0,i+1);
             else
-                ret="";
+            {
+                ParamValue=0;
+            }
+        }
+        else
+        if(format.substr(0,3)==="arr")
+        {
+            if(format.length>3)
+            {
+                ParamValue=parseInt(format.substr(3));
+                format="arr";
+            }
+            else
+            {
+                ParamValue=0;
+            }
+        }
+        else
+        if(format.substr(0,3)==="str")
+        {
+            if(format.length>3)
+            {
+                var length=parseInt(format.substr(3));
+                ret=buf.toString('utf8',buf.len,buf.len+length);
+                buf.len+=length;
 
-            return ret;
+                var nEnd=-1;
+                for(var i=ret.length-1;i>=0;i--)
+                {
+                    if(ret.charCodeAt(i)!==0)
+                    {
+                        nEnd=i;
+                        break;
+                    }
+                }
+                if(nEnd>=0)
+                    ret=ret.substr(0,i+1);
+                else
+                    ret="";
+
+                return ret;
+            }
+            else
+            {
+                ParamValue=0;
+            }
         }
 
         switch (format)
         {
             case "str":
             {
-                var length=buf[buf.len] + buf[buf.len+1]*256;
+                var length;
+                if(buf.len+2<=buf.length)
+                    length=buf[buf.len] + buf[buf.len+1]*256;
+                else
+                    length=0;
+
                 buf.len+=2;
                 var arr=buf.slice(buf.len,buf.len+length);
                 ret=Utf8ArrayToStr(arr);
@@ -361,38 +386,56 @@ function Read(buf,StringFormat,ParamValue,WorkStruct)
             }
             case "byte":
             {
-                ret=buf[buf.len];
+                if(buf.len+1<=buf.length)
+                    ret=buf[buf.len];
+                else
+                    ret=0;
                 buf.len+=1;
                 break;
             }
             case "double":
             {
-                ret=buf.readDoubleLE(buf.len,8);
+                if(buf.len+8<=buf.length)
+                    ret=buf.readDoubleLE(buf.len,8);
+                else
+                    ret=0;
                 buf.len+=8;
                 break;
             }
             case "uint":
             {
-                ret=buf.readUIntLE(buf.len,6);
+                if(buf.len+6<=buf.length)
+                    ret=buf.readUIntLE(buf.len,6);
+                else
+                    ret=0;
                 buf.len+=6;
                 break;
             }
             case "uint16":
             {
-                ret=buf[buf.len] + buf[buf.len+1]*256;
+                if(buf.len+2<=buf.length)
+                    ret=buf[buf.len] + buf[buf.len+1]*256;
+                else
+                    ret=0;
                 buf.len+=2;
                 break;
             }
             case "uint32":
             {
-                ret=buf.readUInt32LE(buf.len,4);
+                if(buf.len+4<=buf.length)
+                    ret=buf.readUInt32LE(buf.len,4);
+                else
+                    ret=0;
                 buf.len+=4;
                 break;
             }
             case "time":
             {
-                var value=buf.readUIntLE(buf.len,6);
-                ret=new Date(value);
+                if(buf.len+6<=buf.length)
+                    ret=buf.readUIntLE(buf.len,6);
+                else
+                    ret=0;
+                ret=new Date(ret);
                 buf.len+=6;
                 break;
             }
@@ -402,24 +445,33 @@ function Read(buf,StringFormat,ParamValue,WorkStruct)
                 ret=[];
                 for(var i=0;i<32;i++)
                 {
-                    ret[i]=buf[buf.len+i];
+                    if(buf.len+i<=buf.length)
+                        ret[i]=buf[buf.len+i];
+                    else
+                        ret[i]=0;
                 }
+
+
                 buf.len+=32;
                 break;
             }
+
+            case "buffer":
+            // {
+            //     ret=buf.slice(buf.len,buf.len+ParamValue);
+            //     buf.len+=ParamValue;
+            //     break;
+            // }
             case "arr":
             {
-                ret=buf.slice(buf.len,buf.len+ParamValue);
+                if(buf.len+ParamValue<=buf.length)
+                    ret=buf.slice(buf.len,buf.len+ParamValue);
+                else
+                    ret=Buffer.alloc(ParamValue);
                 buf.len+=ParamValue;
                 break;
             }
-            // case "tr":
-            // {
-            //     ret=buf.slice(buf.len,buf.len+TR_LEN);
-            //     buf.len+=TR_LEN;
-            //     break;
-            // }
-            case "tr":
+             case "tr":
             {
                 if(buf.len+1>=buf.length)
                 {
@@ -435,9 +487,13 @@ function Read(buf,StringFormat,ParamValue,WorkStruct)
             }
             case "data":
             {
-                var length=buf.readUInt32LE(buf.len,4);
-                if(length>buf.length)
-                     length=buf.length;
+                var length;
+                if(buf.len+4<=buf.length)
+                    length=buf.readUInt32LE(buf.len,4);
+                else
+                    length=0;
+                if(length>buf.length-buf.len-4)
+                     length=0;
 
                 buf.len+=4;
                 ret=buf.slice(buf.len,buf.len+length);
@@ -445,12 +501,6 @@ function Read(buf,StringFormat,ParamValue,WorkStruct)
                 break;
             }
 
-            case "buffer":
-            {
-                ret=buf.slice(buf.len,buf.len+ParamValue);
-                buf.len+=ParamValue;
-                break;
-            }
 
 
             case "hashSTR":
@@ -482,7 +532,7 @@ function Read(buf,StringFormat,ParamValue,WorkStruct)
                     var length=Read(buf,"uint32");
                     for(var i=0;i<length;i++)
                     {
-                        if(buf.len<buf.length)
+                        if(buf.len<=buf.length)
                             ret[i]=Read(buf,formatNext,undefined,WorkStruct);
                         else
                             break;
@@ -681,87 +731,4 @@ function GetAttributes(Str)
     }
     return arr;
 }
-
-////////////////////////////////////////////////////////////////
-//TEST TEST
-
-function TestParsingFormat1()
-{
-    var format="[{BlockNum:uint,AddrHash:hash,PrevHash:hash,TreeHash:hash}]";
-    console.log(format);
-    var format2=GetMiddleString(format,"[","]");
-    console.log(format2);
-    console.log(GetMiddleString(format2,"{","}"));
-
-
-    // var formatNext=GetMiddleString(format2,"{","}");
-    // var arr=formatNext.split(',');
-    //
-    // console.log(arr);
-}
-function TestParsingFormat2()
-{
-    var format="BlockNum:uint, Arr1:[{Val1:uint,Val2:uint}], PrevHash:{Val1:uint,Val2:uint},TreeHash:hash";
-    console.log(format);
-    var format2=GetAttributeStrings(format);
-
-    console.log(GetKeyValueStrings("BlockNum:uint"));
-    console.log(GetKeyValueStrings("Arr1:[{Val1:uint,Val2:uint}]"));
-}
-
-
-
-function TestObjectSerilyze()
-{
-    var buf=GetNewBuffer(1000);
-    var format="[{val1:byte,val2:byte,arr:[byte]}]";
-    var data1=[{val1:1,val2:2,arr:[5,5,5]}, {val1:11,val2:12,arr:[6,6,6]}, {val1:21,val2:22,arr:[7,7,8]}];
-    console.log(data1);
-
-    //write
-    buf.Write(data1,format);
-    //console.log(buf);
-
-    //read
-    buf.len=0;
-    var data2=buf.Read(format);
-    console.log(data2);
-
-}
-
-function TestObjectSerilyze2()
-{
-    var hash=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
-    var hash65=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,255,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
-    var Data=
-        {
-            "SendNumber":1,
-            "BlockNum":105,
-            "Array":[hash65],
-            "MaxPOW":[{BlockNum:102,AddrHash:hash,PrevHash:hash,TreeHash:hash}],
-        };
-    var format=
-        "{" +
-        "SendNumber:uint16," +
-        "BlockNum:uint," +
-        "Array:[buffer65],"+
-        "MaxPOW:[{BlockNum:uint,AddrHash:hash,PrevHash:hash,TreeHash:hash}]," +
-        "}";
-
-    var BufWrite=GetBufferFromObject(Data,format,64000);
-    var BufData=BufWrite;//.slice(0,BufWrite.len);
-
-
-    var Data2=GetObjectFromBuffer(BufData,format);
-    console.log(Data);
-    console.log(Data2);
-
-}
-//TestParsingFormat2();
-// TestObjectSerilyze2();
-// TestParsingFormat1();
-// TestObjectSerilyze2();
-// var buf=Buffer.alloc(6);
-// buf.writeUIntLE(281474976710656,0,6);
-// process.exit(0);
 

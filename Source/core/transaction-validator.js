@@ -58,29 +58,62 @@ module.exports = class CSmartContract extends require("./block-exchange")
         return 1;
     }
 
-    ReWriteDAppTransactions(StartNum,bToLogClient)
+    ReWriteDAppTransactions(StartNum,EndNum)
     {
         if(StartNum===undefined)
             return;
-        ToLog("Rewrite from: "+StartNum+" to "+this.BlockNumDB,bToLogClient);
-        for(var Num=StartNum;Num<=this.BlockNumDB;Num++)
+        if(EndNum===undefined)
+            EndNum=this.BlockNumDB;
+
+        ToLog("Rewrite from: "+StartNum+" to "+EndNum);
+        for(var Num=StartNum;Num<=EndNum;Num++)
         {
-            var Block=this.ReadBlockDB(Num);
-            this.OnWriteBlock(Block);
+            if(Num>BLOCK_PROCESSING_LENGTH2)
+            {
+                var Block=this.ReadBlockDB(Num);
+                Block.Num1=1;
+                this.OnWriteBlock(Block);
+            }
         }
-        ToLog("Rewriting complete",bToLogClient);
+        ToLog("Rewriting complete");
     }
 
+    AddDAppTransactions(BlockNum,Arr)
+    {
+        var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
+        if(Arr.length)
+        {
+            var Hash=DApps.Accounts.GetHash(BlockNumHash);
+            if(Hash)
+            {
+                var Body=[115];
+                WriteUintToArr(Body,BlockNumHash);
+                WriteArrToArr(Body,Hash,32);
+                var Tr={body:Body};
+                this.CheckCreateTransactionHASH(Tr);
+                Arr.unshift(Tr);
+            }
+            else
+            {
+                ToLogTrace("!Hash  BlockNum:"+BlockNumHash);
+            }
+        }
+
+    }
 
     //EVENTS
     //EVENTS
     //EVENTS
     OnWriteBlock(Block)
     {
+
         for(var key in DApps)
         {
             DApps[key].OnWriteBlockStart(Block);
         }
+
+
+
 
         var BlockNum=Block.BlockNum;
         var arr=Block.arrContent;
@@ -92,7 +125,9 @@ module.exports = class CSmartContract extends require("./block-exchange")
             {
                 var Result=App.OnWriteTransaction(arr[i],BlockNum,i);
             }
-         }
+        }
+
+
 
         for(var key in DApps)
         {
@@ -109,11 +144,14 @@ module.exports = class CSmartContract extends require("./block-exchange")
         }
     }
 
-
-
-
-
-
 }
 
 
+
+// setTimeout(function ()
+// {
+//     console.time("*****************************************************************************ReWriteDAppTransactions")
+//     SERVER.ReWriteDAppTransactions(0,1000);
+//     console.timeEnd("*****************************************************************************ReWriteDAppTransactions")
+//     process.exit()
+// },1000)

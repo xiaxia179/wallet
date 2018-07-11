@@ -17,7 +17,7 @@ const STAT_BLOCK_LOAD_PERIOD=CONSENSUS_PERIOD_TIME/5;
 
 
 
-global.COUNT_BLOCKS_FOR_LOAD=400;
+global.COUNT_BLOCKS_FOR_LOAD=600;
 
 
 global.COUNT_HISTORY_BLOCKS_FOR_LOAD=3000;
@@ -41,11 +41,9 @@ const Formats=
         arrContent:[tr],\
         }",
     WRK_BLOCK_TRANSFER:{},
-
-
-
-
 }
+
+
 
 module.exports = class CBlock extends require("./db/block-db")
 {
@@ -227,7 +225,9 @@ module.exports = class CBlock extends require("./db/block-db")
         this.LoadHistoryContext={Node:Node,BlockNum:this.BlockNumDB,MapSend:{},Foward:1,Pause:0,DeltaBlockNum:10};
 
         this.DeleteAllNodesFromHot("LOAD_HISTORY_MODE");
+
         ToLog("LOADHISTORYMODE ON")
+        ToLogClient("Start synchronization")
     }
 
     //Загрузка блоков из других узлов - от заданного хеша блока (поиск назад)
@@ -310,8 +310,8 @@ module.exports = class CBlock extends require("./db/block-db")
         if(this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2)
         {
             this.LoadHistoryMode=false;
+            ToLogClient("Finish synchronization")
             ToLog("LOADHISTORYMODE OFF")
-            //return;
         }
 
 
@@ -409,14 +409,13 @@ module.exports = class CBlock extends require("./db/block-db")
                         chain.StopSend=true;
                         chain.AddInfo("Stop load #1");
 
+                        //TODO:
+                        //Проверять что цепочка имеет право на загрузку (у нее высокий POW и ранее это подтверждено загрузкой ее части)
 
-                        // if(this.RelayMode)
-                        // {
-                            this.BlockNumDB=chain.BlockNum;
-                            this.TruncateBlockDB(chain.BlockNum);
-                            this.StartLoadHistory();
-                            return;
-                        // }
+                        this.BlockNumDB=chain.BlockNum;
+                        this.TruncateBlockDB(chain.BlockNum);
+                        this.StartLoadHistory();
+                        return;
 
                     }
                     else
@@ -897,10 +896,12 @@ module.exports = class CBlock extends require("./db/block-db")
                 {
                     break;
                 }
+                //TODO
+                Context.FindCheckPoint=true;
             }
             if(Block.BlockNum<SERVER.BlockNumDB)
             {
-                ToLog("*************************************************************************Block.BlockNum<SERVER.BlockNumDB : "+Block.BlockNum+" < "+SERVER.BlockNumDB);
+                //ToLog("*************************************************************************Block.BlockNum<SERVER.BlockNumDB : "+Block.BlockNum+" < "+SERVER.BlockNumDB);
                 break;
             }
 
@@ -1512,7 +1513,6 @@ module.exports = class CBlock extends require("./db/block-db")
             if(Block.TreeEq)
             {
                 this.ReadBlockBodyDB(Block);//for smart contracts and mem
-
                 Res=this.WriteBlockDBFinaly(Block);
             }
             else
@@ -1521,6 +1521,11 @@ module.exports = class CBlock extends require("./db/block-db")
                 {
                     Block.BodyFileNum=0;
                     Res=this.WriteBlockDB(Block);
+                }
+                else
+                {
+                    ToLogTrace("IsZeroArr(Block.TreeHash)")
+                    throw "IsZeroArr(Block.TreeHash)";
                 }
             }
             if(!Res)
@@ -1846,10 +1851,26 @@ module.exports = class CBlock extends require("./db/block-db")
             var TreeHash=this.CalcTreeHashFromArrBody(arrContent);
             if(CompareArr(Block.TreeHash,TreeHash)!==0)
             {
-                ToLog("BAD CMP TreeHash block="+Block.BlockNum+" from:"+Info.Node.port+"  TreeHash="+GetHexFromAddres(TreeHash)+"  BlockTreeHash="+GetHexFromAddres(Block.TreeHash));
+                ToLog("BAD CMP TreeHash block="+Block.BlockNum+" from:"+NodeName(Info.Node)+"  TreeHash="+GetHexFromAddres(TreeHash)+"  BlockTreeHash="+GetHexFromAddres(Block.TreeHash));
                 this.SetBlockNOSendToNode(Block,Info.Node,"BAD CMP TreeHash");
                 return;
             }
+
+            //DApp check
+            if(arrContent.length>0)
+            {
+                var TR=arrContent[0];
+                if(TR[0]===TYPE_TRANSACTION_ACC_HASH)
+                {
+                    if(!DApps.Accounts.TRCheckAccountHash(TR,Data.BlockNum))
+                    {
+                        ToLog("BAD ACCOUNT Hash in block="+Block.BlockNum+" from:"+NodeName(Info.Node));
+                        this.SetBlockNOSendToNode(Block,Info.Node,"BAD CMP ACC HASH");
+                        return;
+                    }
+                }
+            }
+
 
             Block.BodyFileNum=this.GetChainFileNum(Block.chain);
             Block.arrContent=arrContent;

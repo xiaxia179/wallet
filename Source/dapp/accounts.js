@@ -19,6 +19,17 @@ const TYPE_TRANSACTION_CREATE=100;
 //const TYPE_TRANSACTION_CHANGE=102;
 const TYPE_TRANSACTION_TRANSFER=105;
 const TYPE_TRANSACTION_TRANSFER2=110;
+global.TYPE_TRANSACTION_ACC_HASH=115;
+
+global.FORMAT_CREATE=
+    "{\
+    Type:byte,\
+    Currency:uint,\
+    PubKey:arr33,\
+    Description:str40,\
+    RefID:uint,\
+    Reserve:arr7,\
+    }";//1+6+33+40+6+7=93
 
 
 global.FORMAT_MONEY_TRANSFER=
@@ -50,16 +61,26 @@ const WorkStructTransfer2={};
 global.FORMAT_MONEY_TRANSFER_BODY2=FORMAT_MONEY_TRANSFER2.replace("Sign:arr64,","");
 
 
+global.FORMAT_ACCOUNT_HASH=
+    "{\
+    Type:byte,\
+    BlockNum:uint,\
+    Hash:buffer32,\
+    }";
+
+
+
+
 
 //codes updater
-class CApp extends require("./dapp")
+class AccountApp extends require("./dapp")
 {
     constructor()
     {
         super();
 
         //DB-state (база состояний)
-        const FORMAT_ACCOUNT_ROW=
+        this.FORMAT_ACCOUNT_ROW=
             "{\
             Currency:uint,\
             PubKey:arr33,\
@@ -70,13 +91,16 @@ class CApp extends require("./dapp")
             Reserve:arr9,\
             }";
 
-        const ACCOUNT_ROW_SIZE=6+33 + 40+(6+4 +6+84) + 6+6+9;
-        this.DBState=new DBRow("accounts-state",ACCOUNT_ROW_SIZE,FORMAT_ACCOUNT_ROW);
+        this.ACCOUNT_ROW_SIZE=6+33 + 40+(6+4 +6+84) + 6+6+9;
+        this.DBState=new DBRow("accounts-state",this.ACCOUNT_ROW_SIZE,this.FORMAT_ACCOUNT_ROW);
 
         //DB-act (база движений)
         this.DBAct=new DBRow("accounts-act",6+6 + (6+4+6+6+84) + 1 + 11,"{ID:uint, BlockNum:uint,PrevValue:{SumTER:uint,SumCENT:uint32, BlockNum:uint, OperationID:uint,Reserve:arr84}, Mode:byte, Reserve: arr11}");
         this.DBActPrev=new DBRow("accounts-act-prev",this.DBAct.DataSize,this.DBAct.Format);
 
+
+        //DB-хешей по таблице остатков
+        this.DBAccountsHash=new DBRow("accounts-hash",6+32 +12,"{BlockNum:uint,Hash:hash, Reserve: arr12}");
 
         this.Start();
 
@@ -179,9 +203,12 @@ class CApp extends require("./dapp")
 
 
     }
+
     OnWriteBlockFinish(Block)
     {
+        this.CalcHash(Block.BlockNum);
     }
+
 
 
 
@@ -214,6 +241,21 @@ class CApp extends require("./dapp")
                 Result=this.TRTransferMoney(Body,BlockNum,FORMAT_MONEY_TRANSFER2,WorkStructTransfer2);
                 break;
             }
+            case TYPE_TRANSACTION_ACC_HASH:
+            {
+                Result=this.TRCheckAccountHash(Body,BlockNum);
+                if(!Result)
+                {
+                    var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
+                    ToLog("FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash);
+                    SERVER.TruncateBlockDB(BlockNumHash-1);
+
+                    //ToLogTrace("FIND BAD ACCOUNT HASH, TR IN BLOCK: "+BlockNum);
+                    //throw "ERROR";
+                }
+
+                break;
+            }
         }
 
         var item=WALLET.ObservTree.find({HASH:shaarr(Body)});
@@ -231,7 +273,7 @@ class CApp extends require("./dapp")
 
     DoCoinBaseTR(Block)
     {
-        if(Block.BlockNum<1000000)
+        if(Block.BlockNum<2000000)
             return;
 
         var SysData=this.ReadValue(0);
@@ -289,6 +331,78 @@ class CApp extends require("./dapp")
         }
     }
 
+    GetScriptTransaction(Body)
+    {
+        var Type=Body[0];
+
+        var format;
+        switch (Type)
+        {
+            case TYPE_TRANSACTION_CREATE:
+            {
+                format=FORMAT_CREATE;
+                break;
+            }
+
+            // case TYPE_TRANSACTION_CHANGE:
+            // {
+            //     Result=this.TRChangeAccount(Body,BlockNum);
+            //     break;
+            // }
+
+            case TYPE_TRANSACTION_TRANSFER:
+            {
+                format=FORMAT_MONEY_TRANSFER;
+                break;
+            }
+            case TYPE_TRANSACTION_TRANSFER2:
+            {
+                format=FORMAT_MONEY_TRANSFER2;
+                break;
+            }
+            case TYPE_TRANSACTION_ACC_HASH:
+            {
+                format=FORMAT_ACCOUNT_HASH;
+                break;
+            }
+
+            default:
+                return "";
+        }
+        try
+        {
+            var TR=BufLib.GetObjectFromBuffer(Body,format,{});
+        }
+        catch (e)
+        {
+            return "";
+        }
+
+        ConvertBufferToStr(TR);
+        return JSON.stringify(TR,"",4);
+    }
+
+    TRCheckAccountHash(Body,BlockNum)
+    {
+        try
+        {
+            var TR=BufLib.GetObjectFromBuffer(Body,FORMAT_ACCOUNT_HASH,{});
+        }
+        catch (e)
+        {
+            return 0;
+        }
+
+        var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
+        if(TR.BlockNum!==BlockNumHash)
+            return 0;
+
+        var Item=this.DBAccountsHash.Read(TR.BlockNum);
+        if(Item)
+            return !CompareArr(Item.Hash,TR.Hash);
+        else
+            return 0;
+    }
 
     TRCreateAccount(Body,BlockNum)
     {
@@ -299,17 +413,6 @@ class CApp extends require("./dapp")
         var power=GetPowPower(HASH);
         if(power<MIN_POWER_POW_ACC_CREATE)
             return "Error min power POW for create account (update client)";
-
-        const FORMAT_CREATE=
-            "{\
-            Type:byte,\
-            Currency:uint,\
-            PubKey:arr33,\
-            Description:str40,\
-            RefID:uint,\
-            Reserve:arr7,\
-            }";//1+6+33+40+6+7=93
-
 
         try
         {
@@ -400,6 +503,7 @@ class CApp extends require("./dapp")
         if(Body.length<103)
             return "Error length transaction (retry transaction)";
 
+
         try
         {
             var TR=BufLib.GetObjectFromBuffer(Body,format_money_transfer,workstructtransfer);
@@ -444,6 +548,9 @@ class CApp extends require("./dapp")
 
         if(Data.Value.SumTER<TotalSum.SumTER || (Data.Value.SumTER===TotalSum.SumTER && Data.Value.SumCENT<TotalSum.SumCENT))
             return "Not enough money on the account";
+
+
+        //ToLog("Transfer = "+TotalSum.SumTER+"   on "+BlockNum);
 
         //transfer sum
         var arr=[];
@@ -646,7 +753,12 @@ class CApp extends require("./dapp")
         this.DeleteActOneDB(this.DBActPrev,BlockNum)
 
         WALLET.OnTruncateBlock(BlockNum);
+
+
+
+        this.DBAccountsHash.Truncate(BlockNum-1);
     }
+
     DeleteActOneDB(DBAct,BlockNum)
     {
         var MaxNum=DBAct.GetMaxNum();
@@ -712,10 +824,10 @@ class CApp extends require("./dapp")
         {
             if(NumTruncateState)
             {
-                ToLog("********DBState Truncate: "+NumTruncateState)
+                //ToLog("********DBState Truncate: "+NumTruncateState)
                 this.DBState.Truncate(NumTruncateState-1);
             }
-            ToLog("*********"+DBAct.FileName+" Truncate: "+(StartNum));
+            //ToLog("*********"+DBAct.FileName+" Truncate: "+(StartNum));
             DBAct.Truncate(StartNum-1);
         }
     }
@@ -824,6 +936,62 @@ class CApp extends require("./dapp")
 
     /////////////////////////////
 
+    GetHash(BlockNum)
+    {
+        var Item=this.DBAccountsHash.Read(BlockNum);
+        if(Item)
+            return Item.Hash;
+        else
+            return undefined;
+    }
+    CalcHash(BlockNum)
+    {
+        //calc Merkle Tree
+        if(this.DBState.WasUpdate)
+        {
+            //this.DBState.MerkleHash=this.DBState.GetHash();
+            this.DBState.MerkleHash=this.CalcMerkleTree().Root;
+            this.DBState.WasUpdate=0;
+        }
+        var Hash=this.DBState.MerkleHash;
+
+        var Data={Num:BlockNum,BlockNum:BlockNum,Hash:Hash};
+        this.DBAccountsHash.Write(Data);
+
+    }
+    CalcMerkleTree()
+    {
+        //TODO (do recalc only change)
+
+        var Count=1+this.GetMaxAccount();
+        if(!Count)
+        {
+            return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        }
+
+        //var Buf=Buffer.alloc(this.ACCOUNT_ROW_SIZE);
+        //var WorkStruct={};
+        var arr=[];
+        for(var num=0;num<Count;num++)
+        {
+            var Buf=this.DBState.Read(num,1);
+            var Hash=shaarr(Buf);
+            arr.push(Hash);
+            // var Data=this.ReadState(num);
+            // Buf.len=0;
+            // BufLib.Write(Buf,Data,this.FORMAT_ACCOUNT_ROW,undefined,WorkStruct);
+            // var Hash=shaarr(Buf);
+            // arr.push(Hash);
+        }
+
+        return CalcMerklFromArray(arr);
+
+        //return shaarr(Buf);
+    }
+
+    /////////////////////////////
+
+
     TestTest(BlockNum)
     {
        this.DeleteAct(BlockNum);
@@ -832,10 +1000,13 @@ class CApp extends require("./dapp")
 
 
 
-module.exports = CApp;
-var App=new CApp;
+module.exports = AccountApp;
+var App=new AccountApp;
 DApps["Accounts"]=App;
 DAppByType[TYPE_TRANSACTION_CREATE]=App;
 DAppByType[TYPE_TRANSACTION_TRANSFER]=App;
 DAppByType[TYPE_TRANSACTION_TRANSFER2]=App;
+DAppByType[TYPE_TRANSACTION_ACC_HASH]=App;
+
+
 

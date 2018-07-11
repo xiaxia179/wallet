@@ -180,6 +180,27 @@ HTTPCaller.GetAccountsAll=function (id,count,Param3)
 }
 
 
+
+HTTPCaller.GetBlockAll=function (num,count)
+{
+    num=parseInt(num);
+    count=parseInt(count);
+
+
+    var arr=SERVER.GetRows(num,count);
+    return {arr:arr,result:1};
+}
+HTTPCaller.GetTransactionAll=function (num,count,BlockNum)
+{
+    num=parseInt(num);
+    count=parseInt(count);
+    BlockNum=parseInt(BlockNum);
+
+
+    var arr=SERVER.GetTrRows(BlockNum,num,count);
+    return {arr:arr,result:1};
+}
+
 HTTPCaller.GetActsAll=function (num,count,Param3)
 {
     num=parseInt(num);
@@ -189,7 +210,18 @@ HTTPCaller.GetActsAll=function (num,count,Param3)
     return {arr:arr,result:1};
 }
 
-HTTPCaller.GetAct=function (num,count,Direct)
+HTTPCaller.GetHashAll=function (num,count)
+{
+    num=parseInt(num);
+    count=parseInt(count);
+
+    var arr=DApps.Accounts.DBAccountsHash.GetRows(num,count);
+    return {arr:arr,result:1};
+}
+
+
+
+HTTPCaller.GetHistoryAct=function (num,count,Direct)
 {
     num=parseInt(num);
     count=parseInt(count);
@@ -236,7 +268,7 @@ HTTPCaller.GetWalletInfo=function ()
             FIRST_TIME_BLOCK:FIRST_TIME_BLOCK,
             CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME,
 
-            DATA_PATH:GetNormalPathString(process.cwd()+"/"+DATA_PATH),
+            DATA_PATH:(DATA_PATH.substr(1,1)===":"?DATA_PATH : GetNormalPathString(process.cwd()+"/"+DATA_PATH)),
             NodeAddrStr:SERVER.addrStr,
             STAT_MODE:global.STAT_MODE,
 
@@ -515,7 +547,7 @@ HTTPCaller.GetNodes=function ()
             result:1,
             sessionid:sessionid,
             Nodes:res,
-            DEF_NETWORK:DEF_NETWORK,
+            DEF_NETWORK:GetNetworkName(),
             DEF_VERSION:DEF_VERSION,
             port:SERVER.port,
             webport:HTTP_PORT_NUMBER,
@@ -747,7 +779,7 @@ function GetNetParams(response)
             addrArr:SERVER.addrArr,
             ip:SERVER.ip,
             port:SERVER.port,
-            DEF_NETWORK:DEF_NETWORK,
+            DEF_NETWORK:GetNetworkName(),
             DEF_VERSION:DEF_VERSION,
             DEF_CLIENT:DEF_CLIENT,
             CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME,

@@ -22,6 +22,9 @@ module.exports = class CDBState extends require("./db")
         var FI=this.OpenDBFile(this.FileName);
         this.FileNameFull=FI.fname;
 
+        this.LastHash=undefined;
+        this.WasUpdate=1;
+
     }
 
 
@@ -36,6 +39,9 @@ module.exports = class CDBState extends require("./db")
 
     Write(Data)
     {
+        this.LastHash=undefined;
+        this.WasUpdate=1;
+
         if(Data.Num===undefined)//new row
             Data.Num=this.GetMaxNum()+1;
 
@@ -52,8 +58,9 @@ module.exports = class CDBState extends require("./db")
         else
         {
             if(Position>=FI.size)
+            {
                 FI.size=Position+this.DataSize;
-
+            }
             return true;
         }
     }
@@ -61,7 +68,7 @@ module.exports = class CDBState extends require("./db")
 
     //Read
 
-    Read(Num)
+    Read(Num,GetBufOnly)
     {
         if(isNaN(Num) || Num<0 || Num>this.GetMaxNum())
         {
@@ -77,6 +84,11 @@ module.exports = class CDBState extends require("./db")
         if(bytesRead!==BufRead.length)
             return undefined;
 
+        if(GetBufOnly)
+        {
+            return BufRead;
+        }
+
         try
         {
             var Data=BufLib.GetObjectFromBuffer(BufRead,this.Format,this.WorkStruct);
@@ -89,6 +101,39 @@ module.exports = class CDBState extends require("./db")
 
         Data.Num=Num;
         return Data;
+    }
+    GetHash()
+    {
+        if(!this.LastHash)
+        {
+            var FI=this.OpenDBFile(this.FileName);
+            if(FI.size)
+            {
+                var BufRead=BufLib.GetNewBuffer(FI.size);
+                this.LastHash=shaarr(BufRead);
+            }
+            else
+            {
+                this.LastHash=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            }
+        }
+        return this.LastHash;
+    }
+
+
+
+    //Scroll
+    GetRows(start,count)
+    {
+        var arr=[];
+        for(var num=start;num<start+count;num++)
+        {
+            var Data=this.Read(num);
+            if(!Data)
+                break;
+            arr.push(Data);
+        }
+        return arr;
     }
 
 
@@ -104,9 +149,47 @@ module.exports = class CDBState extends require("./db")
         var FI=this.OpenDBFile(this.FileName);
         if(Position<FI.size)
         {
+            this.LastHash=undefined;
+            this.WasUpdate=1;
+            if(LastNum<0)
+                ToLog("Truncate "+this.FileName+" from 0")
+            else
+                ToLog("Truncate "+this.FileName+" after Num="+LastNum)
             FI.size=Position;
             fs.ftruncateSync(FI.fd,FI.size);
         }
+    }
+
+
+    TruncateHistory(BlockNum)
+    {
+        //must be field BlockNum in def struct
+
+        var MaxNum=this.GetMaxNum();
+        if(MaxNum===-1)
+            return;
+
+        //return;
+
+        for(var num=MaxNum;num>=0;num--)
+        {
+            var ItemCheck=this.Read(num);
+            if(!ItemCheck)
+                break;
+
+            if(ItemCheck.BlockNum<BlockNum)//нашли
+            {
+                if(num<MaxNum)
+                {
+                    //ToLog("Truncate "+this.FileName+" after: "+(num));
+                    this.Truncate(num);
+                }
+                return;
+            }
+        }
+
+        //не нашли
+        this.Truncate(-1);
     }
 
 

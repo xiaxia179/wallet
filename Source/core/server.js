@@ -36,24 +36,24 @@ const BUF_PACKET_SIZE=16*1024;
 
 global.USE_TCP=1;
 global.MAX_PACKET_LENGTH=1.5*1000000;//1Mb
-global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint}";
-global.FORMAT_POW_TO_SERVER=
-"{\
-    DEF_NETWORK:str15,\
-    DEF_VERSION:str9,\
-    DEF_CLIENT:str16, \
-    addrArr:addres, \
-    ToIP:str26,\
-    ToPort:uint16, \
-    FromIP:str26,\
-    FromPort:uint16, \
-    nonce:uint,\
-    Reconnect:byte,\
-    SendBytes:uint\
-}";
+// global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint}";
+// global.FORMAT_POW_TO_SERVER=
+// "{\
+//     DEF_NETWORK:str15,\
+//     DEF_VERSION:str9,\
+//     DEF_CLIENT:str16, \
+//     addrArr:addres, \
+//     ToIP:str26,\
+//     ToPort:uint16, \
+//     FromIP:str26,\
+//     FromPort:uint16, \
+//     nonce:uint,\
+//     Reconnect:byte,\
+//     SendBytes:uint\
+// }";
 
-global.FORMAT_POW_TO_CLIENT2="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint,Reserve:arr100}";
-global.FORMAT_POW_TO_SERVER2=
+global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint,Reserve:arr100}";
+global.FORMAT_POW_TO_SERVER=
     "{\
         DEF_NETWORK:str15,\
         DEF_VERSION:str9,\
@@ -624,7 +624,7 @@ module.exports = class CTransport extends require("./connect")
 
             //параметры сессии
             var Session={};
-            Session.DEF_NETWORK=DEF_NETWORK;
+            Session.DEF_NETWORK=GetNetworkName();
             Session.DEF_VERSION=DEF_VERSION;
             Session.DEF_CLIENT=DEF_CLIENT;
             Session.addrArr=this.addrArr;
@@ -2113,10 +2113,10 @@ module.exports = class CTransport extends require("./connect")
             return;
         }
 
-        if(Pow.DEF_NETWORK!==DEF_NETWORK)
+        if(Pow.DEF_NETWORK!==GetNetworkName())
         {
-            this.SendCloseSocket(Socket,"DEF_NETWORK="+Pow.DEF_NETWORK+" MUST:"+DEF_NETWORK);
-            this.AddToBanIP(Socket.remoteAddress);
+            this.SendCloseSocket(Socket,"DEF_NETWORK="+Pow.DEF_NETWORK+" MUST:"+GetNetworkName());
+            //this.AddToBanIP(Socket.remoteAddress);
             return;
         }
 
@@ -2331,7 +2331,7 @@ module.exports = class CTransport extends require("./connect")
 
 
             SOCKET.HashRND=crypto.randomBytes(32);
-            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr,HashRND:SOCKET.HashRND,MIN_POWER_POW:MIN_POWER_POW_HANDSHAKE, Reserve:[]},FORMAT_POW_TO_CLIENT2,300,{});
+            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr,HashRND:SOCKET.HashRND,MIN_POWER_POW:MIN_POWER_POW_HANDSHAKE, Reserve:[]},FORMAT_POW_TO_CLIENT,300,{});
             var BufWrite=SELF.GetBufFromData("POW_CONNECT5",BufData,1);
             try
             {

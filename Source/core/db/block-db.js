@@ -54,9 +54,8 @@ module.exports = class CDB extends require("../code")
         if(Block)
         {
             this.TruncateBlockDB(Block);
-            this.BodyFileNum=Block.BodyFileNum;
-            this.BodyFileNumMax=Math.max(this.BodyFileNum,this.BodyFileNumMax);
-
+            // this.BodyFileNum=Block.BodyFileNum;
+            // this.BodyFileNumMax=Math.max(this.BodyFileNum,this.BodyFileNumMax);
             this.LoadMemBlocksOnStart();
         }
     }
@@ -80,22 +79,27 @@ module.exports = class CDB extends require("../code")
         var FI=BlockDB.OpenDBFile(FILE_NAME_HEADER);
         var BlockNum=(FI.size/BLOCK_HEADER_SIZE)-1;
 
+        //BlockNum=0;
         BlockNum=this.CheckBlocksOnStartReverse(BlockNum);
         this.BlockNumDB=this.CheckBlocksOnStartFoward(BlockNum-10000,0);
         this.BlockNumDB=this.CheckBlocksOnStartFoward(this.BlockNumDB-60,1);
         if(this.BlockNumDB>=BLOCK_PROCESSING_LENGTH2)
         {
-            var Block=this.ReadBlockHeaderDB(this.BlockNumDB);
-            if(Block)
-            {
-                this.BodyFileNum=Block.BodyFileNum;
-                this.BodyFileNumMax=Math.max(this.BodyFileNum,this.BodyFileNumMax);
-            }
-            else
-            {
-                throw "Block not find!!!"
-            }
+            // var Block=this.ReadBlockHeaderDB(this.BlockNumDB);
+            // if(Block)
+            // {
+            //     this.BodyFileNum=Block.BodyFileNum;
+            //     this.BodyFileNumMax=Math.max(this.BodyFileNum,this.BodyFileNumMax);
+            // }
+            // else
+            // {
+            //     throw "Block not find!!!"
+            // }
         }
+
+        //Rewrite some transactions
+        this.ReWriteDAppTransactions(this.BlockNumDB-16);
+
 
         ToLog("START_BLOCK_NUM:"+this.BlockNumDB);//+" BODY_FILE_NUM_MAX:"+this.BodyFileNumMax)
     }
@@ -137,7 +141,7 @@ module.exports = class CDB extends require("../code")
         return 0;
     }
 
-    CheckBlocksOnStartFoward(StartNum,bCheckBody,bToClient)
+    CheckBlocksOnStartFoward(StartNum,bCheckBody)
     {
         var PrevBlock;
         if(StartNum<BLOCK_PROCESSING_LENGTH2)
@@ -159,7 +163,7 @@ module.exports = class CDB extends require("../code")
                 var TreeHash=this.CalcTreeHashFromArrBody(Block.arrContent);
                 if(CompareArr(Block.TreeHash,TreeHash)!==0)
                 {
-                    ToLog("BAD TreeHash block="+Block.BlockNum,bToClient);
+                    ToLog("BAD TreeHash block="+Block.BlockNum);
                     return num>0?num-1:0;
                 }
             }
@@ -189,7 +193,7 @@ module.exports = class CDB extends require("../code")
 
                 if(CompareArr(Hash,Block.Hash)!==0)
                 {
-                    ToLog("=================== FIND ERR Hash in "+Block.BlockNum,bToClient)
+                    ToLog("=================== FIND ERR Hash in "+Block.BlockNum)
                     return num>0?num-1:0;
                 }
 
@@ -197,7 +201,7 @@ module.exports = class CDB extends require("../code")
                 var SumHash=shaarr2(PrevBlock.SumHash,Block.Hash);
                 if(CompareArr(SumHash,Block.SumHash)!==0)
                 {
-                    ToLog("=================== FIND ERR SumHash in "+Block.BlockNum,bToClient);
+                    ToLog("=================== FIND ERR SumHash in "+Block.BlockNum);
                     return num>0?num-1:0;
                 }
             }
@@ -208,13 +212,13 @@ module.exports = class CDB extends require("../code")
     GetChainFileNum(chain)
     {
         return 0;
-        //TODO GetChainFileNum
-        if(chain.BodyFileNum===undefined)
-        {
-            this.BodyFileNumMax++;
-            chain.BodyFileNum=this.BodyFileNumMax;
-        }
-        return chain.BodyFileNum;
+        // //TODO GetChainFileNum
+        // if(chain.BodyFileNum===undefined)
+        // {
+        //     this.BodyFileNumMax++;
+        //     chain.BodyFileNum=this.BodyFileNumMax;
+        // }
+        // return chain.BodyFileNum;
     }
 
     //Write
@@ -291,11 +295,10 @@ module.exports = class CDB extends require("../code")
     GetBodyName(Block)
     {
         return FILE_NAME_BODY;
-
-        if(Block.BodyFileNum===undefined)
-            Block.BodyFileNum=this.BodyFileNum;
-
-        return FILE_NAME_BODY+"-"+Block.BodyFileNum;
+        // if(Block.BodyFileNum===undefined)
+        //     Block.BodyFileNum=this.BodyFileNum;
+        //
+        // return FILE_NAME_BODY+"-"+Block.BodyFileNum;
     }
 
     WriteBodyDB(Block)
@@ -312,6 +315,9 @@ module.exports = class CDB extends require("../code")
             Block.TrDataLen=0;
             return true;
         }
+        // var arrTrDapp=Block.arrContentDapp;
+        // if(!arrTrDapp)
+        //     arrTrDapp=[];
 
 
         var TrDataLen=4;
@@ -319,7 +325,6 @@ module.exports = class CDB extends require("../code")
         for(var i=0;i<arrTr.length;i++)
         {
             var body=arrTr[i];
-            //arrSize[i]=6+2+body.length;
             arrSize[i]=2+body.length;
             TrDataLen+=arrSize[i];
         }
@@ -327,15 +332,21 @@ module.exports = class CDB extends require("../code")
 
 
         var BufWrite=BufLib.GetNewBuffer(TrDataLen);
-        BufWrite.Write(arrTr.length,"uint32");
+        BufWrite.Write(arrTr.length,"uint16");
+        BufWrite.Write(0,"uint16");
+        //BufWrite.Write(arrTrDapp.length,"uint16");
         for(var i=0;i<arrTr.length;i++)
         {
             var body=arrTr[i];
-            //BufWrite.Write(Block.BlockNum,"uint");
             BufWrite.Write(body,"tr");
         }
+        // for(var i=0;i<arrTrDapp.length;i++)
+        // {
+        //     var body=arrTrDapp[i];
+        //     BufWrite.Write(body,"tr");
+        // }
 
-        //var written=this.FileBufWrite(this.FileBufBody, FD,BufWrite, Position);
+
         var written=fs.writeSync(FD, BufWrite,0,BufWrite.length, Position);
         if(written!==BufWrite.length)
         {
@@ -470,6 +481,12 @@ module.exports = class CDB extends require("../code")
         var BufWrite=BufLib.GetNewBuffer(BLOCK_HEADER_SIZE);
         this.BlockHeaderToBuf(BufWrite,Block);
         var Res=this.WriteBufHeaderDB(BufWrite,Block.BlockNum);
+
+        if(Res)
+        {
+            this.TruncateBlockDB(Block,1);
+        }
+
         return Res;
     }
 
@@ -523,7 +540,6 @@ module.exports = class CDB extends require("../code")
         var Position=Block.TrDataPos;
         var BufRead=BufLib.GetNewBuffer(Block.TrDataLen);
         var bytesRead=fs.readSync(FD, BufRead,0,BufRead.length, Position);
-        //var bytesRead=this.FileBufRead(this.FileBufBody, FD,BufRead,Position);
         if(bytesRead!==BufRead.length)
         {
             TO_ERROR_LOG("DB",270,"Error read block-body file: "+FileItem.name+"  from POS:"+Position+"  bytesRead="+bytesRead+" of "+BufRead.length+"  BlockNum="+Block.BlockNum);
@@ -532,8 +548,32 @@ module.exports = class CDB extends require("../code")
 
 
 
-        Block.arrContent=this.BufToHashArray(BufRead);
+
+        Block.arrContent=[];
+        //Block.arrContentDapp=[];
+        var TrCount=BufRead.Read("uint16");
+        var TrCountDapp=BufRead.Read("uint16");
+        if(TrCount<=MAX_BLOCK_SIZE/MIN_TRANSACTION_SIZE)
+        {
+            for(var i=0;i<TrCount;i++)
+            {
+                var body=BufRead.Read("tr");
+                if(!body)
+                    break;
+                Block.arrContent[i]=body;
+            }
+            // for(var i=0;i<TrCountDapp;i++)
+            // {
+            //     var body=BufRead.Read("tr");
+            //     if(!body)
+            //         break;
+            //     Block.arrContentDapp[i]=body;
+            // }
+        }
+
+
         Block.TrCount=Block.arrContent.length;
+        //Block.TrCountDapp=Block.arrContentDapp.length;
 
         return true;
     }
@@ -572,23 +612,6 @@ module.exports = class CDB extends require("../code")
 
 
 
-    BufToHashArray(BufRead)
-    {
-        var arrTr=[];
-        var TrCount=BufRead.Read("uint32");
-        if(TrCount<=65535)
-        for(var i=0;i<TrCount;i++)
-        {
-            //var BlockNum=BufRead.Read("uint");
-            var body=BufRead.Read("tr");
-            if(!body)
-                break;
-
-            arrTr[i]=body;
-        }
-        return arrTr;
-    }
-
 
     //Truncate
     TruncateBlockDB(LastBlock,bHeaderOnly)
@@ -600,11 +623,17 @@ module.exports = class CDB extends require("../code")
             if(!LastBlock)
                 return;
         }
-        //ToLog("LastBlock="+LastBlock.BlockNum)
 
         var FItem1=BlockDB.OpenDBFile(FILE_NAME_HEADER);
-        FItem1.size=(LastBlock.BlockNum+1)*BLOCK_HEADER_SIZE;
-        fs.ftruncateSync(FItem1.fd,FItem1.size);
+        var size=(LastBlock.BlockNum+1)*BLOCK_HEADER_SIZE;
+        if(size<0)
+            size=0;
+        if(FItem1.size>size)
+        {
+            ToLog("Truncate header after BlockNum="+LastBlock.BlockNum)
+            FItem1.size=size;
+            fs.ftruncateSync(FItem1.fd,FItem1.size);
+        }
 
         if(bHeaderOnly)
             return;
@@ -724,27 +753,64 @@ module.exports = class CDB extends require("../code")
     }
 
 
+    //Scroll
+    GetRows(start,count)
+    {
+        var arr=[];
+        for(var num=start;num<start+count;num++)
+        {
+            var Block=this.ReadBlockHeaderDB(num);
+            if(!Block)
+                break;
+
+            Block.Num=Block.BlockNum;
+            if(Block.AddrHash)
+            {
+                Block.AddrHash.len=0;
+                Block.Miner=ReadUintFromArr(Block.AddrHash);
+            }
+
+            arr.push(Block);
+        }
+        return arr;
+    }
+
+    GetTrRows(BlockNum,start,count)
+    {
+        var Block=this.ReadBlockDB(BlockNum);
+        var arr=[];
+        for(var num=start;num<start+count;num++)
+        {
+            if(num<0)
+                continue;
+            if(num>=Block.arrContent.length)
+                break;
+
+            var Tr={body:Block.arrContent[num]};
+            this.CheckCreateTransactionHASH(Tr);
+
+            Tr.Num=num;
+            Tr.Type=Tr.body[0];
+            Tr.Body=[];
+            for(var j=0;j<Tr.body.length;j++)
+                Tr.Body[j]=Tr.body[j];
 
 
+            var App=DAppByType[Tr.Type];
+            if(App)
+            {
+                Tr.Script=App.GetScriptTransaction(Tr.body);
+            }
+            else
+            {
+                Tr.Script="";
+            }
 
-
-
-
-
+            arr.push(Tr);
+        }
+        return arr;
+    }
 
 }
 
-
-function GetNewBufferNew(size)
-{
-    var buf=Buffer.alloc(size);
-    // buf.Read=BufRead.bind(buf);
-    //buf.Write=BufWrite.bind(buf);
-    // buf.WriteByte=BufWriteByte.bind(buf);
-    //
-    //
-    //
-    buf.len=0;
-    return buf;
-}
 

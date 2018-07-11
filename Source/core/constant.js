@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=26;
-"update 26";
+global.UPDATE_CODE_VERSION_NUM=27;
+"update 27";
 
 require("./startlib.js");
 
@@ -51,6 +51,8 @@ global.TOTAL_TER_MONEY=1e9;
 //Настройки DApp.accounts
 global.TRANSACTION_PROOF_COUNT=1000*1000;
 global.MIN_POWER_POW_ACC_CREATE=16;
+global.DELTA_BLOCK_ACCOUNT_HASH=8;
+
 
 
 
@@ -75,6 +77,7 @@ global.START_NETWORK_DATE=1530446400000;//(new Date(2018, 6, 1, 12, 0, 0, 0))-0;
 
 //константы соединения:
 var NETWORK="TERA-R3";//10
+var NETWORK2="TERA-R3";//10
 global.DEF_MAJOR_VERSION="0001";//4
 
 
@@ -82,14 +85,26 @@ InitParams();
 
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=1531166959647;//(new Date)-0;//1530781502576+(1)*1000;//
+    global.START_NETWORK_DATE=1531223552406;//(new Date)-0;
+    console.log("START_NETWORK_DATE: "+START_NETWORK_DATE);
     NETWORK="TEST-R3";
+    NETWORK2="TEST-R3";
 }
 
 
 
-global.DEF_NETWORK=NETWORK+"-"+DEF_MAJOR_VERSION;//15
-global.DEF_VERSION=DEF_MAJOR_VERSION+".0001";//9
+global.GetNetworkName=function()
+{
+    return NETWORK+"-"+DEF_MAJOR_VERSION;//15
+    // var CurDate=new Date();
+    // var MustDate=new Date(2018, 6, 12, 12, 0, 0, 0);
+    // if(CurDate<MustDate)
+    //     return NETWORK+"-"+DEF_MAJOR_VERSION;//15
+    // else
+    //     return NETWORK2+"-"+DEF_MAJOR_VERSION;//15
+}
+
+global.DEF_VERSION=DEF_MAJOR_VERSION+"."+UPDATE_CODE_VERSION_NUM;//9
 global.DEF_CLIENT="TERA-CORE";//16
 global.START_IP="";
 

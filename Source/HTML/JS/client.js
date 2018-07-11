@@ -6,7 +6,7 @@ if(window.nw)
 {
     window.Open=function (path,iconname,width,height)
     {
-        width = width || 820;
+        width = width || 840;
         height = height || 1000;
         var params=
             {
@@ -190,6 +190,26 @@ function GetStrFromAddr(arr)
     return GetHexFromArr(arr);
 }
 
+function GetHexFromArrBlock(Arr,LenBlock)
+{
+    var Str="";
+    var Arr2=[];
+    for(var i=0;i<Arr.length;i++)
+    {
+        Arr2[i%LenBlock]=Arr[i];
+        if(Arr2.length>=LenBlock)
+        {
+            Str+=GetHexFromArr(Arr2)+"\n";
+            Arr2=[];
+        }
+    }
+    if(Arr2.length)
+    {
+        Str+=GetHexFromArr(Arr2);
+    }
+
+    return Str;
+}
 
 
 //STRING

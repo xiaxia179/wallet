@@ -67,6 +67,26 @@ function GetArrFromHex(Str)
 global.GetArrFromHex=GetArrFromHex;
 //////////////////////////////////////////////////
 
+global.GetHexFromArrBlock=function(Arr,LenBlock)
+{
+    var Str="";
+    var Arr2=[];
+    for(var i=0;i<Arr.length;i++)
+    {
+        Arr2[i%LenBlock]=Arr[i];
+        if(Arr2.length>=LenBlock)
+        {
+            Str+=GetHexFromArr(Arr2)+"\n";
+            Arr2=[];
+        }
+    }
+    if(Arr2.length)
+    {
+        Str+=GetHexFromArr(Arr2);
+    }
+
+    return Str;
+}
 
 
 

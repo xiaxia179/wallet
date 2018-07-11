@@ -160,6 +160,9 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
             GrayAddres=1;
 
+        var BlockNumHash=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2;
+        var AccountHash=DApps.Accounts.GetHash(BlockNumHash);
+
         var Ret=
             {
                 VERSIONMAX:DEF_VERSION,
@@ -175,6 +178,8 @@ module.exports = class CConnect extends require("./transfer-msg")
                 CodeVersion:CODE_VERSION,
                 TrafficFree:this.SendTrafficFree,
                 MemoryUsage:Math.trunc(process.memoryUsage().heapTotal/1024/1024),
+                AccountBlockNum:BlockNumHash,
+                AccountHash:AccountHash,
                 Reserve:[],
             };
 
@@ -183,39 +188,22 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     static PING_F(bSend)
     {
-        if(!bSend)
-        {
-            return "{\
-                VERSIONMAX:str15,\
-                PingVersion:byte,\
-                GrayConnect:byte,\
-                Reserve2:uint32,\
-                Time:uint,\
-                BlockNumDB:uint,\
-                LoadHistoryMode:byte,\
-                CanStart:byte,\
-                CheckPoint:{BlockNum:uint,Hash:hash,Sign:arr64},\
-                CodeVersion:{VersionNum:uint,Hash:hash,Sign:arr64},\
-                }";
-        }
-        else
-        {
-            return "{\
-                VERSIONMAX:str15,\
-                PingVersion:byte,\
-                GrayConnect:byte,\
-                Reserve2:uint32,\
-                Time:uint,\
-                BlockNumDB:uint,\
-                LoadHistoryMode:byte,\
-                CanStart:byte,\
-                CheckPoint:{BlockNum:uint,Hash:hash,Sign:arr64},\
-                CodeVersion:{VersionNum:uint,Hash:hash,Sign:arr64},\
-                TrafficFree:uint,\
-                MemoryUsage:uint,\
-                Reserve:arr100\
-                }";
-        }
+        return "{\
+            VERSIONMAX:str15,\
+            PingVersion:byte,\
+            GrayConnect:byte,\
+            Reserve2:uint32,\
+            Time:uint,\
+            BlockNumDB:uint,\
+            LoadHistoryMode:byte,\
+            CanStart:byte,\
+            CheckPoint:{BlockNum:uint,Hash:hash,Sign:arr64},\
+            CodeVersion:{VersionNum:uint,Hash:hash,Sign:arr64},\
+            TrafficFree:uint,\
+            AccountBlockNum:uint,\
+            AccountHash:hash,\
+            Reserve:arr62,\
+            }";
     }
 
     static PONG_F(bSend)
@@ -241,8 +229,6 @@ module.exports = class CConnect extends require("./transfer-msg")
     PONG(Info,CurTime)
     {
         var Data=this.DataFromF(Info);
-        if(Data.PingVersion===2)
-            Data=this.DataFromF(Info,true);
         var Node=Info.Node;
 
         //load time from meta
@@ -372,15 +358,8 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(!global.CAN_START)
         if(Times && Times.Count>=1 && Times.AvgDelta<=200)
         {
-            ToLogClient("Start synchronization")
             ToLog("*************************************************************************** CAN_START")
             global.CAN_START=true;
-            if(Node.INFO.BlockNumDB>this.BlockNumDB+COUNT_HISTORY_BLOCKS_FOR_LOAD/2)
-            {
-                if(!this.WasStartLoadHistory)
-                    this.StartLoadHistory(Node);
-                this.WasStartLoadHistory=1;
-            }
         }
     }
 
@@ -1206,8 +1185,8 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         if(DeltaArr.length<1)
             return;
-        // if(DeltaArr.length<CountNodes)
-        //     return;
+        if(DeltaArr.length<CountNodes/2)
+            return;
 
         DeltaArr.sort(function (a,b) {return a-b});
 
@@ -1402,10 +1381,25 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         var arr=this.GetActualNodes();
         var arr2=[];
+        var Str="";
+        arr.sort(function (a,b)
+        {
+            if(a.ip>b.ip)
+                return -1;
+            else
+            if(a.ip<b.ip)
+                return 1;
+            else
+            return 0;
+        });
         for(var i=0;i<arr.length;i++)
         {
-            arr2.push(arr[i].ip);
+            Str+=arr[i].ip+", ";
         }
+        return Str.substr(0,Str.length-2);
+
+
+
         if(bFlag)
             return JSON.stringify(arr2);
         else

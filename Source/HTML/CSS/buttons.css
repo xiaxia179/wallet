@@ -50,51 +50,74 @@
     width: 200px;
 }
 
+.btmedium
+{
+    width: 177px;
+}
 
-
+.btsmall
+{
+    width: 10px;
+}
 
 
 #idCounters
 {
     background-image: url('/HTML/PIC/counters.png');
     background-repeat: no-repeat;
-    background-size: 15%;
+    background-size: 16px;
 }
 
 #idChains
 {
     background-image: url('/HTML/PIC/chains.png');
     background-repeat: no-repeat;
-    background-size: 15%;
+    background-size: 16px;
 }
 
 
 
-#idViewAccounts
-{
-    background-image: url('/HTML/PIC/table.png');
-    background-repeat: no-repeat;
-    background-size: 15%;
-}
 
 #idMonitor
 {
     background-image: url('/HTML/PIC/monitor.png');
     background-repeat: no-repeat;
-    background-size: 15%;
+    background-size: 16px;
 }
 
 #idConsole
 {
     background-image: url('/HTML/PIC/console.png');
     background-repeat: no-repeat;
-    background-size:15%;
+    background-size:16px;
 }
 
-#idConsole2
+#idDown
 {
-    background-image: url('/HTML/PIC/test.png');
+    background-image: url('/HTML/PIC/down.png');
     background-repeat: no-repeat;
-    background-size:15%;
-    filter2: hue-rotate(-180deg);
+    background-size: 16px;
+    background-position: right;
+}
+#idDown22
+{
+    background-image: url('/HTML/PIC/down.png');
+    background-repeat: repeat-y;
+    background-size: 12px;
+}
+
+
+
+#idViewAccounts, #idViewBlock, #idViewActs, #idViewHash, #idViewUtil,#idOpenService
+{
+    width: 136px;
+    background-image: url('/HTML/PIC/down.png');
+    background-repeat: no-repeat;
+    background-size: 16px;
+    background-position: right;
+}
+
+#idOpenService
+{
+    width: 160px;
 }

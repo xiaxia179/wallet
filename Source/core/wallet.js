@@ -17,7 +17,7 @@ class CApp
     constructor()
     {
         CheckCreateDir(GetDataPath(WalletPath));
-        this.DBAct=new DBRow("../"+WalletPath+"/wallet-act",4*6 + 1+200 + 10 + 6,"{BlockNum:uint, FromID:uint, FromOperationID:uint, ToID:uint, Direct:str1, Description:str200, SumTER:uint,SumCENT:uint32, Currency:uint}");
+        this.DBHistory=new DBRow("../"+WalletPath+"/wallet-act",4*6 + 1+200 + 10 + 6,"{BlockNum:uint, FromID:uint, FromOperationID:uint, ToID:uint, Direct:str1, Description:str200, SumTER:uint,SumCENT:uint32, Currency:uint}");
 
         this.ObservTree=new RBTree(CompareItemHASH32);
 
@@ -248,33 +248,13 @@ class CApp
             Item.ToID=Data.Num;
         }
 
-        this.DBAct.Write(Item);
+        this.DBHistory.Write(Item);
 
     }
 
     OnTruncateBlock(BlockNum)
     {
-        var MaxNum=this.DBAct.GetMaxNum();
-        if(MaxNum===-1)
-            return;
-
-        for(var num=MaxNum;num>=0;num--)
-        {
-            var ItemCheck=this.DBAct.Read(num);
-            if(!ItemCheck)
-                break;
-
-            if(ItemCheck.BlockNum<BlockNum)//нашли
-            {
-                if(num<MaxNum)
-                {
-                    ToLog("**************Truncate wallet act from: "+(num+1))
-                    this.DBAct.Truncate(num);
-                }
-                break;
-            }
-        }
-
+        this.DBHistory.TruncateHistory(BlockNum);
     }
 
     OnCreateAccount(Data)
@@ -337,7 +317,7 @@ class CApp
 
     GetHistoryMaxNum()
     {
-        return this.DBAct.GetMaxNum();
+        return this.DBHistory.GetMaxNum();
     }
     GetHistoryAct(start,count,Direct)
     {
@@ -348,7 +328,7 @@ class CApp
         //for(var num=this.GetHistoryMaxNum();num>=0;num--)
         for(var num=start;num<start+count;num++)
         {
-            var Item=this.DBAct.Read(num);
+            var Item=this.DBHistory.Read(num);
             if(!Item)
                 break;
             if(Direct!=="" && Direct!==Item.Direct)

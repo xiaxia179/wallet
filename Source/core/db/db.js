@@ -21,6 +21,9 @@ module.exports = class
 
     CloseDBFile(name,bdelete)
     {
+        this.LastHash=undefined;
+        this.WasUpdate=1;
+
         var Item=this.DBMap[name];
         if(Item)
         {
@@ -51,10 +54,12 @@ module.exports = class
     }
     OpenDBFile(name,bExist)
     {
+        this.LastHash=undefined;
+        this.WasUpdate=1;
+
         var Item=this.DBMap[name];
         if(Item===undefined)
         {
-
 
             if(!this.WasCheckPathDB)
             {

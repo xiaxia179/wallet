@@ -367,7 +367,7 @@ module.exports = class CNode
             var Pow=this.GetPOWClientData(0);
             Pow.Reconnect=1;
 
-            var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER2,1200,{});
+            var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1200,{});
             var BufAll=SERVER.GetBufFromData("POW_CONNECT7",BufWrite,1);
             Socket.write(BufAll);
             return 1;
@@ -439,7 +439,7 @@ module.exports = class CNode
             SetSocketStatus(this.Socket,200);
         }
 
-        var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER2,1200,{});
+        var BufWrite=BufLib.GetBufferFromObject(Pow,FORMAT_POW_TO_SERVER,1200,{});
         var BufAll=SERVER.GetBufFromData("POW_CONNECT6",BufWrite,1);
         Socket.write(BufAll);
         return 1;
@@ -450,7 +450,7 @@ module.exports = class CNode
         var Node=this;
         var Pow={};
 
-        Pow.DEF_NETWORK=DEF_NETWORK;
+        Pow.DEF_NETWORK=GetNetworkName();
         Pow.DEF_VERSION=DEF_VERSION;
         Pow.DEF_CLIENT=DEF_CLIENT;
         Pow.addrArr=SERVER.addrArr;

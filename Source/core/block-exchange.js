@@ -336,10 +336,6 @@ module.exports = class CConsensus extends require("./block-loader")
             return;
         }
 
-        // var arr1=this.GetArrayFromTree(Block);
-        // this.TrToInfo(Block,arr1,"TRANSFER1");
-        // this.TrToInfo(Block,Data.Array,"GET");
-
 
         Transfer.WasGet=true;
         var startTime2 = process.hrtime();
@@ -353,13 +349,6 @@ module.exports = class CConsensus extends require("./block-loader")
         this.ToMaxPOWList(Data.MaxPOW);
         this.ToMaxSumList(Data.MaxSum);
 
-       // ADD_TO_STAT_TIME("TRANSFER4", startTime);
-
-
-        // var arr2=this.GetArrayFromTree(Block);
-        // this.TrToInfo(Block,arr2,"TRANSFER2");
-
-        //this.DoTransfer();
         ADD_TO_STAT_TIME("TRANSFER", startTime);
     }
 
@@ -916,7 +905,7 @@ module.exports = class CConsensus extends require("./block-loader")
         var BufLength=0;
 
         var MaxSize=MAX_BLOCK_SIZE;
-        //if(this.port%100===0 && random(100)>50)  MaxSize=MaxSize/2;//TEST TEST
+
 
         var arr=[];
         var it=Block.PowTree.iterator(), Item;
@@ -931,6 +920,8 @@ module.exports = class CConsensus extends require("./block-loader")
                 break;
 
         };
+
+
 
 
 
@@ -1255,6 +1246,7 @@ module.exports = class CConsensus extends require("./block-loader")
             return;
 
 
+        this.AddDAppTransactions(Block.BlockNum,arrTr);
 
         var arrContent=[];
         var arrHASH=[];
@@ -1292,7 +1284,6 @@ module.exports = class CConsensus extends require("./block-loader")
             Block.TreeHash=Tree.Root;
             Block.arrContent=arrContent;
             Block.TrCount=Block.arrContent.length;
-
         }
     }
     CalcTreeHashFromArrTr(arrTr)
@@ -1349,12 +1340,16 @@ module.exports = class CConsensus extends require("./block-loader")
         var arrHASH=[];
 
         var arrTr=this.GetArrayFromTree(Block);
+        this.AddDAppTransactions(Block.BlockNum,arrTr);
+
+
         for(var i=0;i<arrTr.length;i++)
         {
             var Tr=arrTr[i];
             arrContent.push(Tr.body);
             arrHASH.push(Tr.HASH);
         }
+
 
         var Tree=CalcMerklFromArray(arrHASH);
         Block.TreeHash=Tree.Root;
@@ -1598,159 +1593,4 @@ global.GetCurrentBlockNumByTime=function GetCurrentBlockNumByTime()
     var StartBlockNum=Math.floor((CurTimeNum+CONSENSUS_PERIOD_TIME)/CONSENSUS_PERIOD_TIME);
     return StartBlockNum;
 }
-
-
-
-
-/*
-TODO - сделать релейный режим:
-1. Новый транзакции не принимаются
-2. Выполняются только трансляции транзакций, без их верификации
-3. Общий хеш не вычисляется и не записывается в БД
-*/
-
-/*
-Names:
-^name
-@@name
-#name
-$name
-&name
-*name
-+name
-|name
-~name
-W#name
-W:name
-$vtools
-*/
-
-function TestTest0()
-{
-    var hash3=[0,0,0,0,0,0,33];
-    var hash1=[0,0,0,0,0,11,0];
-    var hash2=[0,0,0,0,0,22,0];
-    var hash4=[0,0,0,0,0,77,0];
-    var tree = new RBTree(CompareItemHash);
-    tree.insert({hash:hash1,name:"val1"});
-    tree.insert({hash:hash2,name:"val2"});
-    tree.insert({hash:hash3,name:"val3"});
-    var res1=tree.insert({hash:hash4,name:"val7"});
-    var res2=tree.insert({hash:hash4,name:"val7"});
-
-    console.log(res1);
-    console.log(res2);
-    return;
-
-
-    tree.insert({hash:[0,0,0,0,0,0,1],name:"val00001"});
-
-    //tree.remove({hash:hash2});
-    // tree.insert({hash:hash1,name:"val4"});
-    // tree.insert({hash:hash2,name:"val2-222"});
-    //tree.clear();
-
-    // tree.remove({hash:hash2});
-    // console.log("find2:");
-    // var el=tree.find({hash:hash2});
-    // console.log(el);
-    // return;
-
-
-    // console.log("MAX:");
-    // console.log(tree.max());
-
-    var item;
-    console.log("-------------- TEST: lowerBound");
-    var it=tree.lowerBound({hash:[0,0,0,0,0,0,2]});
-    // console.log("-------------- TEST: upperBound");
-    // var it=tree.upperBound({hash:[0,0,0,0,0,0,0]});
-    item=it.data();
-    console.log(item);
-
-    it.prev();
-    item=it.data();
-    console.log(item);
-
-
-    console.log("ALL:");
-    var count=0;
-    tree.each(function(d)
-    {
-        console.log(d);
-        // count++;
-        // if(count>=2)
-        //     return false;
-    });
-
-    // var it=tree.iterator(), item;
-    // while((item = it.next()) !== null)
-    // {
-    //     console.log(item.name)// do stuff with item
-    // }
-    return;
-}
-
-function MySHA(Num)
-{
-    var S=[];
-    var RET=[];
-    for(var i=0;i<50;i++)
-        S[i]=0;
-    S[0]=Num;
-    Mesh(S,8);
-    for(var i=0;i<32;i++)
-        RET[i]=S[i]&255;
-
-    return RET;
-}
-function TestTest2()
-{
-    var Tree = new RBTree(function (a,b)
-    {
-        return a.adr-b.adr;
-    });
-
-    var Mem1=process.memoryUsage().heapUsed;
-
-    console.time("Test");
-    var Count=1000000;
-    for(var i=0;i<Count;i++)
-    {
-        Tree.insert({adr:i,HASH:MySHA(i)});
-    }
-
-    console.timeEnd("Test")
-
-    var Mem2=process.memoryUsage().heapUsed;
-    var Delta=(Mem2-Mem1)/1000000;
-    console.log("Delta="+Delta)
-
-    var Stop=1;
-}
-
-function TestTest()
-{
-    // var Arr=[1,2000,3];
-    // var data=Buffer.from(Arr);
-    // ToLog(data);
-
-    var NodesSet = new Set();
-
-    var Node1={"name":1}
-    var Node2={"name":2}
-    NodesSet.add(Node1);
-    NodesSet.add(Node2);
-    NodesSet.add(Node1);
-
-    for(var Node of NodesSet)
-    {
-        ToLog("Node="+Node.name)
-    }
-
-
-}
-
-
-//TODO - не брать в блок последнюю транзакцию, если она приводит к превышению лимита макс размера блока (но в трансфер брать)
 
