@@ -1857,6 +1857,7 @@ module.exports = class CBlock extends require("./db/block-db")
             }
 
             //DApp check
+            if(0)
             if(arrContent.length>0)
             {
                 var TR=arrContent[0];
@@ -1866,6 +1867,8 @@ module.exports = class CBlock extends require("./db/block-db")
                     {
                         ToLog("BAD ACCOUNT Hash in block="+Block.BlockNum+" from:"+NodeName(Info.Node));
                         this.SetBlockNOSendToNode(Block,Info.Node,"BAD CMP ACC HASH");
+                        //this.DeleteNodeFromActive(Info.Node);
+                        //this.AddToBan(Info.Node);
                         return;
                     }
                 }
