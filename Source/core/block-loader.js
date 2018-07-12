@@ -70,14 +70,19 @@ module.exports = class CBlock extends require("./db/block-db")
 
         //setImmediate(this.TestSerilyzeBlock.bind(this),1);
 
+        //автовосстановление данных
+        this.MapBlockBodyLoad={};
 
-        if(!global.ADDRLIST_MODE && !this.VirtualMode)
-            setTimeout(this.CheckStartedBlocks.bind(this),100);
+
 
         if(!global.ADDRLIST_MODE && !this.VirtualMode)
         {
+            setTimeout(this.CheckStartedBlocks.bind(this),100);
             setInterval(this.LoopChainLoad.bind(this),100);
             setInterval(this.LoopBlockLoad.bind(this),10);
+
+            setInterval(this.LoopBlockBodyLoad.bind(this),1*1000);
+
 
             //setInterval(this.Start.bind(this),1000);
         }
@@ -220,6 +225,10 @@ module.exports = class CBlock extends require("./db/block-db")
     StartLoadHistory(Node)
     {
         this.FREE_ALL_MEM_CHAINS();
+
+        if(global.CREATE_ON_START)
+            return;
+
         this.RelayMode=true;
         this.LoadHistoryMode=true;
         this.LoadHistoryContext={Node:Node,BlockNum:this.BlockNumDB,MapSend:{},Foward:1,Pause:0,DeltaBlockNum:10};
@@ -306,12 +315,16 @@ module.exports = class CBlock extends require("./db/block-db")
             Context.BlockNum=this.BlockNumDB;
         }
 
+        var BlockDB=this.ReadBlockHeaderDB(Context.BlockNum);
 
-        if(this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2)
+        if(!BlockDB || this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2)
         {
             this.LoadHistoryMode=false;
             ToLogClient("Finish synchronization")
             ToLog("LOADHISTORYMODE OFF")
+
+            if(!BlockDB)
+                return;
         }
 
 
@@ -319,7 +332,7 @@ module.exports = class CBlock extends require("./db/block-db")
         var Ret=this.GetNextNode(Context,Context.BlockNum,1);
         if(Ret.Result)
         {
-            var BlockDB=this.ReadBlockHeaderDB(Context.BlockNum);
+            //ToLog(Context.BlockNum)//950639
             var Node=Ret.Node;
             this.SendF(Node,
                 {
@@ -436,7 +449,7 @@ module.exports = class CBlock extends require("./db/block-db")
              //если загружена другая цепочка с таким же хешем
             if(chain && !chain.IsSum && !chain.StopSend)
             {
-                var StrKey="H:"+GetHexFromAddres(chain.Hash);
+                var StrKey="H:"+GetHexFromArr(chain.Hash);
                 var Map=this.GetMapLoadedFromChain(chain);
                 var WasBlock=Map[StrKey];
                 if(WasBlock && WasBlock.chain!==chain && CompareArr(WasBlock.Hash,chain.Hash)===0 && !WasBlock.chain.Deleted)
@@ -701,8 +714,8 @@ module.exports = class CBlock extends require("./db/block-db")
                     var SumHash=shaarr2(PrevBlock.SumHash,Block.Hash);
                     // if(CompareArr(SumHash,Block.SumHash)!==0)
                     // {
-                    //     var StrSumHash=GetHexFromAddres(SumHash);
-                    //     var StrSumHashB=GetHexFromAddres(Block.SumHash);
+                    //     var StrSumHash=GetHexFromArr(SumHash);
+                    //     var StrSumHashB=GetHexFromArr(Block.SumHash);
                     //     ToLog("Err SumHash on block="+Block.BlockNum+" StrSumHash="+StrSumHash+"  StrSumHashB="+StrSumHashB)
                     // }
                     Block.SumHash=SumHash;
@@ -929,16 +942,9 @@ module.exports = class CBlock extends require("./db/block-db")
             Context.WasLoadNum=1;
             var chain={id:0,StopSend:1,WriteToDBAfterLoad:1};
             this.ChainBindMethods(chain);
-            this.LoadedChainList=[chain];
+            //this.LoadedChainList=[chain];
+            this.SetChainNum(chain);
             this.PrepareTransactionsForLoad(chain,arr2);
-
-            // for(var n=0;n<arr2.length;n++)
-            // {
-            //     var Block=arr2[n];
-            //     var MapBlockLoaded=this.GetMapLoaded(Block.BlockNum);
-            //     var StrTreeHash=GetHexFromAddres(Block.TreeHash);
-            //     MapBlockLoaded["TH:"+StrTreeHash]=Block;
-            // }
             Context.BlockNum=Block.BlockNum;
             Context.Pause=1;
         }
@@ -1008,7 +1014,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 // }
 
 
-                var StrKey=GetHexFromAddres(Block.SumHash);
+                var StrKey=GetHexFromArr(Block.SumHash);
                 var MapBlockLoaded=this.GetMapLoaded(Block.BlockNum);
 
                 var BlockFind=MapBlockLoaded[StrKey];
@@ -1072,11 +1078,11 @@ module.exports = class CBlock extends require("./db/block-db")
                     Block.chain=chain;
 
                     Block.Node=Info.Node;
-                    var StrSumHash=GetHexFromAddres(Block.SumHash);
+                    var StrSumHash=GetHexFromArr(Block.SumHash);
                     MapBlockLoaded[StrSumHash]=Block;
-                    var StrHash=GetHexFromAddres(Block.Hash);
+                    var StrHash=GetHexFromArr(Block.Hash);
                     MapBlockLoaded["H:"+StrHash]=Block;
-                    var StrTreeHash=GetHexFromAddres(Block.TreeHash);
+                    var StrTreeHash=GetHexFromArr(Block.TreeHash);
                     MapBlockLoaded["TH:"+StrTreeHash]=Block;
 
 
@@ -1350,9 +1356,11 @@ module.exports = class CBlock extends require("./db/block-db")
     }
 
 
-    PrepareTransactionsForLoad(chain,arr)
+    PrepareTransactionsForLoad(chain,arr,bNoSlice)
     {
-        arr=arr.slice(1);
+        if(!bNoSlice)
+            arr=arr.slice(1);
+
         chain.arr=arr;
         if(arr.length>0)
         {
@@ -1388,19 +1396,22 @@ module.exports = class CBlock extends require("./db/block-db")
                         if(!Block.MapSend)
                         {
                             //анализируем необходимость загрузки содержимого транзакций
-                            var BlockDB=this.ReadBlockHeaderDB(Block.BlockNum);
-                            if(BlockDB)
+                            if(!Block.BodyLoad)
                             {
-                                if(CompareArr(BlockDB.TreeHash,Block.TreeHash)==0)
+                                var BlockDB=this.ReadBlockHeaderDB(Block.BlockNum);
+                                if(BlockDB)
                                 {
-                                    Block.TreeEq=true;
-                                    Block.BodyFileNum=BlockDB.BodyFileNum;
-                                    Block.TrDataPos=BlockDB.TrDataPos;
-                                    Block.TrDataLen=BlockDB.TrDataLen;
+                                    if(CompareArr(BlockDB.TreeHash,Block.TreeHash)==0)
+                                    {
+                                        Block.TreeEq=true;
+                                        Block.BodyFileNum=BlockDB.BodyFileNum;
+                                        Block.TrDataPos=BlockDB.TrDataPos;
+                                        Block.TrDataLen=BlockDB.TrDataLen;
 
-                                    //AddInfoBlock(Block,"**TREE EQ**");
-                                    //ToLog("Block.TreeEq in "+Block.BlockNum);
-                                    continue;
+                                        //AddInfoBlock(Block,"**TREE EQ**");
+                                        //ToLog("Block.TreeEq in "+Block.BlockNum);
+                                        continue;
+                                    }
                                 }
                             }
 
@@ -1587,7 +1598,7 @@ module.exports = class CBlock extends require("./db/block-db")
     SendBlockNext(Block)
     {
         var SendResult=0;
-        var Key=GetHexFromAddres(Block.TreeHash);
+        var Key=GetHexFromArr(Block.TreeHash);
         while(true)
         {
             var Ret=this.GetNextNode(Block,Key,true,Block.BlockNum);
@@ -1789,7 +1800,7 @@ module.exports = class CBlock extends require("./db/block-db")
                     var BufWrite=BufLib.GetBufferFromObject(BlockFind,Formats.BLOCK_TRANSFER,MAX_PACKET_LENGTH,Formats.WRK_BLOCK_TRANSFER);
                     StrSend="OK"
                     ADD_TO_STAT("BLOCK_SEND_MEM");
-                    //ToLog("BLOCK_SEND_MEM:"+BlockNum+" TreeHash="+GetHexFromAddres(TreeHash)+" BlockTreeHash="+GetHexFromAddres(BlockFind.TreeHash))
+                    //ToLog("BLOCK_SEND_MEM:"+BlockNum+" TreeHash="+GetHexFromArr(TreeHash)+" BlockTreeHash="+GetHexFromArr(BlockFind.TreeHash))
                 }
             }
         }
@@ -1851,13 +1862,12 @@ module.exports = class CBlock extends require("./db/block-db")
             var TreeHash=this.CalcTreeHashFromArrBody(arrContent);
             if(CompareArr(Block.TreeHash,TreeHash)!==0)
             {
-                ToLog("BAD CMP TreeHash block="+Block.BlockNum+" from:"+NodeName(Info.Node)+"  TreeHash="+GetHexFromAddres(TreeHash)+"  BlockTreeHash="+GetHexFromAddres(Block.TreeHash));
+                ToLog("BAD CMP TreeHash block="+Block.BlockNum+" from:"+NodeName(Info.Node)+"  TreeHash="+GetHexFromArr(TreeHash)+"  BlockTreeHash="+GetHexFromArr(Block.TreeHash));
                 this.SetBlockNOSendToNode(Block,Info.Node,"BAD CMP TreeHash");
                 return;
             }
 
             //DApp check
-            if(0)
             if(arrContent.length>0)
             {
                 var TR=arrContent[0];
@@ -1954,7 +1964,7 @@ module.exports = class CBlock extends require("./db/block-db")
     SetBlockNOSendToNode(Block,Node,Str)
     {
         //следующая отправка другой ноде через 100 мс
-        var Str=GetHexFromAddres(Block.TreeHash);
+        var Str=GetHexFromArr(Block.TreeHash);
         var Str2=this.GetStrFromHashShort(Block.TreeHash);
         var keysend=""+Node.addrStr+":"+Str;
         Block.MapSend[keysend]=1;
@@ -1965,7 +1975,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
     FindBlockInLoadedChain(BlockNum,TreeHash)
     {
-        var StrTreeHash=GetHexFromAddres(TreeHash);
+        var StrTreeHash=GetHexFromArr(TreeHash);
         var MapBlockLoaded=this.GetMapLoaded(BlockNum);
         var BlockFind=MapBlockLoaded["TH:"+StrTreeHash];
         if(BlockFind && BlockFind.TreeEq)
@@ -2013,7 +2023,7 @@ module.exports = class CBlock extends require("./db/block-db")
         var testHash=CalcHashFromArray([testSeqHash,Block.AddrHash],true);
         if(CompareArr(testHash,Block.Hash)!==0)
         {
-            var Str="-----------------------"+StrError+" ERROR hash - block num: "+Block.BlockNum+"  test PrevHash="+GetHexFromAddres(PrevHash)+" test Hash="+GetHexFromAddres(testHash);
+            var Str="-----------------------"+StrError+" ERROR hash - block num: "+Block.BlockNum+"  test PrevHash="+GetHexFromArr(PrevHash)+" test Hash="+GetHexFromArr(testHash);
             this.ToLogBlock(Block,Str);
             //throw "STOP!"
             //throw "ERROR hash!!!"
@@ -2028,12 +2038,12 @@ module.exports = class CBlock extends require("./db/block-db")
     {
         ToLog("-------------"+StrInfo);
         ToLog("BlockNum="+(Block.BlockNum));
-        ToLog("Hash="+GetHexFromAddres(Block.Hash));
-        ToLog("SeqHash="+GetHexFromAddres(Block.SeqHash));
-        ToLog("PrevHash="+GetHexFromAddres(Block.PrevHash));
-        ToLog("TreeHash="+GetHexFromAddres(Block.TreeHash));
-        ToLog("AddrHash="+GetHexFromAddres(Block.AddrHash));
-        ToLog("SumHash="+GetHexFromAddres(Block.SumHash));
+        ToLog("Hash="+GetHexFromArr(Block.Hash));
+        ToLog("SeqHash="+GetHexFromArr(Block.SeqHash));
+        ToLog("PrevHash="+GetHexFromArr(Block.PrevHash));
+        ToLog("TreeHash="+GetHexFromArr(Block.TreeHash));
+        ToLog("AddrHash="+GetHexFromArr(Block.AddrHash));
+        ToLog("SumHash="+GetHexFromArr(Block.SumHash));
         ToLog("Comment:"+Block.Comment1+"   "+Block.Comment2);
         console.trace();
         process.exit();
@@ -2066,7 +2076,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 if(BlockMem)
                     BlockMem.Comment2="NO";
 
-                var Str=(""+n+" DB="+bWasDB+"  +++++++++++++++++++++++++++++++ERROR SeqHash - num="+num+"  test="+GetHexFromAddres(testSeqHash0));
+                var Str=(""+n+" DB="+bWasDB+"  +++++++++++++++++++++++++++++++ERROR SeqHash - num="+num+"  test="+GetHexFromArr(testSeqHash0));
                 ToLogBlock(CurBlockDB2,Str)
             }
             else
@@ -2251,7 +2261,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
     GetStrFromHashShort(Hash)
     {
-        var Str=GetHexFromAddres(Hash);
+        var Str=GetHexFromArr(Hash);
         if(typeof Str==="string")
             return Str.substr(0,4);
         else
@@ -2265,6 +2275,40 @@ module.exports = class CBlock extends require("./db/block-db")
         var deltaTime=(Time[0]*1000 + Time[1]/1e6);//ms
         ToLog(Str+" : "+deltaTime+"ms")
     }
+
+
+    //LOOP LOAD BLOCK BODY
+    AddBlockToLoadBody(Block)
+    {
+        if(!this.MapBlockBodyLoad[Block.BlockNum])
+        {
+            this.MapBlockBodyLoad[Block.BlockNum]=Block;
+        }
+    }
+    LoopBlockBodyLoad()
+    {
+        // if(this.LoadHistoryMode)
+        //     return;
+        var arr=[];
+        for(var key in this.MapBlockBodyLoad)
+        {
+            var Block=this.MapBlockBodyLoad[key];
+            if(!Block.BodyLoad)
+            {
+                Block.BodyLoad=1;
+                arr.push(Block);
+            }
+        }
+        this.MapBlockBodyLoad={};
+        if(!arr.length)
+            return;
+
+        var chain={StopSend:1,WriteToDBAfterLoad:1,BodyLoad:1};
+        this.ChainBindMethods(chain);
+        this.SetChainNum(chain);
+        this.PrepareTransactionsForLoad(chain,arr,1);
+
+     }
 
 
 }
@@ -2311,7 +2355,7 @@ global.GetNodeStrPort=function(Node)
 
 //TODO: скачивать цепочки блоков у нод с минимальным пингом
 
-//GetHexFromAddres
+//GetHexFromArr
 //GetStrFromHashShort
 
 //Servise:

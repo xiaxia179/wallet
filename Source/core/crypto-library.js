@@ -53,7 +53,10 @@ global.GetHexAddresFromPublicKey=function (arr)
 //////////////////////////////////////////////////
 global.GetHexFromArr=function (arr)
 {
-    return Buffer.from(arr).toString('hex').toUpperCase();
+    if(!arr)
+        return "";
+    else
+        return Buffer.from(arr).toString('hex').toUpperCase();
 }
 function GetArrFromHex(Str)
 {

@@ -1972,8 +1972,8 @@
             <th id="SUM_TO_STRING(Item)" class="sum">Amount</th>
             <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
             <th id="Item.Description"class="desc">Description</th>
-            <th id="Item.FromID" class="num">From</th>
-            <th id="GetStrID(Item.ToID)" class="num">To</th>
+            <th id="Item.FromID" class="num bold">From</th>
+            <th id="GetStrID(Item.ToID)" class="num bold">To</th>
             <th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>
             <th id="Item.BlockNum" class="num">Block</th>
         </tr>
@@ -2040,7 +2040,7 @@
 <DIV id="TabExplorer" style="display: none">
 
     <INPUT type="button" onclick="window.Open('./HTML/stat.html','counters')" class="btdoit btmedium bt" id="idCounters" value="Counters">
-    <INPUT type="button" onclick="window.Open('./HTML/chains.html','chains',1030)" class="btdoit btmedium bt" id="idChains" value="Chains">
+    <INPUT type="button" onclick="window.Open('./HTML/chains.html','chains',1200,600)" class="btdoit btmedium bt" id="idChains" value="Chains">
     <INPUT type="button" onclick="window.Open('./HTML/monitor.html','monitor',1200)" class="btdoit btmedium bt" id="idMonitor" value="Monitor">
     <INPUT type="button" onclick="window.Open('./HTML/console.html','console')" class="btdoit btmedium bt" id="idConsole" value="Console">
 
@@ -2088,7 +2088,7 @@
                 <th id="(RetOpenBlock(Item.BlockNum,Item.TrDataLen))" class="num">Open</th>
                 <th id="Item.TrDataLen" class="num">Bytes</th>
 
-                <th id="GetHexFromArr(Item.Hash)" class="code">Hash</th>
+                <th id="GetHexFromArr(Item.Hash)" class="hash">Hash</th>
                 <th id="Item.Power" class="num">Pow</th>
                 <th id="Item.Miner" class="num">Miner</th>
 

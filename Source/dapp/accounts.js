@@ -244,7 +244,7 @@ class AccountApp extends require("./dapp")
             case TYPE_TRANSACTION_ACC_HASH:
             {
                 Result=this.TRCheckAccountHash(Body,BlockNum);
-                if(!Result)
+                if(Result!==1)
                 {
                     var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
                     ToLog("FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash);
@@ -379,7 +379,7 @@ class AccountApp extends require("./dapp")
         }
 
         ConvertBufferToStr(TR);
-        return JSON.stringify(TR,"",4);
+        return JSON.stringify(TR,"",2);
     }
 
     TRCheckAccountHash(Body,BlockNum)
@@ -399,9 +399,14 @@ class AccountApp extends require("./dapp")
 
         var Item=this.DBAccountsHash.Read(TR.BlockNum);
         if(Item)
-            return !CompareArr(Item.Hash,TR.Hash);
+        {
+            if(CompareArr(Item.Hash,TR.Hash)===0)
+                return 1;
+            else
+                return 0;
+        }
         else
-            return 0;
+            return 2;
     }
 
     TRCreateAccount(Body,BlockNum)

@@ -21,6 +21,11 @@ table
     text-align2: right;
 }
 
+td.bold
+{
+    font-weight: 700;
+}
+
 
 td.sum
 {
@@ -28,6 +33,7 @@ td.sum
     width: 50px;
     font-weight: 700;
 }
+
 td.num
 {
     text-align: right;
@@ -121,6 +127,16 @@ table.form_input
     text-align: left;
     word-break: break-all;
 }
+.hash
+{
+    width: 240px;
+    font-family: "courier new", "times new roman", monospace;
+    font-size: 60%;
+    align-content: left;
+    text-align: left;
+    word-break: break-all;
+}
+
 
 #idTotalSum
 {

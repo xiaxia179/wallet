@@ -19,6 +19,7 @@ module.exports = class CDB extends require("../code")
         super(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
 
 
+        this.StartOncProcess();
 
         //TODO - поиск макс номера:
         this.BodyFileNum=0;
@@ -28,6 +29,25 @@ module.exports = class CDB extends require("../code")
         this.BlockNumDB=0;
 
 
+    }
+
+    StartOncProcess()
+    {
+        var path=GetDataPath("DB/run");
+        if(fs.existsSync(path))
+        {
+            fs.unlinkSync(path);
+        }
+        try
+        {
+            this.BlockRunFI=BlockDB.OpenDBFile("run");
+        }
+        catch (e)
+        {
+            ToLog("********************************************* DETECT START ANOTHER PROCESS *********************************************")
+            ToLog("EXIT");
+            process.exit();
+        }
     }
 
     SetFirstTimeBlock(Num)
@@ -542,6 +562,8 @@ module.exports = class CDB extends require("../code")
         var bytesRead=fs.readSync(FD, BufRead,0,BufRead.length, Position);
         if(bytesRead!==BufRead.length)
         {
+            this.AddBlockToLoadBody(Block);
+
             TO_ERROR_LOG("DB",270,"Error read block-body file: "+FileItem.name+"  from POS:"+Position+"  bytesRead="+bytesRead+" of "+BufRead.length+"  BlockNum="+Block.BlockNum);
             return false;
         }
@@ -777,8 +799,9 @@ module.exports = class CDB extends require("../code")
 
     GetTrRows(BlockNum,start,count)
     {
-        var Block=this.ReadBlockDB(BlockNum);
         var arr=[];
+        var Block=this.ReadBlockDB(BlockNum);
+        if(Block && Block.arrContent)
         for(var num=start;num<start+count;num++)
         {
             if(num<0)

@@ -71,7 +71,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
             if(Num>BLOCK_PROCESSING_LENGTH2)
             {
                 var Block=this.ReadBlockDB(Num);
-                Block.Num1=1;
+                if(Block)
                 this.OnWriteBlock(Block);
             }
         }
@@ -151,7 +151,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
 // setTimeout(function ()
 // {
 //     console.time("*****************************************************************************ReWriteDAppTransactions")
-//     SERVER.ReWriteDAppTransactions(0,1000);
+//     SERVER.ReWriteDAppTransactions(948767,948767);
 //     console.timeEnd("*****************************************************************************ReWriteDAppTransactions")
 //     process.exit()
 // },1000)

@@ -297,7 +297,10 @@ function RunOnUpdate()
     {
         clearInterval(idRunOnUpdate);
 
-        if(UPDATE_NUM_COMPLETE!==UPDATE_CODE_VERSION_NUM)
+        if(!UPDATE_NUM_COMPLETE)
+            UPDATE_NUM_COMPLETE=0;
+        var CurNum=UPDATE_NUM_COMPLETE;
+        if(CurNum!==UPDATE_CODE_VERSION_NUM)
         {
             global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
             SAVE_CONST(true);
@@ -309,8 +312,8 @@ function RunOnUpdate()
             //DO UPDATE
             //----------------------------------------------------------------------------------------------------------
 
-            if(UPDATE_CODE_VERSION_NUM===27)
-                SERVER.ReWriteDAppTransactions(0);
+            // if(CurNum<=27)
+            //     SERVER.ReWriteDAppTransactions(0);
 
             //----------------------------------------------------------------------------------------------------------
             ToLog("UPDATER Finish");
