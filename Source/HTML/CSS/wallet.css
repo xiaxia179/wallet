@@ -136,6 +136,20 @@ table.form_input
     text-align: left;
     word-break: break-all;
 }
+.pubkey
+{
+    width: 160px;
+    font-family: "courier new", "times new roman", monospace;
+    font-size: 75%;
+    align-content: left;
+    text-align: left;
+    word-break: break-all;
+}
+
+#idNodeWhiteList
+{
+    width: 780px;
+}
 
 
 #idTotalSum

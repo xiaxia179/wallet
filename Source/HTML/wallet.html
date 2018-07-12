@@ -1922,7 +1922,7 @@
     IP:<INPUT  maxlength="16" id="idIP"> Port:<INPUT maxlength="9" id="idPort"><BR>
     <!--<INPUT type="checkbox" id="idUseIncomeGrayIP">Allow connection users without a direct ip:<BR>-->
     White list nodes (HEX-format):<BR>
-    <TEXTAREA id="idNodeWhiteList" rows="4" cols="110"> </TEXTAREA>
+    <TEXTAREA id="idNodeWhiteList" rows="4" cols="100"> </TEXTAREA>
     <BR>
 
     <INPUT type="button" onclick="SetNetworkParams(0)" class="btdoit bt" value="Save">
@@ -2066,7 +2066,7 @@
                 <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
                 <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
                 <th id="Item.Description" class="name">Account name</th>
-                <th id="Item.PubKey.substr(0,66)" class="code">PubKey</th>
+                <th id="Item.PubKey" class="pubkey">PubKey</th>
                 <th id="Item.Value.OperationID" class="num">Operation</th>
                 <th id="Item.BlockNumCreate" class="num">Block Num</th>
             </tr>
