@@ -158,7 +158,6 @@ module.exports = class CCode extends require("./base")
             if(fs.existsSync(fname2))
             {
                 fs.unlinkSync(fname2);
-                //return "File was exist: "+fname2;
             }
 
             var data = fs.readFileSync(fname);

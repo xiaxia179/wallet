@@ -216,6 +216,14 @@ HTTPCaller.GetHashAll=function (num,count)
     count=parseInt(count);
 
     var arr=DApps.Accounts.DBAccountsHash.GetRows(num,count);
+    for(var i=0;i<arr.length;i++)
+    {
+        var item=arr[i];
+        var Block=SERVER.ReadBlockHeaderDB(item.BlockNum);
+        if(Block)
+            item.TrDataLen=Block.TrDataLen;
+
+    }
     return {arr:arr,result:1};
 }
 

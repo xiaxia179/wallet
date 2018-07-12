@@ -533,6 +533,8 @@ module.exports = class CDB extends require("../code")
     //Read
     ReadBlockDB(Num)
     {
+        if(!Num)
+            Num=0;
         var Block=this.ReadBlockHeaderDB(Num);
         if(Block && Block.TrDataLen)
         {
@@ -814,6 +816,7 @@ module.exports = class CDB extends require("../code")
 
             Tr.Num=num;
             Tr.Type=Tr.body[0];
+            Tr.Length=Tr.body.length;
             Tr.Body=[];
             for(var j=0;j<Tr.body.length;j++)
                 Tr.Body[j]=Tr.body[j];

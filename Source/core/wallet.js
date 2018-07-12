@@ -340,6 +340,15 @@ class CApp
             if(Item.Direct==="-" && this.AccountMap[Item.FromID]===undefined)
                 continue;
 
+            //name
+            if(Item.ToID!==1000000000000)
+            {
+                var Account=DApps.Accounts.ReadState(Item.ToID);
+                if(Account)
+                    Item.ToName=Account.Description;
+            }
+
+
             arr.push(Item);
             //arr.unshift(Item);
             // if(arr.length>count)

@@ -99,25 +99,26 @@
     background-size: 16px;
     background-position: right;
 }
-#idDown22
+
+#idUp
 {
-    background-image: url('/HTML/PIC/down.png');
-    background-repeat: repeat-y;
-    background-size: 12px;
-}
-
-
-
-#idViewAccounts, #idViewBlock, #idViewActs, #idViewHash, #idViewUtil,#idOpenService
-{
-    width: 136px;
-    background-image: url('/HTML/PIC/down.png');
+    background-image: url('/HTML/PIC/up.png');
     background-repeat: no-repeat;
     background-size: 16px;
     background-position: right;
+
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 1);
 }
+
+
+
+
 
 #idOpenService
 {
     width: 160px;
+}
+.btexlporer
+{
+    width: 136px;
 }

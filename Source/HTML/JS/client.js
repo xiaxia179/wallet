@@ -59,7 +59,7 @@ else
 {
     window.Open=function (path,iconname,width,height)
     {
-        window.open(path);
+        var win=window.open(path);
     };
 
     window.GetData=
@@ -437,14 +437,6 @@ function CopyObjKeys(dest,src)
 }
 
 
-//ACCOUNT ID
-function GetStrID(num)
-{
-    if(num===1000000000000)
-        num="∞";
-    return num;
-}
-
 
 //CMART-CONTRACT SERILIZE
 function SaveToArr(Arr,Obj)
@@ -516,3 +508,213 @@ function LoadFromArr(Arr,Obj)
         return false;
 }
 
+//HTML
+var entityMap =
+    {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': '&quot;',
+        "'": '&#39;',
+        "/": '&#x2F;',
+        "\n": '<BR>',
+        " ": '&nbsp;',
+    };
+function escapeHtml(string)
+{
+    return String(string).replace(/[\s\n&<>"'\/]/g, function (s)
+    {
+        return entityMap[s];
+    });
+}
+
+
+
+//Paginations lib
+function ViewCurrent(Def,flag,This)
+{
+    if(Def.BlockName)
+    {
+        if(flag)
+        {
+            SetVisibleBlock(Def.BlockName,!IsVisibleBlock(Def.BlockName));
+        }
+        else
+        {
+            SetVisibleBlock(Def.BlockName,true);
+        }
+    }
+    var item=document.getElementById(Def.NumName);
+    ViewGrid("/"+Def.APIName+"/"+ParseNum(item.value)+"/"+CountViewRows+"/"+Def.Param3,Def.TabName,1,Def.TotalSum);
+
+    if(This)
+        SetImg(This,Def.BlockName);
+}
+
+function ViewPrev(Def)
+{
+    var item=document.getElementById(Def.NumName);
+    var Num=ParseNum(item.value);
+    Num-=CountViewRows;
+    if(Num<0)
+        Num=0;
+    item.value=Num;
+
+    ViewCurrent(Def);
+}
+function ViewNext(Def,MaxNum)
+{
+    var item=document.getElementById(Def.NumName);
+    var Num=ParseNum(item.value);
+    Num+=CountViewRows;
+
+    if(Num<MaxNum)
+    {
+        item.value=Num;
+    }
+    else
+    {
+        item.value=MaxNum-MaxNum%CountViewRows;
+    }
+    ViewCurrent(Def);
+}
+
+
+
+function DoStableScroll()
+{
+
+    var scrollHeight = Math.max(
+        document.body.scrollHeight, document.documentElement.scrollHeight,
+        document.body.offsetHeight, document.documentElement.offsetHeight,
+        document.body.clientHeight, document.documentElement.clientHeight
+    );
+
+    var item=document.getElementById("idStableScroll");
+    var itemlHeight = Math.max(item.scrollHeight,item.offsetHeight,item.clientHeight);
+    scrollHeight=scrollHeight-itemlHeight;
+
+    //console.log("height="+itemlHeight );
+    item.style.top=""+scrollHeight+"px";
+
+}
+
+
+
+//GRID
+var glWorkNum=0;
+function SetGridData(arr,id_name,btotal,bclear,revert)
+{
+    var htmlTable=document.getElementById(id_name);
+
+    if(bclear)
+        ClearTable(htmlTable);
+
+
+    if(!htmlTable.ItemsMap)
+        htmlTable.ItemsMap={};
+
+    var map=htmlTable.ItemsMap;
+
+    glWorkNum++;
+    var ValueTotal={SumTER:0,SumCENT:0};
+
+
+    var row0=htmlTable.rows[0];
+    var colcount=row0.cells.length;
+    for(var i=0;arr && i<arr.length;i++)
+    {
+        var Item=arr[i];
+        var ID=(Item.Num);
+
+        var row=map[ID];
+        if(!row)
+        {
+            htmlTable.RowCount++;
+            if(revert)
+                row=htmlTable.insertRow(1);
+            else
+                row=htmlTable.insertRow(-1);
+            map[ID]=row;
+            for(var n=0;n<colcount;n++)
+            {
+                var cell0=row0.cells[n];
+                var cell=row.insertCell(n);
+                cell.className  = cell0.className;
+            }
+        }
+        row.Work=glWorkNum;
+        for(var n=0;n<colcount;n++)
+        {
+            var cell0=row0.cells[n];
+            var cell=row.cells[n];
+            var formula=cell0.id;
+            if(formula.substr(0,1)==="(")
+            {
+                var text=eval(formula);
+                if(cell.innerHTML!==text)
+                    cell.innerHTML=text;
+            }
+            else
+            {
+                var text=eval(formula);
+                if(cell.innerText!==text)
+                    cell.innerText=text;
+            }
+        }
+
+        if(btotal)
+            ADD(ValueTotal,Item.Value);
+    }
+
+    //delete old
+    for(var key in map)
+    {
+        var row=map[key];
+        if(row.Work!==glWorkNum)
+        {
+            htmlTable.deleteRow(row.rowIndex);
+            delete map[key];
+        }
+    }
+    if(btotal)
+    {
+        var id = document.getElementById("idTotalSum");
+        id.innerText="Total: "+SUM_TO_STRING(ValueTotal,1);
+
+    }
+
+    DoStableScroll();
+}
+
+function ClearTable(htmlTable)
+{
+    for(var i=htmlTable.rows.length-1;i>0;i--)
+        htmlTable.deleteRow(i);
+    htmlTable.ItemsMap={};
+    htmlTable.RowCount=0;
+}
+
+
+function ViewGrid(serverpath,nameid,bClear,bTotal)
+{
+    GetData(serverpath, function (Data)
+    {
+        if(!Data || !Data.result)
+            return;
+        SetGridData(Data.arr,nameid,bTotal,bClear);
+    });
+}
+
+function RetOpenBlock(Num,TrDataLen)
+{
+    if(Num && TrDataLen)
+        return '<INPUT type="button" onclick="ViewTransaction('+Num+')" class="" value="'+Num+'">';
+    else
+        return Num;
+}
+
+function ViewTransaction(BlockNum)
+{
+    window.Open('./HTML/blockviewer.html#'+BlockNum,'viewer',800,800);
+}

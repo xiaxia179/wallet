@@ -196,6 +196,12 @@
         {
             SendToServer();
         }
+
+        if(e.keyCode===27)
+        {
+            window.close();
+        }
+
         //SetStatus("keyCode="+e.keyCode)
     }
 
@@ -234,6 +240,8 @@
         LoadValues();
 
         document.body.className=localStorage["idSelStyle"];
+
+
     }
 
     function LoadValues()

@@ -740,6 +740,14 @@
             SetDiagramMouseX(event);
         }
 
+        window.onkeydown = function (e)
+        {
+            if(e.keyCode===27)
+            {
+                window.close();
+            }
+        };
+
         //document.body.className=localStorage["idSelStyle"];
     }
 

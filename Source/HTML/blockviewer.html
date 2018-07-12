@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Block</title>
+    <link rel="shortcut icon" href="/HTML/PIC/viewer.png" type="image/png">
+
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/buttons.css">
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/style.css">
+    <link rel="stylesheet" type="text/css" href="../HTML/CSS/wallet.css">
+
+    <script>
+        window.RUN_CLIENT=1;
+        window.RUN_SERVER=0;
+        if(typeof global === 'object')
+        {
+            global.RUN_CLIENT=1;
+            global.RUN_SERVER=0;
+        }
+    </script>
+    <script type="text/javascript" src="../HTML/JS/client.js"></script>
+
+
+
+    <script>
+        var CountViewRows=10;
+        var DefTr={NumName:"idViewTrNum", TabName:"grid_transaction_all",APIName:"GetTransactionAll",Param3:undefined};
+
+        window.onload=function()
+        {
+            document.body.className=localStorage["idSelStyle"];
+            var i=document.URL.indexOf("#");
+            if(i>0)
+            {
+                var BlockNum=ParseNum(document.URL.substr(i+1));
+                document.title="Block: "+BlockNum;
+                document.getElementById("view_header_tr").innerText="Transactions on block: "+BlockNum;
+
+                DefTr.Param3=BlockNum;
+                ViewCurrent(DefTr);
+            }
+
+            window.onkeydown = function (e)
+            {
+                if(e.keyCode===27)
+                {
+                    window.close();
+                }
+            };
+
+        }
+    </script>
+</head>
+<body>
+
+<DIV id="idTransactionBlock" style="display: block">
+    <BR>
+    <DIV id="view_header_tr" >Transactions on block<BR></DIV>
+    <INPUT type="button" onclick="ViewPrev(DefTr)" class="btdoit bt" value="<< Prev">
+    <INPUT type="number" id="idViewTrNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefTr)">
+    <INPUT type="button" onclick="ViewNext(DefTr,5000)" class="btdoit bt" value="Next >>">
+
+    <table id="grid_transaction_all" class="grid">
+        <tr>
+            <th id="Item.Num" class="num">Num</th>
+            <th id="Item.Type" class="num">Type</th>
+            <th id="GetHexFromArr(Item.Body)" class="code">Body</th>
+            <th id="(escapeHtml(Item.Script))" class="code">JSON</th>
+            <th id="GetHexFromArr(Item.HASH)" class="code">HASH</th>
+            <th id="Item.Length" class="num">Bytes</th>
+            <th id="Item.power" class="num">power</th>
+        </tr>
+    </table>
+</DIV>
+
+
+<DIV id="idStableScroll">
+    @terafoundation
+    <!--progr76@gmail.com-->
+</DIV>
+
+</body>
+</html>

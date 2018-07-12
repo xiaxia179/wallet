@@ -58,7 +58,7 @@
             DoDblClick(mouse.x,mouse.y, event);
         }, false);
 
-        InitViewBlock();
+        //InitViewBlock();
         InitMoveBlock();
 
         //COMMON MOUSE MOVING
@@ -66,6 +66,16 @@
         {
             moveBlock(event);
         }
+
+
+        window.onkeydown = function (e)
+        {
+            if(e.keyCode===27)
+            {
+                window.close();
+            }
+        };
+
 
     }
 
@@ -879,6 +889,8 @@
     }
     function SetViewBlock(Block,event)
     {
+        InitViewBlock();
+
         var name=Block.Type.trim()+Block.guid;
         var coord=getMouse(window,event);
         var x=coord.x;
