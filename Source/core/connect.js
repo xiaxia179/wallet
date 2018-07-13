@@ -13,6 +13,7 @@ const CNode=require("./node");
 global.PERIOD_FOR_RECONNECT=3600*1000;//ms
 //const PERIOD_FOR_RECONNECT=10*1000;//ms
 
+global.CHECK_DELTA_TIME={Num:0,bUse:0,StartBlockNum:0,EndBlockNum:0,bAddTime:0,DeltaTime:0,Sign:[]};
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
 global.CODE_VERSION={VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
 
@@ -144,6 +145,29 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(global.CAN_START)
             this.PerioadAfterCanStart++;
 
+        if(CHECK_DELTA_TIME.bUse)
+        {
+            var BlockNum=GetCurrentBlockNumByTime();
+            if(CHECK_DELTA_TIME.StartBlockNum<=BlockNum && CHECK_DELTA_TIME.EndBlockNum>=BlockNum)
+            {
+                if(!global.DELTA_CURRENT_TIME)
+                    global.DELTA_CURRENT_TIME=0;
+                var CorrectTime=0;
+                if(CHECK_DELTA_TIME.bAddTime)
+                    CorrectTime = CHECK_DELTA_TIME.DeltaTime;
+                else
+                    CorrectTime = -CHECK_DELTA_TIME.DeltaTime;
+
+                ToLog("************************************************USE CORRECT TIME: "+CHECK_DELTA_TIME.Num+" Delta = "+CorrectTime);
+
+                global.DELTA_CURRENT_TIME += CorrectTime;
+                //reset times
+                this.ClearTimeStat();
+                SAVE_CONST(true);
+            }
+        }
+
+
         var arr=SERVER.GetActualNodes();
         for(var i=0;i<arr.length;i++)
         {
@@ -192,6 +216,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 AccountBlockNum:BlockNumHash,
                 AccountsHash:AccountsHash,
                 MemoryUsage:Math.trunc(process.memoryUsage().heapTotal/1024/1024),
+                CheckDeltaTime:CHECK_DELTA_TIME,
                 Reserve:[],
             };
 
@@ -215,7 +240,8 @@ module.exports = class CConnect extends require("./transfer-msg")
             AccountBlockNum:uint,\
             AccountsHash:hash,\
             MemoryUsage:uint,\
-            Reserve:arr62,\
+            CheckDeltaTime:{Num:uint,bUse:byte,StartBlockNum:uint,EndBlockNum:uint,bAddTime:byte,DeltaTime:uint,Sign:arr64},\
+            Reserve:arr40,\
             }";
     }
 
@@ -383,6 +409,32 @@ module.exports = class CConnect extends require("./transfer-msg")
             ToLog("*************************************************************************** CAN_START")
             global.CAN_START=true;
         }
+
+
+        if(global.CAN_START && !CREATE_ON_START)
+        {
+            if(Data.CheckDeltaTime.Num>CHECK_DELTA_TIME.Num)
+            {
+                var SignArr=this.GetSignCheckDeltaTime(Data.CheckDeltaTime);
+                if(CheckDevelopSign(SignArr,Data.CheckDeltaTime.Sign))
+                {
+                    ToLog("Get new CheckDeltaTime: "+JSON.stringify(Data.CheckDeltaTime));
+                    global.CHECK_DELTA_TIME=Data.CheckDeltaTime;
+                }
+                else
+                {
+                    Node.NextConnectDelta=60*1000;
+                    ToLog("Error Sign CheckDeltaTime Num="+Data.CheckDeltaTime.Num+" from "+NodeInfo(Node));
+                    this.AddCheckErrCount(Node,1,"Error Sign CheckDeltaTime");
+                }
+            }
+        }
+    }
+
+    GetSignCheckDeltaTime(Data)
+    {
+        var Buf=BufLib.GetBufferFromObject(Data,"{Num:uint,bUse:byte,StartBlockNum:uint,EndBlockNum:uint,bAddTime:byte,DeltaTime:uint}",1000,{});
+        return shaarr(Buf);
     }
 
 
@@ -1275,12 +1327,17 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
         //reset times
-        for(var Node of NodesSet)
+        this.ClearTimeStat();
+
+        SAVE_CONST();
+    }
+    ClearTimeStat()
+    {
+        var ArrNodes=this.GetHotTimeNodes();
+        for(var Node of ArrNodes)
         {
             Node.Times=undefined;
         }
-
-        SAVE_CONST();
     }
 
 

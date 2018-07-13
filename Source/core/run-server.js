@@ -237,7 +237,7 @@ function ConnectToNodes()
 
 function RunServer(bVirtual)
 {
-    idRunOnUpdate=setInterval(RunOnUpdate,100);
+    idRunOnUpdate=setInterval(RunOnUpdate,1000);
     ToLog("NETWORK: "+GetNetworkName());
     ToLog("VERSION: "+DEF_VERSION);
 
@@ -312,8 +312,16 @@ function RunOnUpdate()
             //DO UPDATE
             //----------------------------------------------------------------------------------------------------------
 
-            // if(CurNum<=27)
-            //     SERVER.ReWriteDAppTransactions(0);
+            if(SERVER.BlockNumDB<1000000)
+            {
+                var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
+                var AccountsHash=DApps.Accounts.GetHash(BlockNumHash);
+                if(IsZeroArr(AccountsHash))
+                {
+                    if(CurNum<=31)
+                        SERVER.ReWriteDAppTransactions(0);
+                }
+            }
 
             //----------------------------------------------------------------------------------------------------------
             ToLog("UPDATER Finish");

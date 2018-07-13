@@ -420,17 +420,18 @@ HTTPCaller.TruncateBlockChain=function (BlockNum,Param2,Param3)
 
 HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
 {
+    if(WALLET.WalletOpen===false)
+    {
+        ToLogClient("Not open wallet")
+        return {result:0};
+    }
+
     if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
     {
         ToLogClient("Not developer key")
         return {result:0};
     }
 
-    if(WALLET.WalletOpen===false)
-    {
-        ToLogClient("Not open wallet")
-        return {result:0};
-    }
 
 
     if(!BlockNum)
@@ -450,14 +451,15 @@ HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
 
 HTTPCaller.SetNewCodeVersion=function (Num,Param2,Param3)
 {
-    if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
-    {
-        ToLogClient("Not developer key")
-        return {result:0};
-    }
     if(WALLET.WalletOpen===false)
     {
         ToLogClient("Not open wallet")
+        return {result:0};
+    }
+
+    if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
+    {
+        ToLogClient("Not developer key")
         return {result:0};
     }
 
@@ -467,6 +469,36 @@ HTTPCaller.SetNewCodeVersion=function (Num,Param2,Param3)
     var Ret=SERVER.SetNewCodeVersion(Num,WALLET.KeyPair.getPrivateKey(''));
     return {result:1,text:Ret};
 }
+
+
+
+HTTPCaller.SetCheckDeltaTime=function (Data)
+{
+    if(WALLET.WalletOpen===false)
+    {
+        ToLogClient("Not open wallet")
+        return {result:0};
+    }
+
+    if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
+    {
+        ToLogClient("Not developer key")
+        return {result:0};
+    }
+
+    if(!Data || !Data.Num)
+    {
+        ToLogClient("Num not set")
+        return {result:0};
+    }
+
+    var SignArr=SERVER.GetSignCheckDeltaTime(Data);
+    Data.Sign = secp256k1.sign(shabuf(SignArr), WALLET.KeyPair.getPrivateKey('')).signature;
+    global.CHECK_DELTA_TIME=Data;
+
+    return {result:1,text:"Set check time Num="+Data.Num};
+}
+
 
 
 
