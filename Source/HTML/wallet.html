@@ -700,6 +700,12 @@
     function RewriteTransactions()
     {
         var BlockNum=ParseNum(document.getElementById("idBlockNum").value);
+        if(!BlockNum)
+        {
+            SetError("The block number must be more then 0");
+            return;
+        }
+
 
         SetVisibleBlock("idServerBlock",1);
         SetStatus("Start rewrite transactions from: "+BlockNum);
@@ -715,6 +721,11 @@
     function CheckBlocks()
     {
         var BlockNum=ParseNum(document.getElementById("idBlockNum").value);
+        if(!BlockNum)
+        {
+            SetError("The block number must be more then 0");
+            return;
+        }
 
         SetVisibleBlock("idServerBlock",1);
         SetStatus("Start CheckBlocks from: "+BlockNum);
@@ -1096,20 +1107,6 @@
         else
             return "";
     }
-    function DateFromBlock(BlockNum)
-    {
-        var Str;
-        if(window.FIRST_TIME_BLOCK)
-        {
-            var now=new Date(window.FIRST_TIME_BLOCK+BlockNum*1000);
-            Str=now.toISOString();
-            Str=Str.substr(0,Str.indexOf("."));
-            Str=Str.replace("T"," ");
-        }
-        else
-            Str="";
-        return Str;
-    }
 
 
 
@@ -1437,8 +1434,13 @@
     }
     function TruncateBlockChain()
     {
-        var VersionNum=document.getElementById("idTruncateBlockNum").value;
-        GetData("/TruncateBlockChain/"+VersionNum,function (Data)
+        var BlockNum=ParseNum(document.getElementById("idBlockNum").value);
+        if(!BlockNum)
+        {
+            SetError("The block number must be more then 0");
+            return;
+        }
+        GetData("/TruncateBlockChain/"+BlockNum,function (Data)
         {
             if(Data && Data.result===1)
             {
@@ -1762,11 +1764,6 @@
             <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit btlong bt" value="Create check point">
             <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit btlong bt" value="Set new code version:">
             <INPUT type="string" id="idVersionNum" maxlength="6" value="1">
-
-            <BR>
-            <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit btlong bt" value="Truncate chain:">
-            <INPUT type="string" id="idTruncateBlockNum" maxlength="6" value="0">
-            <BR>
         </DIV>
     </DIV>
 
@@ -1793,7 +1790,7 @@
         <tr>
             <th id="Item.Direct">Direct</th>
             <th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>
-            <th id="DateFromBlock(Item.BlockNum)" class="date">Date</th>
+            <th id="(escapeHtml(DateFromBlock(Item.BlockNum)))" class="date">Date</th>
             <th id="SUM_TO_STRING(Item)" class="sum">Amount</th>
             <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
             <th id="Item.Description"class="desc">Description</th>
@@ -1922,10 +1919,11 @@
 
         <table id="grid_block_all" class="grid">
             <tr>
-                <th id="(RetOpenBlock(Item.BlockNum,Item.TrDataLen))" class="num">Open</th>
-                <th id="Item.TrDataLen" class="num">Bytes</th>
-
+                <th id="(RetOpenBlock(Item.BlockNum,Item.TrDataLen))" class="num">Block</th>
+                <th id="(escapeHtml(DateFromBlock(Item.BlockNum)))" class="date">Date</th>
+                <th id="GetHexFromArr(Item.TreeHash)" class="hash">Data Hash</th>
                 <th id="GetHexFromArr(Item.Hash)" class="hash">Hash</th>
+                <th id="Item.TrDataLen" class="num">Bytes</th>
                 <th id="Item.Power" class="num">Pow</th>
                 <th id="Item.Miner" class="num">Miner</th>
 
@@ -1948,6 +1946,7 @@
                 <th id="Item.ID" class="num">Account</th>
                 <th id="Item.Mode">Mode</th>
                 <th id="(RetOpenBlock(Item.BlockNum,1))" class="num">Block</th>
+                <th id="(escapeHtml(DateFromBlock(Item.BlockNum)))" class="date">Date</th>
 
                 <th id="Item.PrevValue.OperationID" class="num">Prev. Operation</th>
                 <th id="Item.PrevValue.BlockNum" class="num">Prev. Block</th>
@@ -1966,6 +1965,7 @@
         <table id="grid_hash_all" class="grid">
             <tr>
                 <th id="(RetOpenBlock(Item.BlockNum,Item.TrDataLen))" class="num">Block</th>
+                <th id="(escapeHtml(DateFromBlock(Item.BlockNum)))" class="date">Date</th>
                 <th id="GetHexFromArr(Item.Hash)" class="code">Hash</th>
             </tr>
         </table>
@@ -1975,9 +1975,10 @@
         <HR>
         <DIV id="view_header" >UTILITES<BR></DIV>
 
-        Block num:<INPUT type="number" id="idBlockNum" value="0">
+        Operation with Block number:<INPUT type="number" id="idBlockNum" value="0"><BR>
         <INPUT type="button" onclick="RewriteTransactions()"  class="bt btdoit btlong" value="Rewrite Transactions">
         <INPUT type="button" onclick="CheckBlocks()"  class="bt btdoit btlong" value="Check Blocks">
+        <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit btlong bt" value="Truncate chain <!>">
         <BR>
 
     </DIV>

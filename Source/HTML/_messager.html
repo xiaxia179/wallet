@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Messager</title>
+</head>
+
+<script type="text/javascript" src="constant.js"></script>
+<script type="text/javascript" src="sha3.js"></script>
+<script type="text/javascript" src="crypto-client.js"></script>
+<script>
+    function SetStatus(Str)
+    {
+        var id = document.getElementById("status");
+        //id.innerText=Str;
+        id.innerHTML=Str;
+    }
+
+    var MaxBlockNum=0;
+    var addrArr;
+    var ArrMyName;
+    var WasOpenChannel;
+
+
+
+    function UpdateData()
+    {
+
+        GetData("/getnetparams/", function (Data)
+        {
+            if(Data)
+            {
+                if(Data.CurBlockNum>MaxBlockNum)
+                    MaxBlockNum=Data.CurBlockNum;
+                addrArr=Data.addrArr.data;
+                //SetStatus("addrArr="+addrArr)
+            }
+        });
+    }
+
+
+
+    function SendMessage()
+    {
+        if(!WasOpenChannel)
+        {
+            SetStatus("Not was Open channel");
+            return;
+        }
+
+        var Value = document.getElementById("idValue").value;
+        var arrValue=GetArrFromStr(Value,TR_LEN-1);
+        var Body=[];
+        Body[0]=12;
+        for(var i=0;i<TR_LEN-1;i++)
+        {
+            Body[i+1]=arrValue[i];
+        }
+
+        SendTransaction(Body);
+    }
+
+    function OpenChannel()
+    {
+        if(!ArrMyName)
+        {
+            SetStatus("Not was register name");
+            return;
+        }
+        var Value = document.getElementById("idValue").value;
+
+        var arrValue=GetArrFromStr(Value,32);
+        var Body=[];
+        Body[0]=11;
+        for(var i=0;i<32;i++)
+        {
+            Body[i+1]=ArrMyName[i];
+            Body[i+33]=arrValue[i];
+        }
+        WasOpenChannel=1;
+
+        SendTransaction(Body);
+
+    }
+
+    function SendName()
+    {
+        if(!addrArr)
+        {
+            SetStatus("Params error!");
+            return;
+        }
+
+        var Value = document.getElementById("idValue").value;
+        var arrValue=GetArrFromStr(Value,32);
+
+        ArrMyName=arrValue;
+
+        var Body=[];
+        Body[0]=10;
+        for(var i=0;i<32;i++)
+        {
+            Body[i+1]=arrValue[i];
+            Body[i+33]=addrArr[i];
+        }
+
+        SendTransaction(Body);
+    }
+
+
+    //***********************************************
+    function SendTransaction(Body)
+    {
+
+        if(!addrArr)
+        {
+            SetStatus("Params error!");
+            return;
+        }
+
+        var SumPow = document.getElementById("idPow").value;
+
+
+
+        var HASH=shaarr(Body);
+        var nonce=CreateNoncePOWExtern(HASH,MaxBlockNum,SumPow*1000);
+        var StrHex=GetStrFromAddr(Body,TR_LEN);
+        //var hashPow=GetHashWithValues(Body,nonce,0);
+        //SetStatus(hashPow);
+        SetStatus("---------------");
+        GetData("/SendTransactionHex/"+StrHex+"/"+nonce+"/"+(MaxBlockNum%100), function (Data)
+        {
+            if(Data)
+            {
+                SetStatus("result:"+Data.text);
+            }
+        });
+    }
+
+
+
+     function CheckCtrlEnter(e,F)
+    {
+        if(e.ctrlKey && e.keyCode===13)
+        {
+            SendMessage();
+        }
+        //SetStatus("keyCode="+e.keyCode)
+    }
+
+    //LIB
+    //LIB
+    //LIB
+    function ToArr(obj,length)
+    {
+        var arr=[];
+        for(var i=0;obj && i<length;i++)
+        {
+            arr[i]=obj[i];
+        }
+        return arr;
+    }
+    function GetStrFromAddr(arr,length)
+    {
+        var Str="";
+
+        for(var i=0;arr && i<length;i++)
+        {
+            var A=arr[i].toString(16);
+            if(A.length===1)
+                A="0"+A;
+            Str=Str+A;
+        }
+
+        return Str.toUpperCase();
+    }
+
+    function GetData(Method, ObjPost, Func)
+    {
+        var StrPost=null;
+        if(Func===undefined)
+        {
+            //old mode
+            Func=ObjPost;
+            ObjPost=null;
+        }
+
+        let name=Method;
+        var serv=new XMLHttpRequest();
+        serv.open("GET", Method, true);
+
+        if(ObjPost)
+        {
+            StrPost=JSON.stringify(ObjPost);
+            serv.open("POST", Method, true);
+        }
+        else
+        {
+            serv.open("GET", Method, true);
+        }
+        serv.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        //serv.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT");
+        serv.onreadystatechange = function()
+        {
+            if (serv.readyState == 4)
+            {
+                if(serv.status == 200)
+                {
+                    if(Func)
+                    {
+                        var length=Math.floor(serv.responseText.length/1024);
+                        //console.log("name="+name+" size="+length+"kb")
+                        //SetStatus2("Method="+serv.responseText.length);
+                        Func(JSON.parse(serv.responseText),serv.responseText);
+                    }
+                }
+                else
+                {
+                    if(Func)
+                        Func(undefined);
+                }
+            }
+        }
+
+        serv.send(StrPost);
+
+    };
+
+
+    window.onload=function()
+    {
+
+
+        setInterval(UpdateData,1000);
+//        setInterval(LoadPrevBlocks,100);
+
+        window.onkeydown = CheckCtrlEnter;
+
+    }
+
+
+
+</script>
+
+<style type="text/css">
+    table
+    {
+        border-collapse: collapse;
+    }
+    .trans th, .trans td
+    {
+        border: 1px solid #2545a9;
+        padding: 5px;
+    }
+    .trans td
+    {
+        width: 260px;
+        text-align: right;
+    }
+
+
+</style>
+<body>
+MESSAGER
+<DIV id="status"> ... </DIV><BR>
+
+
+<table class="grid2">
+    <tr>
+        <td>POW:</td>
+        <td><INPUT type="number" id="idPow" value="10"></td>
+    </tr>
+    <tr>
+        <td>VALUE:</td>
+        <!--<td><textarea  id="idValue"></td>-->
+        <td><textarea id="idValue" cols="80" rows="10"></textarea></td>
+
+    </tr>
+    <tr>
+        <td></td>
+        <td><INPUT type="button" onclick="SendName()" class="buttons" value="Register"></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><INPUT type="button" onclick="OpenChannel()" class="buttons" value="Open"></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><INPUT type="button" onclick="SendMessage()" class="buttons" value="Send"></td>
+    </tr>
+</table>
+
+
+<BR>
+
+
+
+</body>
+</html>

@@ -65,11 +65,15 @@ td.name
 td.date
 {
     text-align: left;
-    width: 400px;
+    width: 200px;
     font-size: small;
 }
 
 
+.short222
+{
+    width: 40px;
+}
 
 
 
@@ -117,7 +121,6 @@ table.form_input
 
 
 
-
 .code
 {
     width: 240px;
@@ -129,7 +132,7 @@ table.form_input
 }
 .hash
 {
-    width: 240px;
+    width: 250px;
     font-family: "courier new", "times new roman", monospace;
     font-size: 60%;
     align-content: left;

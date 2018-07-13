@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Block explorer</title>
+</head>
+
+<script type="text/javascript" src="constant.js"></script>
+<script type="text/javascript" src="sha3.js"></script>
+<script type="text/javascript" src="crypto-client.js"></script>
+<script>
+    function SetStatus(Str)
+    {
+        var id = document.getElementById("status");
+        //id.innerText=Str;
+        id.innerHTML=Str;
+    }
+
+
+    function SendTransaction()
+    {
+        var Key = document.getElementById("idKey").value;
+        var Value = document.getElementById("idValue").value;
+        var SumPow = document.getElementById("idPow").value;
+
+
+        var arrkey=GetArr32FromStr(Key);
+        var arrval=GetArr32FromStr(Value);
+
+        var body=[];
+        body[0]=0;  //smart-contract number 1
+        for(var i=0;i<32;i++)
+        {
+            body[i+1]=arrkey[i];
+            body[i+33]=arrval[i];
+        }
+        var HASH=shaarr(body);
+        var nonce=CreateNoncePOWExtern(HASH,MaxBlockNum,SumPow*1000);
+        var StrHex=GetStrFromAddr(body,TR_LEN);
+        //var hashPow=GetHashWithValues(body,nonce,0);
+        //SetStatus(hashPow);
+        SetStatus("---------------");
+        GetData("/SendTransactionHex/"+StrHex+"/"+nonce+"/"+(MaxBlockNum%100), function (Data)
+        {
+            if(Data)
+            {
+                SetStatus("result:"+Data.text);
+            }
+        });
+    }
+
+
+
+
+
+    //***********************************************
+    function SendTransaction2()
+    {
+        var Key = document.getElementById("idKey").value;
+        var Value = document.getElementById("idValue").value;
+        var nonce=0;
+
+
+        GetData("/sendtransaction/"+encodeURIComponent(Key)+"/"+encodeURIComponent(Value)+"/"+nonce, function (Data)
+        {
+            if(Data)
+                SetStatus("result:"+Data.result+"<BR>key:"+Data.key+"<BR>value:"+Data.value);
+        });
+    }
+
+    var MaxBlockNum=0;
+    var MaxTrCount=50;
+    var BlockLoadedMap={};
+    var TaskForLoad={};
+    var sessionid;
+    var StartLoad=1;
+    function ClearData()
+    {
+        BlockLoadedMap={};
+        TaskForLoad={};
+        ClearTable();
+    }
+    function ClearTable()
+    {
+        var htmlTable=document.getElementById("grid_transactions");
+        if(htmlTable.ItemsMap)
+            for(var key in htmlTable.ItemsMap)
+            {
+                var item=htmlTable.ItemsMap[key];
+                htmlTable.deleteRow(item.rowIndex);
+            }
+        htmlTable.ItemsMap={};
+        htmlTable.RowCount=0;
+    }
+
+    function SetBlocksData(Data)
+    {
+        if(!Data || !Data.result)
+            return;
+
+        var htmlTable=document.getElementById("grid_transactions");
+//        if(!htmlTable.ItemsMap)
+//        {
+//            htmlTable.ItemsMap={};
+//            htmlTable.RowCount=0;
+//        }
+        if(htmlTable.RowCount>MaxTrCount)
+        {
+            ClearTable();
+        }
+
+        var BlockNum=Data.BlockNum;
+        if(BlockNum>MaxBlockNum)
+            MaxBlockNum=BlockNum;
+        if(Data.bSave)
+            BlockLoadedMap[BlockNum]=1;
+
+        var colcount=8;
+        var arr=Data.arrContent;
+        for(var i=0;arr && i<arr.length;i++)
+        {
+            var ID=""+Data.BlockNum+":"+i;
+            var Hash=ToArr(arr[i],65);
+
+            var Type=Hash[0].toString(16)
+            var StrKey=Utf8ArrayToStr(Hash.slice(1,33));
+            var StrVal=Utf8ArrayToStr(Hash.slice(33,64));
+            var HashStr=GetStrFromAddr(Hash,65);
+
+            var item=htmlTable.ItemsMap[ID];
+            if(!item)
+            {
+                htmlTable.RowCount++;
+                var item=htmlTable.insertRow(1);
+                htmlTable.ItemsMap[ID]=item;
+                for(var n=0;n<colcount;n++)
+                {
+                    item.insertCell(n);
+                }
+            }
+            if(Data.bSave)
+                item.cells[0].innerHTML="<B>"+ID+"</B>";
+            else
+                item.cells[0].innerText=ID;
+
+            item.cells[1].innerText=BlockNum;
+            item.cells[2].innerText=i;
+            item.cells[3].innerText=Type;
+            item.cells[4].innerText=StrKey;
+            item.cells[5].innerText=StrVal;
+
+            item.cells[6].innerText=HashStr;
+            item.cells[7].innerText=Data.bSave;
+
+            if(i>=MaxTrCount)
+                break;
+        }
+    }
+
+    function LoadPrevBlocks()
+    {
+        for(var key in TaskForLoad)
+        {
+            delete TaskForLoad[key];
+            GetData("/getblock/"+key, function (Data)
+            {
+                SetBlocksData(Data);
+            });
+        }
+    }
+
+    function UpdateData()
+    {
+        GetData("/getblockheaders", function (Data)
+        {
+            if(!Data || !Data.result)
+                return;
+
+            if(sessionid!==Data.sessionid)
+            {
+                ClearData();
+                sessionid=Data.sessionid;
+            }
+
+            var BlockNum;
+            var TrForLoadCount=MaxTrCount;
+            for(var i=Data.ArrBlocks.length-1;i>=0;i--)
+            {
+                var Block=Data.ArrBlocks[i];
+                BlockNum=Block.BlockNum;
+                if(Block && Block.TrCount)
+                {
+                    if(!BlockLoadedMap[BlockNum])
+                    {
+                        TaskForLoad[BlockNum]=1;
+                        TrForLoadCount-=Block.TrCount;
+                        if(TrForLoadCount<=0)
+                            break;
+                    }
+                }
+            }
+
+            if(0)
+            if(BlockNum && StartLoad)
+            {
+                var CountLoad=100;
+                StartLoad=0;
+                for(var num=BlockNum;num>=0;num--)
+                {
+                    if(!BlockLoadedMap[num])
+                    {
+                        TaskForLoad[num]=1;
+                        CountLoad--;
+                        if(CountLoad<=0)
+                            break;
+                    }
+                }
+            }
+
+        });
+    }
+
+    function CheckCtrlEnter(e,F)
+    {
+        if(e.ctrlKey && e.keyCode===13)
+        {
+            SendTransaction();
+        }
+        //SetStatus("keyCode="+e.keyCode)
+    }
+
+    //LIB
+    //LIB
+    //LIB
+    function ToArr(obj,length)
+    {
+        var arr=[];
+        for(var i=0;obj && i<length;i++)
+        {
+            arr[i]=obj[i];
+        }
+        return arr;
+    }
+    function GetStrFromAddr(arr,length)
+    {
+        var Str="";
+
+        for(var i=0;arr && i<length;i++)
+        {
+            var A=arr[i].toString(16);
+            if(A.length===1)
+                A="0"+A;
+            Str=Str+A;
+        }
+
+        return Str.toUpperCase();
+    }
+
+    function GetData(Method, ObjPost, Func)
+    {
+        var StrPost=null;
+        if(Func===undefined)
+        {
+            //old mode
+            Func=ObjPost;
+            ObjPost=null;
+        }
+
+        let name=Method;
+        var serv=new XMLHttpRequest();
+        serv.open("GET", Method, true);
+
+        if(ObjPost)
+        {
+            StrPost=JSON.stringify(ObjPost);
+            serv.open("POST", Method, true);
+        }
+        else
+        {
+            serv.open("GET", Method, true);
+        }
+        serv.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        //serv.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT");
+        serv.onreadystatechange = function()
+        {
+            if (serv.readyState == 4)
+            {
+                if(serv.status == 200)
+                {
+                    if(Func)
+                    {
+                        var length=Math.floor(serv.responseText.length/1024);
+                        //console.log("name="+name+" size="+length+"kb")
+                        //SetStatus2("Method="+serv.responseText.length);
+                        Func(JSON.parse(serv.responseText),serv.responseText);
+                    }
+                }
+                else
+                {
+                    if(Func)
+                        Func(undefined);
+                }
+            }
+        }
+
+        serv.send(StrPost);
+
+    };
+
+
+    window.onload=function()
+    {
+        ClearData();
+
+        setInterval(UpdateData,1000);
+        setInterval(LoadPrevBlocks,100);
+
+        window.onkeydown = CheckCtrlEnter;
+
+    }
+
+
+
+</script>
+
+<style type="text/css">
+    a.buttons {
+        width: 150px;
+        height: 30px;
+        text-decoration: none;
+        padding-top: 9px;
+        color: #a675b3;
+        text-align: center;
+        line-height: 20px;
+        display: block;
+        margin: 20px auto;
+        font: normal 17px arial;
+    }
+
+    a.buttons:not(.active) {
+        box-shadow: inset 0 1px 1px rgba(111, 55, 125, 0.8), inset 0 -1px 0px rgba(63, 59, 113, 0.2), 0 9px 16px 0 rgba(0, 0, 0, 0.3), 0 4px 3px 0 rgba(0, 0, 0, 0.3), 0 0 0 1px #150a1e;
+        background-image: linear-gradient(#3b2751, #271739);
+        text-shadow: 0 0 21px rgba(223, 206, 228, 0.5), 0 -1px 0 #311d47;
+    }
+
+    a.buttons:not(.active):hover,
+    a.buttons:not(.active):focus {
+        transition: color 200ms linear, text-shadow 500ms linear;
+        color: #fff;
+        text-shadow: 0 0 21px rgba(223, 206, 228, 0.5), 0 0 10px rgba(223, 206, 228, 0.4), 0 0 2px #2a153c;
+    }
+    a.buttons:not(:hover) {
+        transition: 0.6s;
+    }
+
+
+
+    table
+    {
+        border-collapse: collapse;
+    }
+    .trans th, .trans td {
+        border: 1px solid #2545a9;
+        padding: 5px;
+    }
+    .trans td{
+        width: 60px;
+        text-align: right;
+    }
+    .trans td:nth-child(5)
+    {
+        text-align: left;
+        width: 150px;
+    }
+    .trans td:nth-child(6)
+    {
+        text-align: left;
+        width: 150px;
+    }
+    .trans td:nth-child(7)
+    {
+        text-align: left;
+        width: 220px;
+    }
+
+
+</style>
+<body>
+TRANSACTIONS SENDER
+<DIV id="status"> ... </DIV><BR>
+
+
+<table class="grid2">
+    <tr>
+        <td>KEY:</td>
+        <td><INPUT type="string" id="idKey"></td>
+    </tr>
+    <tr>
+        <td>VALUE:</td>
+        <td><INPUT type="string" id="idValue"></td>
+    </tr>
+    <tr>
+        <td>PoW:<INPUT type="number" style="width: 80px" id="idPow" value="10"></td>
+        <td><INPUT type="button" onclick="SendTransaction()" class="buttons" value="Send"></td>
+    </tr>
+</table>
+
+
+<BR>
+Блоки:
+<table id="grid_transactions" class="trans">
+    <tr>
+        <th>ИД</th>
+        <th>Номер блока</th>
+        <th>Номер транзакции</th>
+        <th>Тип</th>
+        <th>Ключ</th>
+        <th>Значение</th>
+        <th>HEX</th>
+        <th>БД</th>
+    </tr>
+</table>
+
+
+<BR>
+<INPUT type="hidden" onclick="CreateDump()" class="buttons" value="CreateDump">
+
+
+</body>
+</html>

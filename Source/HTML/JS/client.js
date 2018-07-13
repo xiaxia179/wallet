@@ -706,15 +706,30 @@ function ViewGrid(serverpath,nameid,bClear,bTotal)
     });
 }
 
-function RetOpenBlock(Num,TrDataLen)
+function RetOpenBlock(BlockNum,TrDataLen)
 {
-    if(Num && TrDataLen)
-        return '<INPUT type="button" onclick="ViewTransaction('+Num+')" class="" value="'+Num+'">';
+    if(BlockNum && TrDataLen)
+        return '<INPUT type="button" onclick="ViewTransaction('+BlockNum+')" class="" value="'+BlockNum+'">';
     else
-        return Num;
+        return BlockNum;
 }
 
 function ViewTransaction(BlockNum)
 {
     window.Open('./HTML/blockviewer.html#'+BlockNum,'viewer',800,800);
+}
+
+function DateFromBlock(BlockNum)
+{
+    var Str;
+    if(window.FIRST_TIME_BLOCK)
+    {
+        var now=new Date(window.FIRST_TIME_BLOCK+BlockNum*1000);
+        Str=now.toISOString();
+        Str=Str.substr(0,Str.indexOf("."));
+        Str=Str.replace("T"," ");
+    }
+    else
+        Str="";
+    return Str;
 }

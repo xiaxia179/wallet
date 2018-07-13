@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html>
+   <head>
+
+    <meta charset="utf-8">
+    <title>TEST!!</title>
+       <script>
+           module={};
+           global={};
+       </script>
+
+       <script>
+           window.RUN_CLIENT=1;
+           window.RUN_SERVER=0;
+           if(typeof global === 'object')
+           {
+               global.RUN_CLIENT=1;
+               global.RUN_SERVER=0;
+           }
+       </script>
+
+       <script type="text/javascript" src="../HTML/JS/client.js"></script>
+
+       <script type="text/javascript" src="../HTML/JS/sha3.js"></script>
+       <script type="text/javascript" src="../HTML/JS/crypto-client.js"></script>
+
+
+<script src="../core/lexer.js">
+</script>
+
+<script>
+LexerJS=global.LexerJS;
+LexerJS.InjectCheck=1;
+
+
+
+
+
+function RunEval(id,bRun)
+{
+    var Str=document.getElementById(id).value;
+    ClearResult();
+    try
+    {
+        LexerJS.ParseCode(Str);
+        ToResult(LexerJS.stream);
+        if(bRun)
+            RunContract(LexerJS.stream,LexerJS.ExportMap);
+        UpdateResult();
+        return;
+
+
+        console.time("ParseCode");
+        for(var i=0;i<1000;i++)
+        {
+            LexerJS.ParseCode(Str);
+        }
+        console.timeEnd("ParseCode");
+
+        console.time("RunContract");
+        if(bRun)
+        for(var i=0;i<1000;i++)
+        {
+            try
+            {
+                RunContract(LexerJS.stream,LexerJS.ExportMap);
+            }
+            catch (e)
+            {
+
+            }
+        }
+        console.timeEnd("RunContract");
+    }
+    catch (e)
+    {
+        ToResult("\n>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        if(e.stack)
+            ToResult(e.stack);
+        else
+            ToResult(e);
+    }
+    UpdateResult();
+}
+var StrResult="";
+function ClearResult()
+{
+    StrResult="";
+}
+function ToResult(Str)
+{
+    StrResult+=Str+"\n";
+}
+function UpdateResult()
+{
+    document.getElementById("result").value=StrResult;
+}
+
+
+window.onload=function()
+{
+    LoadValues();
+    window.onkeydown=function (e,F)
+    {
+        SaveValues();
+        if(e.ctrlKey && e.keyCode===13)
+        {
+            RunEval('code',1);
+        }
+    }
+}
+var SaveIdArr=["code"];
+
+function LoadValues()
+{
+    if(localStorage["VerSave"]!=="1")
+        return;
+    for(var i=0;i<SaveIdArr.length;i++)
+    {
+        var name=SaveIdArr[i];
+        var Item=document.getElementById(name);
+
+        if(Item.nodeName==="SELECT")
+        {
+            LoadMapAfter[name]=localStorage.getItem(name);
+        }
+        Item.value=localStorage.getItem(name);
+        //Item.checked
+    }
+}
+function SaveValues()
+{
+    localStorage["VerSave"]="1";
+    for(var i=0;i<SaveIdArr.length;i++)
+    {
+        var name=SaveIdArr[i];
+        var Item=document.getElementById(name);
+        window.localStorage.setItem(name,Item.value);
+        //Item.checked
+    }
+}
+
+
+
+function __GetHexFromArr(Arr)
+{
+    return GetHexFromArr(Arr);
+}
+
+function __GetArrFromHex(Str)
+{
+    return GetArrFromHex(Str);
+}
+
+//immutable safe:
+Array.prototype.toLocaleString=undefined;
+Number.prototype.toLocaleString=undefined;
+
+String.prototype.localeCompare=undefined;
+String.prototype.toLocaleLowerCase=undefined;
+String.prototype.toLocaleUpperCase=undefined;
+String.prototype.toLocaleLowerCase=undefined;
+
+//memory safe:
+Array.prototype.concat=undefined;
+
+String.prototype.match=undefined;
+String.prototype.repeat=undefined;
+String.prototype.search=undefined;
+String.prototype.padStart=undefined;
+String.prototype.padEnd=undefined;
+
+
+//**********************************************************************************************************************
+function RunContract(Code,ExportMap)
+{
+    "use strict";
+    //var mySandbox = new Components.utils.Sandbox();
+
+
+//    String.prototype=undefined;
+//    Array.prototype=undefined;
+//    Number.prototype=undefined;
+//    Boolean.prototype=undefined;
+
+//    var arr=Object.getOwnPropertyNames(String.prototype);
+//    for(var name of arr)
+//    {
+//        if(name!=="length")
+//        String.prototype[name]=undefined;
+//    }
+//
+
+
+    //var __Object=Object;
+    var exports={};
+    var Counter=15000;
+    ToResult("---------------------------------");
+
+    for(var key in ExportMap)
+    {
+        Code=Code+";\nexports."+key+"=__"+key;
+    }
+    //Code=Code+";\nString.prototype.codePointAt=undefined;";
+
+
+    var Result=eval(Code);
+
+    if(0)
+    for(var key in exports)
+    {
+        var F=exports[key];
+        F();
+    }
+
+    ToResult("---------------------------------");
+    ToResult("\nCounter left: "+Counter)
+    if(localStorage.TestData)
+        ToResult("Data length: "+localStorage.TestData.length/2)
+
+    return;
+
+    function CHCK_LENGTH0(Str)
+    {
+        if(typeof  Str==="string" && Str.length>1000)
+            throw new Error("Invalid string length:"+Str.length);
+    }
+    function CHCK_LENGTH(Str)
+    {
+        if(typeof  Str==="string" && Str.length>1000)
+            throw new Error("Invalid string length:"+Str.length);
+        return Str;
+    }
+
+    //contract 1
+    function SendPromise0(Sender,TO,SumTER,SumCENT)
+    {
+
+    }
+
+//    function SendPromise(uint ID, uint SumTer,uint nDate,str Description) //export
+//    {
+//        var format=["uint","uint","uint","str"];
+//        var dataPrev=Load(format);
+//        if(dataPrev[2]>=CurrentBlock().BlockNum)
+//            return "abort";
+//
+//        var data=[ID,SumTer,nDate,Description];
+//        Save(data,format);
+//        return "commit";
+//    }
+
+
+    //contract 2
+    function OnSend0(Arr)
+    {
+        if(CurrentBlock().BlockNum-LastBlockAct().BlockNum<60)
+            return "abort";
+
+        var MaxSumTER=AccountRest().SumTER/100;
+        var SumTER=0;
+        for(var i=0;i<Arr.length;i++)
+        {
+            SumTER+=Arr[i].SumTER;
+            if(SumTER>MaxSumTER)
+            {
+                return "abort";
+            }
+        }
+
+        return "check-sign";
+
+//        return "check-sign";
+//        return "not-check-sign";
+//        return "abort";
+    }
+
+    //Environment:
+    function DO(TickCount)
+    {
+        Counter-=TickCount;
+        if(Counter<0)
+            throw new Error("STOP: Tick limited");
+    }
+    function __Send(TOArr,Sum)
+    {
+        DO(10000);
+        __ToLog("TO ID:"+ID+" Send: "+Sum+ " TER");
+    }
+    function __ToLog(Str)
+    {
+        DO(1000);
+
+        ToResult((""+Str).substr(0,1000));
+
+    }
+    function __Save(Obj)
+    {
+        DO(1000);
+        var Arr=[0];
+        SaveToArr(Arr,Obj);
+        localStorage.TestData=GetHexFromArr(Arr);
+    }
+
+    function __Load(Obj)
+    {
+        DO(1000);
+        var Arr=GetArrFromHex(localStorage.TestData);
+        return LoadFromArr(Arr,Obj);
+    }
+
+    function __AccountRest()
+    {
+        return {SumTER:1000,SumCENT:0,Sum:1000*1e9};
+    }
+    function __LastBlockAct()
+    {
+        return {BlockNum:1000000};
+    }
+    function __CurrentBlock()
+    {
+        return {BlockNum:1000100};
+    }
+
+
+    //System
+    function __isFinite(a)
+    {
+        return isFinite(a);
+    }
+    function __isNaN(a)
+    {
+        return isNaN(a);
+    }
+    function __parseFloat(a)
+    {
+        return parseFloat(a);
+    }
+    function __parseInt(a)
+    {
+        return parseInt(a);
+    }
+
+    function __String(a)
+    {
+        return String(a);
+    }
+    function __Number(a)
+    {
+        return Number(a);
+    }
+    function __Boolean(a)
+    {
+        return Boolean(a);
+    }
+
+    //Math
+    function random(a)//TODO: __random
+    {
+        DO(100);
+        return 0;
+    }
+
+    //autogenerate:
+    function __abs() { DO(6); return Math.abs.apply(Math, arguments); }
+    function __acos() { DO(16); return Math.acos.apply(Math, arguments); }
+    function __acosh() { DO(8); return Math.acosh.apply(Math, arguments); }
+    function __asin() { DO(17); return Math.asin.apply(Math, arguments); }
+    function __asinh() { DO(30); return Math.asinh.apply(Math, arguments); }
+    function __atan() { DO(13); return Math.atan.apply(Math, arguments); }
+    function __atanh() { DO(26); return Math.atanh.apply(Math, arguments); }
+    function __atan2() { DO(13); return Math.atan2.apply(Math, arguments); }
+    function __ceil() { DO(6); return Math.ceil.apply(Math, arguments); }
+    function __cbrt() { DO(21); return Math.cbrt.apply(Math, arguments); }
+    function __expm1() { DO(17); return Math.expm1.apply(Math, arguments); }
+    function __clz32() { DO(5); return Math.clz32.apply(Math, arguments); }
+    function __cos() { DO(11); return Math.cos.apply(Math, arguments); }
+    function __cosh() { DO(17); return Math.cosh.apply(Math, arguments); }
+    function __exp() { DO(14); return Math.exp.apply(Math, arguments); }
+    function __floor() { DO(5); return Math.floor.apply(Math, arguments); }
+    function __fround() { DO(6); return Math.fround.apply(Math, arguments); }
+    function __hypot() { DO(51); return Math.hypot.apply(Math, arguments); }
+    function __imul() { DO(3); return Math.imul.apply(Math, arguments); }
+    function __log() { DO(9); return Math.log.apply(Math, arguments); }
+    function __log1p() { DO(20); return Math.log1p.apply(Math, arguments); }
+    function __log2() { DO(17); return Math.log2.apply(Math, arguments); }
+    function __log10() { DO(14); return Math.log10.apply(Math, arguments); }
+    function __max() { DO(6); return Math.max.apply(Math, arguments); }
+    function __min() { DO(6); return Math.min.apply(Math, arguments); }
+    function __pow() { DO(37); return Math.pow.apply(Math, arguments); }
+    function __round() { DO(6); return Math.round.apply(Math, arguments); }
+    function __sign() { DO(5); return Math.sign.apply(Math, arguments); }
+    function __sin() { DO(9); return Math.sin.apply(Math, arguments); }
+    function __sinh() { DO(23); return Math.sinh.apply(Math, arguments); }
+    function __sqrt() { DO(6); return Math.sqrt.apply(Math, arguments); }
+    function __tan() { DO(12); return Math.tan.apply(Math, arguments); }
+    function __tanh() { DO(22); return Math.tanh.apply(Math, arguments); }
+    function __trunc() { DO(5); return Math.trunc.apply(Math, arguments); }
+
+}
+
+
+
+
+
+
+</script>
+
+
+</head>
+
+
+
+<body>
+
+    
+    <BR>
+   <DIV style="float: left;">
+   <textarea rows="40" cols="80"  name="text" id="code" autofocus>
+
+function OnSend(Arr)
+{
+    if(CurrentBlock().BlockNum-LastBlockAct().BlockNum<60)
+        return "abort";
+    ToLog("OnSend");
+
+    var MaxSumTER=AccountRest().SumTER/100;
+    var SumTER=0;
+    for(var i=0;Arr && i<Arr.length;i++)
+    {
+        SumTER+=Arr[i].SumTER;
+        if(SumTER>MaxSumTER)
+        {
+            return "abort";
+        }
+    }
+
+    return "check-sign";
+
+//        return "check-sign";
+//        return "not-check-sign";
+//        return "abort";
+}
+
+function SendPromise()
+{
+  var s=sin(0.5);
+  ToLog("SendPromise="+s)
+}
+
+
+var Arr=[100,255,256];
+var Data={Test1:0,Test2:0,Txt:"!!",arr:12};
+if(!Load(Data))
+{
+   ToLog("Err load!")
+   Save({Test1:1000.22,Test2:1e12-1,Txt:"Это текст!!",arr: Arr});
+}
+ToLog("Arr="+Arr);
+ToLog("GetHexFromArr="+GetHexFromArr(Arr));
+
+ToLog("Test1="+Data.Test1);
+ToLog("Test2="+Data.Test2);
+ToLog("Txt="+Data.Txt);
+ToLog("arr="+Data.arr);
+
+
+   </textarea>
+   <textarea rows="40" cols="80"  name="result" id="result">
+   </textarea>
+
+    <BR>
+       <button onClick="RunEval('code',0)">Parse</button>
+       <button onClick="RunEval('code',1)">Run</button>
+   </DIV>
+
+
+            
+
+</body>
+</html>
+
+

@@ -952,8 +952,9 @@
         header.innerText=Str0;
 
 
-        var Str = ""+Block.BlockNum;
+        var Str = ""+RetOpenBlock(Block.BlockNum,Block.TrDataLen);
         Str+="\nSave:"+Block.bSave;
+
 
 
 
@@ -1030,9 +1031,11 @@
             Str+="\n\n--------ROOT "+Block.root.id+" max:"+Block.root.BlockNumMax+":\n"+rootinfo;
 
 
+        Str=Str.replace(/[\n]/g, "<BR>");
 
 
-        data.innerText=Str;
+        //data.innerText=Str;
+        data.innerHTML=Str;
     }
 
 

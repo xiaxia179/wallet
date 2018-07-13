@@ -278,7 +278,7 @@ class AccountApp extends require("./dapp")
 
         var SysData=this.ReadValue(0);
         var SysBalance=SysData.Value.SumTER;
-        const REF_PERIOD=1000*1000;
+        const REF_PERIOD=2*1000*1000;
         const REF_PERIOD_END=30*REF_PERIOD;
         //const REF_PERIOD=100;
         //const REF_PERIOD_END=4*REF_PERIOD;

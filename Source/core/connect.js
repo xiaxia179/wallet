@@ -20,10 +20,15 @@ const MAX_PERIOD_GETNODES=60*1000;
 
 var MAX_PING_FOR_CONNECT=300;//ms
 var TIME_AUTOSORT_GRAY_LIST=5000;//ms
-var MAX_TIME_CORRECT=10000*1000;//ms TODO сделать настраиваемым, т.е. чем больше времени запущена программа, тем меньше изменение времени. Если более часа и уже была выполнена синхронизация, то макс изменение 250 мс
+var MAX_TIME_CORRECT=3*3600*1000;//ms
 
 global.MAX_WAIT_PERIOD_FOR_HOT=2*CONSENSUS_PERIOD_TIME;
 global.MAX_WAIT_PERIOD_FOR_ACTIVE=10*CONSENSUS_PERIOD_TIME;
+
+const PERIOD_FOR_CTAR_CHECK_TIME=300;//sec
+
+
+
 
 module.exports = class CConnect extends require("./transfer-msg")
 {
@@ -44,6 +49,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         this.NodesIPMap={};
         this.WasNodesSort=true;
 
+        this.PerioadAfterCanStart=0;
 
 
 
@@ -135,14 +141,20 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(glStopNode)
             return;
 
+        if(global.CAN_START)
+            this.PerioadAfterCanStart++;
+
         var arr=SERVER.GetActualNodes();
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
             if(this.IsCanConnect(Node))
             {
+                if(!Node.PingNumber)
+                    Node.PingNumber=0;
+                Node.PingNumber++;
 
-                var Context={"StartTime":GetCurrentTime(0)};
+                var Context={"StartTime":GetCurrentTime(0),PingNumber:Node.PingNumber};
                 this.SendF(Node,
                     {
                         "Method":"PING",
@@ -161,7 +173,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             GrayAddres=1;
 
         var BlockNumHash=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2;
-        var AccountHash=DApps.Accounts.GetHash(BlockNumHash);
+        var AccountsHash=DApps.Accounts.GetHash(BlockNumHash);
 
         var Ret=
             {
@@ -177,9 +189,9 @@ module.exports = class CConnect extends require("./transfer-msg")
                 CheckPoint:CHECK_POINT,
                 CodeVersion:CODE_VERSION,
                 TrafficFree:this.SendTrafficFree,
-                MemoryUsage:Math.trunc(process.memoryUsage().heapTotal/1024/1024),
                 AccountBlockNum:BlockNumHash,
-                AccountHash:AccountHash,
+                AccountsHash:AccountsHash,
+                MemoryUsage:Math.trunc(process.memoryUsage().heapTotal/1024/1024),
                 Reserve:[],
             };
 
@@ -201,7 +213,8 @@ module.exports = class CConnect extends require("./transfer-msg")
             CodeVersion:{VersionNum:uint,Hash:hash,Sign:arr64},\
             TrafficFree:uint,\
             AccountBlockNum:uint,\
-            AccountHash:hash,\
+            AccountsHash:hash,\
+            MemoryUsage:uint,\
             Reserve:arr62,\
             }";
     }
@@ -232,8 +245,13 @@ module.exports = class CConnect extends require("./transfer-msg")
         var Node=Info.Node;
 
         //load time from meta
-        if(!Info.Context || !Info.Context.StartTime)
+        if(!Info.Context)
             return;
+        if(!Info.Context.StartTime)
+            return;
+        if(Info.Context.PingNumber!==Node.PingNumber)
+            return;
+
 
         var DeltaTime=GetCurrentTime(0)-Info.Context.StartTime;
         Node.DeltaTime=DeltaTime;
@@ -352,6 +370,10 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
             this.CorrectTime();
+        }
+        else
+        {
+            //ToLog("DeltaTime="+DeltaTime+" ms  -  "+NodeInfo(Node)+"    PingNumber:"+Info.Context.PingNumber+"/"+Node.PingNumber);
         }
         ADD_TO_STAT("MAX:PING_TIME",DeltaTime);
 
@@ -1172,7 +1194,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             var Node=ArrNodes[i];
             if(!Node.Times)
                 continue;
-            if(Node.Times.Count<5)
+            if(Node.Times.Count<2)
                 continue;
             NodesSet.add(Node);
         }
@@ -1217,7 +1239,13 @@ module.exports = class CConnect extends require("./transfer-msg")
         var AvgDelta=Math.floor(Sum/Count+0.5);
 
 
-        if(global.CAN_START)
+        if(this.PerioadAfterCanStart<PERIOD_FOR_CTAR_CHECK_TIME)
+        {
+            var KT=(PERIOD_FOR_CTAR_CHECK_TIME-this.PerioadAfterCanStart)/PERIOD_FOR_CTAR_CHECK_TIME;
+            //ToLog("AvgDelta="+AvgDelta+ " KT="+KT);
+            AvgDelta=AvgDelta*KT;
+        }
+        else
         {
             MAX_TIME_CORRECT=50;
         }

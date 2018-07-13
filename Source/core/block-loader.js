@@ -245,6 +245,13 @@ module.exports = class CBlock extends require("./db/block-db")
         if(this.LoadHistoryMode)
             return;
 
+        if(Num > this.CurrentBlockNum+TIME_START_SAVE)
+        {
+            //ToLog("!!!!!!!!!!!!!!!!    Num>TIME_START_SAVE  Num="+Num)
+            return;
+        }
+
+
         bIsSum = bIsSum || false;
         var Tree=this.GetHistoryTree("StartLoadBlockHeader");
         if(Tree.find({hash:LoadHash}))
@@ -252,8 +259,6 @@ module.exports = class CBlock extends require("./db/block-db")
         Tree.insert({hash:LoadHash});
 
 
-        if(Num > this.CurrentBlockNum+TIME_START_SAVE)
-            ToLog("!!!!!!!!!!!!!!!!    Num>TIME_START_SAVE  Num="+Num)
 
 
 
