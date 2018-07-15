@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=32;
-"update 32";
+global.UPDATE_CODE_VERSION_NUM=33;
+"update 33";
 
 require("./startlib.js");
 
@@ -33,7 +33,6 @@ global.MAX_BLOCK_SIZE=120*1024;
 
 
 //Настройки транзакций
-global.TEST_TRANSACTION_GENERATE=0;
 global.MAX_TRANSACTION_SIZE=65535;
 global.MIN_TRANSACTION_SIZE=32;
 global.MAX_TRANSACTION_COUNT=2000;
@@ -85,8 +84,12 @@ InitParams();
 
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=1531223552406;//(new Date)-0;
-    console.log("START_NETWORK_DATE: "+START_NETWORK_DATE);
+    global.START_NETWORK_DATE=((new Date)-0)-50*1000;
+    global.TEST_TRANSACTION_GENERATE=1;
+    global.MIN_POWER_POW_TR=0;
+    global.MIN_POWER_POW_ACC_CREATE=0;
+
+    console.log("TEST RUN - START_NETWORK_DATE: "+START_NETWORK_DATE);
     NETWORK="TEST-R3";
     NETWORK2="TEST-R3";
 }

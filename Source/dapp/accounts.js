@@ -102,6 +102,9 @@ class AccountApp extends require("./dapp")
         //DB-хешей по таблице остатков
         this.DBAccountsHash=new DBRow("accounts-hash",6+32 +12,"{BlockNum:uint,Hash:hash, Reserve: arr12}");
 
+
+
+
         this.Start();
 
         setInterval(this.ControlActSize.bind(this),60*1000);
@@ -151,8 +154,11 @@ class AccountApp extends require("./dapp")
     }
 
 
-    OnTruncateBlock(Block)
+    OnDeleteBlock(Block)
     {
+        if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+            return;
+        this.DeleteAct(Block.BlockNum);
     }
 
     SendMoney(FromID,ToID,CoinSum,BlockNum,Description)
@@ -193,9 +199,8 @@ class AccountApp extends require("./dapp")
     {
         if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
             return;
+        this.OnDeleteBlock(Block);
 
-
-        this.DeleteAct(Block.BlockNum);
 
 
         //do coin base
@@ -244,14 +249,11 @@ class AccountApp extends require("./dapp")
             case TYPE_TRANSACTION_ACC_HASH:
             {
                 Result=this.TRCheckAccountHash(Body,BlockNum);
-                if(Result!==1)
+                if(!Result)
                 {
                     var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
-                    ToLog("FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash);
-                    SERVER.TruncateBlockDB(BlockNumHash-1);
-
-                    //ToLogTrace("FIND BAD ACCOUNT HASH, TR IN BLOCK: "+BlockNum);
-                    //throw "ERROR";
+                    ToLog("2 *************************************** FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash+ " DO BLOCK="+BlockNum);
+                    SERVER.SetTruncateBlockDB(BlockNum-1);
                 }
 
                 break;
@@ -265,6 +267,7 @@ class AccountApp extends require("./dapp")
                 Result="Add to blockchain";
             item.result=Result;
             ToLogClient(Result,GetHexFromArr(item.HASH),true);
+            WALLET.ObservTree.remove(item);
         }
 
         return Result;
@@ -530,6 +533,7 @@ class AccountApp extends require("./dapp")
         //calc sum
         var TotalSum={SumTER:0,SumCENT:0};
         var MapItem={};
+        var bWas=0;
         for(var i=0;i<TR.To.length;i++)
         {
             var Item=TR.To[i];
@@ -542,10 +546,13 @@ class AccountApp extends require("./dapp")
                 continue;
             MapItem[Item.ID]=1;
 
+            bWas=1;
             this.ADD(TotalSum,Item);
         }
 
 
+        if(!bWas)
+            return "No significant recipients";
 
         //check sum
         if(TotalSum.SumTER===0 && TotalSum.SumCENT===0)
@@ -699,7 +706,7 @@ class AccountApp extends require("./dapp")
 
     COIN_FROM_FLOAT(Sum)
     {
-        if(Sum>1e6)
+        if(Sum>8*1e6)
         {
             throw "VERY BIG SUM IN COIN_FROM_FLOAT";
         }
@@ -752,16 +759,13 @@ class AccountApp extends require("./dapp")
         return this.ReadState(Num);
     }
 
-    DeleteAct(BlockNum)
+    DeleteAct(BlockNumFrom)
     {
-        this.DeleteActOneDB(this.DBAct,BlockNum)
-        this.DeleteActOneDB(this.DBActPrev,BlockNum)
+        this.DeleteActOneDB(this.DBAct,BlockNumFrom)
+        this.DeleteActOneDB(this.DBActPrev,BlockNumFrom)
+        this.DBAccountsHash.Truncate(BlockNumFrom-1);
 
-        WALLET.OnTruncateBlock(BlockNum);
-
-
-
-        this.DBAccountsHash.Truncate(BlockNum-1);
+        WALLET.OnDeleteBlock(BlockNumFrom);
     }
 
     DeleteActOneDB(DBAct,BlockNum)
@@ -941,7 +945,7 @@ class AccountApp extends require("./dapp")
 
     /////////////////////////////
 
-    GetHash(BlockNum)
+    GetHashOrUndefined(BlockNum)
     {
         var Item=this.DBAccountsHash.Read(BlockNum);
         if(Item)

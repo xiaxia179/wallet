@@ -161,7 +161,7 @@ module.exports = class CDBState extends require("./db")
     }
 
 
-    TruncateHistory(BlockNum)
+    DeleteHistory(BlockNumFrom)
     {
         //must be field BlockNum in def struct
 
@@ -177,7 +177,7 @@ module.exports = class CDBState extends require("./db")
             if(!ItemCheck)
                 break;
 
-            if(ItemCheck.BlockNum<BlockNum)//нашли
+            if(ItemCheck.BlockNum<BlockNumFrom)//нашли
             {
                 if(num<MaxNum)
                 {

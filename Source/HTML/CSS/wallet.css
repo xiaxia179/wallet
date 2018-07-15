@@ -240,12 +240,16 @@ table.keys
     color:#204410;
 }
 
-#idSumTER,#idSumCENT
+#idTo
+{
+    width: 97%;
+}
+#idSumTER
 {
     background-color: #f0ffb9;
     font-weight: 700;
+    width: 90%;
 }
-
 
 #view_header
 {

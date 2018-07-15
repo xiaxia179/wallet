@@ -2440,17 +2440,19 @@ module.exports = class CTransport extends require("./connect")
 
 
         if(!global.NET_WORK_MODE)
-            this.FindInternetIP()
+            this.FindInternetIP();
     }
 
     RunListenServer()
     {
         let SELF=this;
+        SELF.port=START_PORT_NUMBER;
         ToLogClient("Prepare to run TCP server on port: "+SELF.port);
         this.Server.listen(SELF.port, '0.0.0.0', () =>
         {
+            if(SELF.CanSend<2)
+                ToLogClient("Run TCP server on port: "+SELF.port);
             SELF.CanSend++;
-            ToLogClient("Run TCP server on port: "+SELF.port);
         });
 
     }

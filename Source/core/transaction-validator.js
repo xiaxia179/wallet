@@ -13,15 +13,95 @@ require("../dapp/names");
 require("./wallet");
 
 
+const RBTree = require('bintrees').RBTree;
 
+const COUNT_MEM_BLOCKS=1;//BLOCK_PROCESSING_LENGTH2
 
 module.exports = class CSmartContract extends require("./block-exchange")
 {
     constructor(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
     {
-        super(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
+        super(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual);
+
+        this.BufHashTree = new RBTree(CompareArr);
     }
 
+
+    //EVENTS
+    //EVENTS
+    //EVENTS
+    OnWriteBlock(Block)
+    {
+        if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+            return;
+
+
+
+        if(Block.BlockNum>1240000)
+        {
+            this.BufHashTree.clear();
+            for(var num=COUNT_MEM_BLOCKS;num>=1;num--)
+            {
+                var BlockPrev=this.ReadBlockDB(Block.BlockNum-num);
+                var arr=BlockPrev.arrContent;
+                if(arr)
+                for(var i=0;i<arr.length;i++)
+                {
+                    var HASH=shaarr(arr[i]);
+                    this.BufHashTree.insert(HASH);
+                }
+            }
+        }
+
+
+
+        for(var key in DApps)
+        {
+            DApps[key].OnWriteBlockStart(Block);
+        }
+
+
+
+
+        var BlockNum=Block.BlockNum;
+        var arr=Block.arrContent;
+        if(arr)
+        for(var i=0;i<arr.length;i++)
+        {
+            var HASH=shaarr(arr[i]);
+
+            if(this.BufHashTree.find(HASH))
+            {
+                continue;
+            }
+
+
+            var App=DAppByType[arr[i][0]];
+            if(App)
+            {
+                var Result=App.OnWriteTransaction(arr[i],BlockNum,i);
+            }
+        }
+
+
+
+        for(var key in DApps)
+        {
+            DApps[key].OnWriteBlockFinish(Block);
+        }
+     }
+
+    OnDelete(Block)
+    {
+        for(var key in DApps)
+        {
+            DApps[key].OnDeleteBlock(Block);
+        }
+    }
+
+
+
+    //API
     CheckCreateTransactionHASH(Tr)
     {
         if(!Tr.hashPow)
@@ -72,7 +152,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
             {
                 var Block=this.ReadBlockDB(Num);
                 if(Block)
-                this.OnWriteBlock(Block);
+                    this.OnWriteBlock(Block);
             }
         }
         ToLog("Rewriting complete");
@@ -83,7 +163,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
         var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
         if(Arr.length)
         {
-            var Hash=DApps.Accounts.GetHash(BlockNumHash);
+            var Hash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
             if(Hash)
             {
                 var Body=[115];
@@ -95,53 +175,10 @@ module.exports = class CSmartContract extends require("./block-exchange")
             }
             else
             {
-                ToLogTrace("!Hash  BlockNum:"+BlockNumHash);
+                //ToLogTrace("!Hash  BlockNum:"+BlockNumHash);
             }
         }
 
-    }
-
-    //EVENTS
-    //EVENTS
-    //EVENTS
-    OnWriteBlock(Block)
-    {
-
-        for(var key in DApps)
-        {
-            DApps[key].OnWriteBlockStart(Block);
-        }
-
-
-
-
-        var BlockNum=Block.BlockNum;
-        var arr=Block.arrContent;
-        if(arr)
-        for(var i=0;i<arr.length;i++)
-        {
-            var App=DAppByType[arr[i][0]];
-            if(App)
-            {
-                var Result=App.OnWriteTransaction(arr[i],BlockNum,i);
-            }
-        }
-
-
-
-        for(var key in DApps)
-        {
-            DApps[key].OnWriteBlockFinish(Block);
-        }
-
-     }
-
-    OnTruncate(Block)
-    {
-        for(var key in DApps)
-        {
-            DApps[key].OnTruncateBlock(Block);
-        }
     }
 
 }

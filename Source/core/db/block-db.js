@@ -19,7 +19,7 @@ module.exports = class CDB extends require("../code")
         super(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
 
 
-        this.StartOncProcess();
+        this.StartOneProcess();
 
         //TODO - поиск макс номера:
         this.BodyFileNum=0;
@@ -31,7 +31,7 @@ module.exports = class CDB extends require("../code")
 
     }
 
-    StartOncProcess()
+    StartOneProcess()
     {
         var path=GetDataPath("DB/run");
         if(fs.existsSync(path))
@@ -50,35 +50,6 @@ module.exports = class CDB extends require("../code")
         }
     }
 
-    SetFirstTimeBlock(Num)
-    {
-        global.FIRST_TIME_BLOCK=Num;
-
-        if(this.WasSetFirstTimeBlock)
-            return;
-        this.WasSetFirstTimeBlock=1;
-
-        var CurNum=GetCurrentBlockNumByTime();
-        //ToLog("CurNum="+CurNum+"  this.BlockNumDB="+this.BlockNumDB)
-        if(CurNum<=this.BlockNumDB)
-        {
-            this.BlockNumDB=CurNum;
-        }
-
-        this.FindStartBlockNum();
-
-        if(this.BlockNumDB<BLOCK_PROCESSING_LENGTH2)
-            this.CreateGenesisBlocks();
-
-        var Block=this.ReadBlockHeaderDB(this.BlockNumDB);
-        if(Block)
-        {
-            this.TruncateBlockDB(Block);
-            // this.BodyFileNum=Block.BodyFileNum;
-            // this.BodyFileNumMax=Math.max(this.BodyFileNum,this.BodyFileNumMax);
-            this.LoadMemBlocksOnStart();
-        }
-    }
     LoadMemBlocksOnStart()
     {
         this.CurrentBlockNum=GetCurrentBlockNumByTime();
@@ -102,9 +73,15 @@ module.exports = class CDB extends require("../code")
         //BlockNum=0;
         BlockNum=this.CheckBlocksOnStartReverse(BlockNum);
         this.BlockNumDB=this.CheckBlocksOnStartFoward(BlockNum-10000,0);
-        this.BlockNumDB=this.CheckBlocksOnStartFoward(this.BlockNumDB-60,1);
+        this.BlockNumDB=this.CheckBlocksOnStartFoward(this.BlockNumDB-100,1);
         if(this.BlockNumDB>=BLOCK_PROCESSING_LENGTH2)
         {
+            this.TruncateBlockDB(this.BlockNumDB);
+            // var Block=this.ReadBlockHeaderDB(this.BlockNumDB);
+            // if(Block)
+            // {
+            // }
+
             // var Block=this.ReadBlockHeaderDB(this.BlockNumDB);
             // if(Block)
             // {
@@ -213,7 +190,7 @@ module.exports = class CDB extends require("../code")
 
                 if(CompareArr(Hash,Block.Hash)!==0)
                 {
-                    ToLog("=================== FIND ERR Hash in "+Block.BlockNum)
+                    ToLog("=================== FIND ERR Hash in "+Block.BlockNum+"  bCheckBody="+bCheckBody)
                     return num>0?num-1:0;
                 }
 
@@ -504,7 +481,7 @@ module.exports = class CDB extends require("../code")
 
         if(Res)
         {
-            this.TruncateBlockDB(Block,1);
+            this.TruncateBlockDBInner(Block,1);
         }
 
         return Res;
@@ -564,7 +541,7 @@ module.exports = class CDB extends require("../code")
         var bytesRead=fs.readSync(FD, BufRead,0,BufRead.length, Position);
         if(bytesRead!==BufRead.length)
         {
-            this.AddBlockToLoadBody(Block);
+            //this.AddBlockToLoadBody(Block);
 
             TO_ERROR_LOG("DB",270,"Error read block-body file: "+FileItem.name+"  from POS:"+Position+"  bytesRead="+bytesRead+" of "+BufRead.length+"  BlockNum="+Block.BlockNum);
             return false;
@@ -635,19 +612,37 @@ module.exports = class CDB extends require("../code")
 
 
 
+    SetTruncateBlockDB(Num)
+    {
+        if(this.UseTruncateBlockDB)
+        {
+            if(Num<this.UseTruncateBlockDB)
+                this.UseTruncateBlockDB=Num;
+        }
+        else
+        {
+            this.UseTruncateBlockDB=Num;
+        }
+    }
 
+
+    TruncateBlockDB(LastBlockNum)
+    {
+        this.UseTruncateBlockDB=undefined;
+
+        var Block=this.ReadBlockDB(LastBlockNum);
+        if(!Block)
+        {
+            ToLog("************ ERROR TruncateBlockDB - not found block="+LastBlockNum);
+            return;
+        }
+        this.WriteBlockDB(Block);
+    }
 
     //Truncate
-    TruncateBlockDB(LastBlock,bHeaderOnly)
+    TruncateBlockDBInner(LastBlock)
     {
         var startTime = process.hrtime();
-        if(typeof LastBlock === "number")
-        {
-            LastBlock=this.ReadBlockHeaderDB(LastBlock);
-            if(!LastBlock)
-                return;
-        }
-
         var FItem1=BlockDB.OpenDBFile(FILE_NAME_HEADER);
         var size=(LastBlock.BlockNum+1)*BLOCK_HEADER_SIZE;
         if(size<0)
@@ -658,10 +653,7 @@ module.exports = class CDB extends require("../code")
             FItem1.size=size;
             fs.ftruncateSync(FItem1.fd,FItem1.size);
         }
-
-        if(bHeaderOnly)
-            return;
-
+        return;
 
         //TODO
         var FItem2=BlockDB.OpenDBFile(this.GetBodyName(LastBlock));
@@ -672,15 +664,6 @@ module.exports = class CDB extends require("../code")
             fs.ftruncateSync(FItem2.fd,FItem2.size);
         }
 
-
-        // var Time = process.hrtime(startTime);
-        // var deltaTime=(Time[0]*1000 + Time[1]/1e6);//ms
-        //ToLog("TruncateDB Block="+LastBlock.BlockNum+" HEADER from: "+FItem1.size+"  BODY from:"+FItem2.size+" deltaTime="+deltaTime+" ms");
-
-
-
-        // this.TruncateFileBuf(this.FileBufHeader,FItem1.size);
-        // this.TruncateFileBuf(this.FileBufBody,FItem2.size);
         if(USE_KEY_DB)
             this.TruncateKeyDB(LastBlock);
     }

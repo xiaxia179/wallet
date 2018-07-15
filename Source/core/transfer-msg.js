@@ -27,6 +27,13 @@ module.exports = class CMessages extends require("./transaction-validator")
 
         for(var i=0;i<=MAX_LEVEL_SPECIALIZATION;i++)
         this.MemPoolMsg[i] = new RBTree(CompareItemTimePow);
+
+        this.TimePoolTransaction=[];
+        if(!global.ADDRLIST_MODE && !this.VirtualMode)
+        {
+            setInterval(this.CheckTimePoolTransaction.bind(this),50);
+        }
+
     }
 
     //MESSAGE
@@ -121,7 +128,7 @@ module.exports = class CMessages extends require("./transaction-validator")
     SendMessageNext(Msg)
     {
         var CountNodes=3;
-        var LevelStart=Msg.Level;//AddrLevelArr(this.addrArr,Msg.addrArr);
+        var LevelStart=Msg.Level;
         if(CompareArr(this.addrArr,Msg.addrArr)===0)
             return false;//мы получатели - сообщение для нас
 
@@ -233,7 +240,7 @@ module.exports = class CMessages extends require("./transaction-validator")
     //TRANSACTION
 
 
-    AddTransactionKeyValue(Key,Value,nonce,bHashKey,Num)
+    __AddTransactionKeyValue(Key,Value,nonce,bHashKey,Num)
     {
         Key = Key || "";
         Value = Value || "";
@@ -257,7 +264,7 @@ module.exports = class CMessages extends require("./transaction-validator")
 
 
         var body=[];
-        body[0]=0;  //smart-contract number 1
+        body[0]=0;  //smart-contract number 0
         body[64]=0;
         for(var i=0;i<32;i++)
         {
@@ -283,80 +290,127 @@ module.exports = class CMessages extends require("./transaction-validator")
 
     AddTransaction(Tr)
     {
-        //если можно отправить по цепочке - то отправляем
-        // var Res=this.SendTransaction(Tr)
-        // if(Res)
-        //     return;
-
-        //иначе транзакция наша - добавляем в свой пул
-
         //проверяем валидность транзакции
         var Res=this.IsValidTransaction(Tr,this.CurrentBlockNum);
-        if(Res<=0)
+        if(Res<=0 && Res!==-3)
             return Res;
 
-        return this.AddTrToQuote(this.TreePoolTr,Tr,MAX_TRANSACTION_COUNT);
+        this.SendTransaction(Tr);
+
+        if(Res===-3)
+        {
+            var delta=Tr.num-this.CurrentBlockNum;
+            if(delta>0)
+            {
+                this.TimePoolTransaction.push(Tr);
+                ToLogClient("Added "+TrName(Tr)+" to time pool. Send transaction after "+(delta)+" sec");
+                return 4;
+            }
+        }
+
+        Res=this.AddTrToQuote(this.TreePoolTr,Tr,MAX_TRANSACTION_COUNT);
+        ToLogContext("Add "+TrName(Tr)+" for Block: "+this.CurrentBlockNum+" Res="+Res);
+        return Res;
     }
 
-
-
-
-
-    SendTransactionOLD(Tr)
+    CheckTimePoolTransaction()
     {
-        return;
-
-        // //TODO
-        // //отправляем транзакцию всем нодам
-        // var HASH=Tr.HASH;
-        //
-        // let Level=AddrLevelArr(this.addrArr,HASH);
-        //
-        // for(let L=Level;L>=0 && L>=Level-1;L--)
-        //     if(this.LevelNodes[L] && this.LevelNodes[L].length)
-        //     {
-        //         var arr=this.LevelNodes[L];
-        //         for(let j=0;arr && j<arr.length;j++)
-        //         {
-        //             var Node=arr[j];
-        //             this.Send(Node,
-        //                 {
-        //                     "Method":"TRANSACTION",
-        //                     "Data":Tr
-        //                 }
-        //             );
-        //
-        //         }
-        //         return true;//?
-        //     }
-        //
-        // //TODO
-        // //Сделать так чтобы транзакция хвосту отправлялась, но и себе оставлялась...
-        //
-        // return false;
+        for(var i=this.TimePoolTransaction.length-1;i>=0;i--)
+        {
+            var Tr=this.TimePoolTransaction[i];
+            if(Tr.num<=this.CurrentBlockNum)
+            {
+                this.TimePoolTransaction.splice(i,1);
+                var Res=this.AddTrToQuote(this.TreePoolTr,Tr,MAX_TRANSACTION_COUNT);
+                ToLogContext("Add "+TrName(Tr)+" for Block: "+this.CurrentBlockNum+" Res="+Res);
+            }
+        }
     }
-    TRANSACTION_OLD(Info,CurTime)
+
+
+
+
+
+    SendTransaction(Tr)
     {
-        // if(typeof Info.Data !== "object")
-        //     return;
-        //var HASH=Info.Data.HASH;
-        // if(!body)
-        //     return;
-
-        //
-        // //ToLog("TRANSACTION: "+hashStr)
-        // var Res=this.AddTransaction(Info.Data);
-        //
-
-        //TODO
-        //Сделать ответ об успешном добавлении транзакции
+        //отправляем транзакцию всем нодам
+        var ArrNodes=this.GetHotTimeNodes();
+        for(var i=0;i<ArrNodes.length;i++)
+        {
+            var Node=ArrNodes[i];
+            this.SendF(Node,
+                {
+                    "Method":"TRANSACTION",
+                    "Data":Tr
+                }
+            );
+            ToLogContext("Send "+TrName(Tr)+" to "+NodeName(Node))
+        }
     }
 
+    static TRANSACTION_F()
+    {
+        return "{body:tr}";
+    }
+
+    TRANSACTION(Info,CurTime)
+    {
+        if(this.CurrentBlockNum<1240000)
+            return;
+
+        var Tr=this.DataFromF(Info);
+
+        // this.CheckCreateTransactionHASH(Tr);
+        // Tr.num++;//!!!!
+        // this.TimePoolTransaction.push(Tr);
+        // var delta=Tr.num-this.CurrentBlockNum;
+        // ToLogContext("Receive "+TrName(Tr)+" from "+NodeName(Info.Node)+" added to time pool. Send transaction after "+(delta)+" sec");
+        // return;
 
 
+        var Res=this.IsValidTransaction(Tr,this.CurrentBlockNum);
+        if(Res===-3)
+        {
+            var delta=Tr.num-this.CurrentBlockNum;
+            if(delta>0)
+            {
+                if(delta<3 && this.TimePoolTransaction.length<50)
+                {
+                    this.TimePoolTransaction.push(Tr);
+                    ToLogContext("Receive "+TrName(Tr)+" from "+NodeName(Info.Node)+" added to time pool. Send transaction after "+(delta)+" sec");
+                }
+                else
+                {
+                    ToLogContext("Receive "+TrName(Tr)+" from "+NodeName(Info.Node)+" NOT ADD TO POOL");
+                }
+                return;
+            }
+        }
+        if(Res>0)
+        {
+            var Res=this.AddTrToQuote(this.TreePoolTr,Tr,MAX_TRANSACTION_COUNT);
+            ToLogContext("Receive "+TrName(Tr)+" from "+NodeName(Info.Node)+" added to current pool for Block: "+this.CurrentBlockNum+"  Res="+Res);
+        }
+        else
+        {
+            ToLogContext("Receive "+TrName(Tr)+" from "+NodeName(Info.Node)+" NOT ADD TO POOL");
+        }
 
-
+     }
 }
+function ToLogContext(Str)
+{
+    //ToLog(Str);
+}
+function TrName(Tr)
+{
+    if(!Tr.HASH)
+        SERVER.CheckCreateTransactionHASH(Tr);
+
+    var Str=GetHexFromArr(Tr.HASH);
+    return Str.substr(0,8);
+}
+global.TrName=TrName;
 
 
 

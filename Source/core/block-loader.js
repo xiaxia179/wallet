@@ -64,9 +64,6 @@ module.exports = class CBlock extends require("./db/block-db")
         this.LoadHistoryMode=false;
 
 
-        this.SetFirstTimeBlock(START_NETWORK_DATE-0);
-
-        setInterval(this.RecalcLoadBlockStatictic.bind(this),STAT_BLOCK_LOAD_PERIOD);
 
         //setImmediate(this.TestSerilyzeBlock.bind(this),1);
 
@@ -77,6 +74,10 @@ module.exports = class CBlock extends require("./db/block-db")
 
         if(!global.ADDRLIST_MODE && !this.VirtualMode)
         {
+
+            setInterval(this.RecalcLoadBlockStatictic.bind(this),STAT_BLOCK_LOAD_PERIOD);
+
+
             setTimeout(this.CheckStartedBlocks.bind(this),100);
             setInterval(this.LoopChainLoad.bind(this),100);
             setInterval(this.LoopBlockLoad.bind(this),10);
@@ -138,14 +139,25 @@ module.exports = class CBlock extends require("./db/block-db")
 
     CheckStartedBlocks()
     {
+        this.FindStartBlockNum();
+        if(this.UseTruncateBlockDB)
+            this.TruncateBlockDB(this.UseTruncateBlockDB);
+
+        var CurNum=GetCurrentBlockNumByTime();
+        if(CurNum<=this.BlockNumDB)
+        {
+            // var Block=this.ReadBlockHeaderDB(CurNum);
+            // if(Block)
+            this.TruncateBlockDB(CurNum);
+        }
+
+        if(this.BlockNumDB<BLOCK_PROCESSING_LENGTH2)
+            this.CreateGenesisBlocks();
+
+
         if(fs.existsSync(GetCodePath("EXPERIMENTAL/_run.js")))
         {
             require(GetCodePath("EXPERIMENTAL/_run.js")).Run();
-        }
-        else
-        if(this.BlockNumDB<BLOCK_PROCESSING_LENGTH2)
-        {
-            this.CreateGenesisBlocks();
         }
         this.LoadMemBlocksOnStart();
     }
@@ -226,7 +238,7 @@ module.exports = class CBlock extends require("./db/block-db")
     {
         this.FREE_ALL_MEM_CHAINS();
 
-        if(global.CREATE_ON_START)
+        if(global.CREATE_ON_START && !LOCAL_RUN)
             return;
 
         this.RelayMode=true;
@@ -322,7 +334,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
         var BlockDB=this.ReadBlockHeaderDB(Context.BlockNum);
 
-        if(!BlockDB || this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2)
+        if(!BlockDB || this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH-2)
         {
             this.LoadHistoryMode=false;
             ToLogClient("Finish synchronization")
@@ -377,6 +389,8 @@ module.exports = class CBlock extends require("./db/block-db")
         if(glStopNode)
             return;
 
+        if(this.UseTruncateBlockDB)
+            this.TruncateBlockDB(this.UseTruncateBlockDB);
 
 
         if(this.LoadHistoryMode)
@@ -908,6 +922,9 @@ module.exports = class CBlock extends require("./db/block-db")
         for(var i=0;i<arr.length;i++)
         {
             var Block=arr[i];
+            if(!Block)
+                return;
+
             if(Block.BlockNum===CHECK_POINT.BlockNum && !IsZeroArr(CHECK_POINT.Hash))
             {
                 if(CompareArr(CHECK_POINT.Hash,Block.Hash)!==0)
@@ -1514,13 +1531,16 @@ module.exports = class CBlock extends require("./db/block-db")
 
         //smart-contracrs
         //Отправляем сигнал об удалении старых блоков
-        this.OnTruncate(arr[0]);
+        //this.OnDelete(arr[0]);
 
         var CurrentBlockNum=GetCurrentBlockNumByTime()
 
         var Block;
         for(var i=0;i<arr.length;i++)
         {
+            if(arr[i].BlockNum>this.BlockNumDB+1)
+                break;
+
             Block=arr[i];
             Block.BlockDown=undefined;
 
@@ -1567,6 +1587,8 @@ module.exports = class CBlock extends require("./db/block-db")
 
         //удаляем более поздние блоки как возможно не валидные
 
+        if(!Block)
+            return;
 
         var CurNum=Block.BlockNum+1;
         while(true)
@@ -1784,7 +1806,9 @@ module.exports = class CBlock extends require("./db/block-db")
         var BufWrite;
         var BlockDB;
         if(TreeHash && !IsZeroArr(TreeHash))
+        {
             BlockDB=this.ReadBlockDB(BlockNum);
+        }
         var StrSend;
         if(BlockDB && CompareArr(BlockDB.TreeHash,TreeHash)===0)
         {
@@ -1811,7 +1835,19 @@ module.exports = class CBlock extends require("./db/block-db")
         }
 
         if(StrSend==="OK")
+        {
+            var TreeHash=this.CalcTreeHashFromArrBody(BlockDB.arrContent);
+            if(CompareArr(BlockDB.TreeHash,TreeHash)!==0)
+            {
+                ToLog("1. BAD CMP TreeHash block="+BlockDB.BlockNum+" TO: "+NodeName(Info.Node)+"  TreeHash="+GetHexFromArr(TreeHash)+"  BlockTreeHash="+GetHexFromArr(BlockDB.TreeHash));
+                StrSend="NO";
+            }
+        }
+
+        if(StrSend==="OK")
+        {
             ADD_TO_STAT("BLOCK_SEND");
+        }
         else
         {
             BufWrite=BufLib.GetNewBuffer(100);
@@ -1867,20 +1903,23 @@ module.exports = class CBlock extends require("./db/block-db")
             var TreeHash=this.CalcTreeHashFromArrBody(arrContent);
             if(CompareArr(Block.TreeHash,TreeHash)!==0)
             {
-                ToLog("BAD CMP TreeHash block="+Block.BlockNum+" from:"+NodeName(Info.Node)+"  TreeHash="+GetHexFromArr(TreeHash)+"  BlockTreeHash="+GetHexFromArr(Block.TreeHash));
+                ToLog("2. BAD CMP TreeHash block="+Block.BlockNum+" from:"+NodeName(Info.Node)+"  TreeHash="+GetHexFromArr(TreeHash)+"  BlockTreeHash="+GetHexFromArr(Block.TreeHash));
                 this.SetBlockNOSendToNode(Block,Info.Node,"BAD CMP TreeHash");
                 return;
             }
 
             //DApp check
-            if(arrContent.length>0)
+
+
+            if(0)
+            if(!this.LoadHistoryMode)// arrContent.length>0)
             {
                 var TR=arrContent[0];
                 if(TR[0]===TYPE_TRANSACTION_ACC_HASH)
                 {
                     if(!DApps.Accounts.TRCheckAccountHash(TR,Data.BlockNum))
                     {
-                        ToLog("BAD ACCOUNT Hash in block="+Block.BlockNum+" from:"+NodeName(Info.Node));
+                        ToLog("1 *************************************** BAD ACCOUNT Hash in block="+Block.BlockNum+" from:"+NodeName(Info.Node));
                         this.SetBlockNOSendToNode(Block,Info.Node,"BAD CMP ACC HASH");
                         //this.DeleteNodeFromActive(Info.Node);
                         //this.AddToBan(Info.Node);

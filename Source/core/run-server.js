@@ -27,7 +27,7 @@ if(USE_PARAM_JS)
 
 require("./library");
 const cluster = require('cluster');
-var CTransport=require("./server");
+var CServer=require("./server");
 
 global.glCurNumFindArr=0;
 global.ArrReconnect=[];
@@ -35,12 +35,16 @@ var FindList=LoadParams(GetDataPath("finds-server.lst"),undefined);
 if(!FindList)
 {
     FindList=[{"ip":"194.1.237.94","port":30000},{"ip":"91.235.136.81","port":30002}];
+    FindList.push({"ip":"18.218.103.82","port":30000});
     SaveParams(GetDataPath("finds-server.lst"),FindList);
 }
 
+
+
+
 if(global.LOCAL_RUN)
 {
-    FindList=[{"ip":"127.0.0.1","port":41000},{"ip":"127.0.0.1","port":41001}];
+    FindList=[{"ip":"127.0.0.1","port":40000},{"ip":"127.0.0.1","port":40001}];
 }
 if(global.TEST_DEVELOP_MODE)
     FindList=[{"ip":"91.235.136.81","port":30002}];
@@ -263,7 +267,7 @@ function RunServer(bVirtual)
         SAVE_CONST(true);
     }
     KeyPair.setPrivateKey(Buffer.from(GetArrFromHex(global.SERVER_PRIVATE_KEY_HEX)));
-    global.SERVER=new CTransport(KeyPair,START_IP, START_PORT_NUMBER,false,bVirtual);
+    new CServer(KeyPair,START_IP, START_PORT_NUMBER,false,bVirtual);
 
     DoStartFindList();
 }
@@ -312,11 +316,11 @@ function RunOnUpdate()
             //DO UPDATE
             //----------------------------------------------------------------------------------------------------------
 
-            if(SERVER.BlockNumDB<1000000)
+            if(SERVER.BlockNumDB>=BLOCK_PROCESSING_LENGTH2 && SERVER.BlockNumDB<1000000)
             {
                 var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
-                var AccountsHash=DApps.Accounts.GetHash(BlockNumHash);
-                if(IsZeroArr(AccountsHash))
+                var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
+                if(AccountsHash && IsZeroArr(AccountsHash))
                 {
                     if(CurNum<=31)
                         SERVER.ReWriteDAppTransactions(0);

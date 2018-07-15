@@ -194,6 +194,9 @@ module.exports = class CConsensus extends require("./block-loader")
     {
         if(this.StartMode)
             return;
+        if(!CAN_START)
+            return;
+
 
         var StartBlockNum=GetCurrentBlockNumByTime();
 
@@ -1586,8 +1589,8 @@ module.exports = class CConsensus extends require("./block-loader")
 
 global.GetCurrentBlockNumByTime=function GetCurrentBlockNumByTime()
 {
-    if(!CAN_START)
-        return 0;
+    // if(!CAN_START)
+    //     return 0;
 
     var CurTimeNum=GetCurrentTime()-FIRST_TIME_BLOCK-CONSENSUS_PERIOD_TIME/2;
     var StartBlockNum=Math.floor((CurTimeNum+CONSENSUS_PERIOD_TIME)/CONSENSUS_PERIOD_TIME);

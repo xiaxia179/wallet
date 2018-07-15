@@ -33,7 +33,9 @@
 
 
 <script>
-    var AppVersionNum=0;
+    var ServerBlockNumDB=0;
+    var ServerVersionNum=0;
+    var ServerCurBlockNum=0;
     var CanSendTransaction=1;
     var Net_Work_Mode;
     var MiningAccount=0;
@@ -49,7 +51,7 @@
 
     var CurTabName;
     var TabArr=[{name:"TabAccounts",log:1},{name:"TabSend",log:1},{name:"TabHistory"},{name:"TabExplorer"}];
-    var SaveIdArr=["idAccount","idTo","idSumTER","idSumCENT","idDescription","idSelStyle",
+    var SaveIdArr=["idAccount","idTo","idSumTER","idDescription","idSelStyle",
         "idViewAccountNum","idViewBlockNum","idViewHistoryNum","idViewActNum","idViewHashNum","idWalletPow"];
     var LoadMapAfter={};
 
@@ -335,7 +337,7 @@
     //SEND
     function ClearTransaction()
     {
-        var arr=["idAccount","idTo","idSumTER","idSumCENT","idDescription"];
+        var arr=["idAccount","idTo","idSumTER","idDescription"];
         for(var i=0;i<arr.length;i++)
         {
             var name=arr[i];
@@ -413,11 +415,15 @@
         var ToID = ParseNum(document.getElementById("idTo").value);
         var element=document.getElementById("idNameTo");
         var Item=MapAccounts[ToID];
-        element.innerText="To: "+GetAccountText(Item,ToID);
-        if(Item && Item.MyAccount)
-            element.className="bold";
-        else
-            element.className="";
+        var StrTo="To: "+GetAccountText(Item,ToID);
+        if(element.innerText!==StrTo)
+        {
+            element.innerText=StrTo;
+            if(Item && Item.MyAccount)
+                element.className="bold";
+            else
+                element.className="";
+        }
     }
 
     function OnEditIdTo()
@@ -438,9 +444,22 @@
 
         var FromID = ParseNum(document.getElementById("idAccount").value);
         var ToID = ParseNum(document.getElementById("idTo").value);
-        var SumTer = ParseNum(document.getElementById("idSumTER").value);
-        var SumCent = ParseNum(document.getElementById("idSumCENT").value);
         var Description = document.getElementById("idDescription").value.substr(0,200);
+
+        var StrSum=document.getElementById("idSumTER").value;
+        var indDot=StrSum.indexOf(".");
+        if(indDot>=0)
+        {
+            var StrTER=StrSum.substr(0,indDot);
+            var StrCENT=StrSum.substr(indDot+1);
+        }
+        else
+        {
+            var StrTER=StrSum;
+            var StrCENT="0";
+        }
+        StrCENT=StrCENT+"000000000";
+        var Coin={SumTER:ParseNum(StrTER),SumCENT:ParseNum(StrCENT.substr(0,9))};
 
 
         var OperationID=0;
@@ -459,7 +478,7 @@
                 Currency:0,
                 FromID:FromID,
                 OperationID:OperationID,
-                To:[{ID:ToID,SumTER:SumTer,SumCENT:SumCent}],
+                To:[{ID:ToID,SumTER:Coin.SumTER,SumCENT:Coin.SumCENT}],
                 Description:Description,
                 Sign:CurrentTR.Sign,
 
@@ -925,8 +944,11 @@
         if(!Data || !Data.result)
             return;
 
-        AppVersionNum=Data.VersionNum;
-        document.title="TERA 1."+AppVersionNum;
+        ServerVersionNum=Data.VersionNum;
+        ServerBlockNumDB=Data.BlockNumDB;
+        ServerCurBlockNum=Data.CurBlockNum;
+
+        document.title="TERA 1."+ServerVersionNum;
         SetBlockChainConstant(Data);
         MaxBlockNum=GetCurrentBlockNumByTime();
 
@@ -1447,9 +1469,9 @@
     function SetNewCodeVersion()
     {
         var VersionNum=document.getElementById("idVersionNum").value;
-        if(VersionNum<AppVersionNum)
+        if(VersionNum<ServerVersionNum)
         {
-            SetError("Version num must be more "+(AppVersionNum-1));
+            SetError("Version num must be more "+(ServerVersionNum-1));
             return;
         }
 
@@ -1462,21 +1484,48 @@
         });
     }
 
+    function AutoSetCheckTime()
+    {
+        var AutoDelta=parseInt(document.getElementById("idAutoSetDelta").value);
+        try
+        {
+            var Data=JSON.parse(document.getElementById("idCheckTimeData").value);
+            var Num=Data.Num;
+        }
+        catch (e)
+        {
+        }
+        if(!Num)
+            Num=0;
+        Num++;
+
+        Data={Num:Num,bUse:1,bAddTime:1};
+        if(AutoDelta<0)
+        {
+            AutoDelta=-AutoDelta;
+            Data.bAddTime=0;
+        }
+        Data.DeltaTime=50;
+        Data.StartBlockNum=(ServerCurBlockNum+100)-ServerCurBlockNum%100;
+        Data.EndBlockNum=Data.StartBlockNum+Math.trunc(AutoDelta/Data.DeltaTime);
+
+        var Str=JSON.stringify(Data,"",2);
+        document.getElementById("idCheckTimeData").value=Str;
+
+    }
+
     function SetCheckDeltaTime()
     {
-        var Num=ParseNum(document.getElementById("idCheckTimeNum").value);
-        var bUse=document.getElementById("idCheckTimeUse").checked;
-        var StartBlockNum=ParseNum(document.getElementById("idCheckTimeStart").value);
-        var EndBlockNum=ParseNum(document.getElementById("idCheckTimeEnd").value);
-        var DeltaTime=parseInt(document.getElementById("idCheckTimeDelta").value);
-        var bAdd=1;
-        if(DeltaTime<0)
+        try
         {
-            bAdd=0;
+            var Data=JSON.parse(document.getElementById("idCheckTimeData").value);
+        }
+        catch (e)
+        {
+            SetError("Error format setting data");
+            return;
         }
 
-
-        var Data={Num:Num,bUse:bUse,StartBlockNum:StartBlockNum,EndBlockNum:EndBlockNum,bAddTime:bAdd,DeltaTime:Math.abs(DeltaTime)};
 
         GetData("/SetCheckDeltaTime",Data,function (Data)
         {
@@ -1699,11 +1748,11 @@
     Node addr: <B id="idNodeAddr"></B>
 
     <DIV id="wallet_config_tab" style="display: none">
+        <INPUT type="button" onclick="NewPrivateKey();" class="btdoit bt" value="New wallet..." id="idDown2">
+        <INPUT type="button" onclick="EditPrivateKey();SetImg(this,'edit_keys');" class="btdoit bt" value="Edit wallet" id="idDown">
         <INPUT type="button" onclick="NewAccount();SetImg(this,'edit_create_acc');" class="btdoit bt" value="New account" id="idDown">
-        <INPUT type="button" onclick="EditPrivateKey();SetImg(this,'edit_keys');" class="btdoit bt" value="Edit Key" id="idDown">
-        <INPUT type="button" onclick="NewPrivateKey();" class="btdoit bt" value="New Key..." id="idDown2">
-        <INPUT type="button" onclick="MiningSets();SetImg(this,'edit_mining_set');" class="btdoit bt" value="Mining Sets" id="idDown">
-        <INPUT type="button" onclick="ViewSetPassword();itemBtPassword=this; SetImg(itemBtPassword,'idBlockPassword');" class="bt btdoit" value="Set Password" id="idDown">
+        <INPUT type="button" onclick="MiningSets();SetImg(this,'edit_mining_set');" class="btdoit bt" value="Set mining" id="idDown">
+        <INPUT type="button" onclick="ViewSetPassword();itemBtPassword=this; SetImg(itemBtPassword,'idBlockPassword');" class="bt btdoit" value="Set password" id="idDown">
     </DIV>
 
 
@@ -1795,20 +1844,18 @@
 
     <DIV id="idDevelopService" style="display: none">
         <HR>
-        <INPUT type="button" id="idOpenService" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'))" class="btdoit bt" value="Developer service">
+        <H3>Developer service:</H3>
+        <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
+               class="btdoit bt" value="DEV SERVICE">
         <DIV id="idDevelopServiceView" style="display: none">
-            <H3>Developer service:</H3>
 
             <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit btlong bt" value="Create check point">
             <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit btlong bt" value="Set new code version:">
             <INPUT type="string" id="idVersionNum" maxlength="6" value="1"><BR>
             <B>Time correct:</B><BR>
-            <INPUT type="checkbox" id="idCheckTimeUse">Use<BR>
-            Start block:<INPUT type="number" id="idCheckTimeStart" value="0">
-            End block:<INPUT type="number" id="idCheckTimeEnd" value="0">
-            Delta time, ms:<INPUT type="number" id="idCheckTimeDelta" value="0">
-            <BR>
-            <INPUT type="button" onclick="SetCheckDeltaTime()" class="btdoit btlong bt" value="Set new time version:"><INPUT type="number" id="idCheckTimeNum" value="0">
+            <INPUT type="button" class="bt"onclick="AutoSetCheckTime()" value="Auto set on, ms:"><INPUT type="number" id="idAutoSetDelta" value="0"><BR>
+            <TEXTAREA id="idCheckTimeData" rows="8" cols="40"> </TEXTAREA><BR>
+            <INPUT type="button" onclick="SetCheckDeltaTime()" class="btdoit btlong bt" value="START TOME CORRECT">
         </DIV>
     </DIV>
 
@@ -1877,16 +1924,15 @@
         </tr>
         <tr><td>&nbsp;</td><td><DIV id="idNameTo" class="bold"></DIV></td></tr>
         <tr>
-            <td>Pay to</td><td><INPUT style="float: left" type="number" id="idTo" min=1 max=1000000000000 value="" onkeyup="OnEditIdTo()" onchange="OnEditIdTo()"
-                                      placeholder="Payee (required)" ></td>
+            <td>Pay to</td>
+            <td>
+                <INPUT style="float: left" type="number" id="idTo" min=1 max=1000000000000 value="" onkeyup="OnEditIdTo()" onchange="OnEditIdTo()"placeholder="Payee (required)" >
+            </td>
         </tr>
         <tr>
             <td>Amount</td>
             <td>
-                <DIV class="short_input">
-                    <INPUT type="number" id="idSumTER" value="" min=0 max=1000000000 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()"><B>.</B>
-                    <INPUT type="number" id="idSumCENT" value="" min=0 max=999999999 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()"> <B>TER</B>
-                </DIV>
+                <INPUT type="number" id="idSumTER" value="" step=0 min=0 max=1000000000 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()">&nbsp;<B>TER</B>
             </td>
         </tr>
         <tr>

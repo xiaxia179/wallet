@@ -120,9 +120,12 @@ else
 
 
 
-//SUM SUM SUM
+//MONEY
 
 var MAX_SUM_CENT=1e9;
+
+
+
 function ADD(Ret,Value2)
 {
     Ret.SumTER+=Value2.SumTER;
@@ -425,7 +428,6 @@ function ParseNum(Str)
         Res=0;
     return Res;
 }
-
 
 //OBJECT
 function CopyObjKeys(dest,src)

@@ -46,7 +46,7 @@ class CMemHash
         this.CountDoublePos=0;
         this.CountDoubleValue=0;
 
-        this.MinBlockNum=0;
+        this.LastBlockNum=0;
         this.TempHashPos=[];
 
 
@@ -314,10 +314,6 @@ class CMemHash
 
 
 
-        if(BlockNum<this.MinBlockNum)
-        {
-            return;
-        }
         if(TrNum>=this.COUNT_LINES)
         {
             console.trace("TrNum>this.COUNT_LINES")
@@ -371,13 +367,14 @@ class CMemHash
 
     SetBlock(Block)
     {
+
+        this.LastBlockNum=Block.BlockNum;
+
         var arr=Block.arrContent;
         if(!arr)
             return;
 
         var BlockNum=Block.BlockNum;
-        if(BlockNum<this.MinBlockNum)
-            return;
 
         for(var i=0;i<arr.length;i++)
         {
@@ -408,6 +405,8 @@ class CMemHash
 
     DeleteBlock(BlockNum)
     {
+        if(this.LastBlockNum===BlockNum)
+            this.LastBlockNum=0;
 
         if(this.TestMap)
         if(this.TestBlockMap[BlockNum])
@@ -422,8 +421,6 @@ class CMemHash
         }
 
 
-        if(BlockNum<this.MinBlockNum)
-            return 0;
         var Count=0;
         for(var TrNum=0;TrNum<this.COUNT_LINES;TrNum++)
         {
@@ -445,23 +442,6 @@ class CMemHash
         }
 
         return Count;
-    }
-    CheckAlMinimum()
-    {
-        for(var IndexPos=0;IndexPos<this.MAX_POS;IndexPos++)
-        {
-            var KeyIndex=this.DATAPOS[IndexPos];
-            if(!KeyIndex)
-                continue;
-
-            var Num=this.ReadBlockNum(KeyIndex)
-            if(Num<this.MinBlockNum)
-            {
-                ToLog("Find num="+Num)
-                throw "ERROR"
-
-            }
-        }
     }
 
     WriteIndexPos(KeyIndex,IndexPos)
@@ -582,8 +562,7 @@ function TestTest()
 
     function OnWriteBlock(Block)
     {
-        var MinBlockNum=0;
-        if(!Block || Block.BlockNum<MinBlockNum)
+        if(!Block)
             return;
 
         //добавляем новые транзакции в буфер контроля дублей

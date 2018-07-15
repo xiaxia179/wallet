@@ -56,8 +56,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
 
-        if(!global.ADDRLIST_MODE)
-        if(!this.VirtualMode)
+        if(!global.ADDRLIST_MODE && !this.VirtualMode)
         {
 
             setInterval(this.StartPingPong.bind(this),1000);
@@ -197,7 +196,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             GrayAddres=1;
 
         var BlockNumHash=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2;
-        var AccountsHash=DApps.Accounts.GetHash(BlockNumHash);
+        var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
 
         var Ret=
             {
@@ -1261,6 +1260,12 @@ module.exports = class CConnect extends require("./transfer-msg")
             return;
         if(DeltaArr.length<CountNodes/2)
             return;
+        if(this.PerioadAfterCanStart>=PERIOD_FOR_CTAR_CHECK_TIME)
+        {
+            if(DeltaArr.length<3*CountNodes/4)
+                return;
+        }
+
 
         DeltaArr.sort(function (a,b) {return a-b});
 
@@ -1465,7 +1470,6 @@ module.exports = class CConnect extends require("./transfer-msg")
     GetActualsServerIP(bFlag)
     {
         var arr=this.GetActualNodes();
-        var arr2=[];
         var Str="";
         arr.sort(function (a,b)
         {
@@ -1477,20 +1481,16 @@ module.exports = class CConnect extends require("./transfer-msg")
             else
             return 0;
         });
+
+        if(bFlag)
+            return arr;
+
         for(var i=0;i<arr.length;i++)
         {
             Str+=arr[i].ip+", ";
         }
         return Str.substr(0,Str.length-2);
-
-
-
-        if(bFlag)
-            return JSON.stringify(arr2);
-        else
-            return arr2;
     }
-
 }
 
 

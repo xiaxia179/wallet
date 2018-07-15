@@ -252,9 +252,9 @@ class CApp
 
     }
 
-    OnTruncateBlock(BlockNum)
+    OnDeleteBlock(BlockNumFrom)
     {
-        this.DBHistory.TruncateHistory(BlockNum);
+        this.DBHistory.DeleteHistory(BlockNumFrom);
     }
 
     OnCreateAccount(Data)

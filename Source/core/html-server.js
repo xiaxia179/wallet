@@ -344,7 +344,7 @@ AddTrMap[0]="Not add";
 AddTrMap[1]="OK";
 AddTrMap[2]="Update OK";
 AddTrMap[3]="Was send";
-
+AddTrMap[4]="Added to time pool";
 
 
 // HTTPCaller.SendTransactionHex2=function(Str)
@@ -414,7 +414,7 @@ HTTPCaller.TruncateBlockChain=function (BlockNum,Param2,Param3)
 
     SERVER.BlockNumDB=BlockNum;
     SERVER.TruncateBlockDB(SERVER.BlockNumDB);
-    return {result:1,text:"Truncate on BlockNum="+BlockNum};
+    return {result:1,text:"Truncate after BlockNum="+BlockNum};
 }
 
 
@@ -510,6 +510,11 @@ HTTPCaller.SetNetMode=function (SetObj)
     for(var key in SetObj)
     {
         global.NET_WORK_MODE[key]=SetObj[key];
+    }
+    if(NET_WORK_MODE)
+    {
+        global.START_IP=NET_WORK_MODE.ip;
+        global.START_PORT_NUMBER=NET_WORK_MODE.port;
     }
 
     SAVE_CONST(true);

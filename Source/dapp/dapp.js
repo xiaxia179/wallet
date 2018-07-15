@@ -46,7 +46,7 @@ class DApp
     OnWriteBlockFinish(Block)
     {
     }
-    OnTruncateBlock(Block)
+    OnDeleteBlock(Block)
     {
 
     }

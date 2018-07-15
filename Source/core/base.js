@@ -24,13 +24,14 @@ module.exports = class CCommon
 {
     constructor(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
     {
+        global.SERVER=this;//самый ранний вызов - присваиваем здесь!!!
+
         this.VirtualMode=bVirtual;
 
         this.KeyPair=SetKeyPair;
         this.addrArr=SetKeyPair.getPublicKey('','compressed').slice(1);
         this.addrStr=GetHexFromArr(this.addrArr);
         this.HashDBArr=shaarr2(this.KeyPair.getPrivateKey(),[0,0,0,0,0,0,0,1]);
-
 
 
         //this.MetaBuf=new STreeBuffer(MAX_TIME_NETWORK_TRANSPORT,CompareItemHash,"object","PACKETS_LOST");
