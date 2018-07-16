@@ -1923,6 +1923,13 @@
         <HR>
     </DIV>
 
+    Style:
+    <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
+        <option value="styleBrown">Brown</option>
+        <option value="styleBlue">Blue</option>
+        <option value="styleGreen">Green</option>
+    </select>
+
     <DIV id="idDevelopService" style="display: none">
         <H3>Developer service:</H3>
         <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
@@ -1936,17 +1943,9 @@
             <INPUT type="button" class="bt"onclick="AutoSetCheckTime()" value="Auto set on, ms:"><INPUT type="number" id="idAutoSetDelta" value="0"><BR>
             <TEXTAREA id="idCheckTimeData" rows="8" cols="40"> </TEXTAREA><BR>
             <INPUT type="button" onclick="SetCheckDeltaTime()" class="btdoit btlong bt" value="START TOME CORRECT">
+            <HR>
         </DIV>
-        <HR>
     </DIV>
-
-
-    Style:
-    <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
-        <option value="styleBrown">Brown</option>
-        <option value="styleBlue">Blue</option>
-        <option value="styleGreen">Green</option>
-    </select>
 
 
 </DIV>

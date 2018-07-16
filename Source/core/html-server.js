@@ -1253,7 +1253,7 @@ if(HTTP_PORT_NUMBER)
     setInterval(function ()
     {
         ClientTokenMap={};
-    },24*3600);
+    },24*3600*1000);
 
     var port = HTTP_PORT_NUMBER;
     var HTTPServer=http.createServer(function (request, response0)
