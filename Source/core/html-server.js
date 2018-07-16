@@ -280,7 +280,10 @@ HTTPCaller.GetWalletInfo=function ()
             NodeAddrStr:SERVER.addrStr,
             STAT_MODE:global.STAT_MODE,
 
-        };
+            HTTPPort:HTTP_PORT_NUMBER,
+            HTTPPassword:HTTP_PORT_PASSWORD,
+
+};
 
 
     Ret.PrivateKey=WALLET.KeyPair.PrivKeyStr;
@@ -318,6 +321,11 @@ HTTPCaller.OpenWallet=function (Password)
     return {result:res};
 }
 
+// HTTPCaller.SetPassword=function (Password)
+// {
+//     ClientTokenMap[glCurToken]=1;
+//     return {result:1};
+// }
 
 
 
@@ -501,6 +509,18 @@ HTTPCaller.SetCheckDeltaTime=function (Data)
 
 
 
+HTTPCaller.SetHTTPParams=function (SetObj)
+{
+    global.HTTP_PORT_NUMBER=SetObj.HTTPPort;
+    global.HTTP_PORT_PASSWORD=SetObj.HTTPPassword;
+    SAVE_CONST(true);
+
+
+    if(SetObj.RestartNode)
+        RestartNode();
+
+    return {result:1};
+}
 
 HTTPCaller.SetNetMode=function (SetObj)
 {
@@ -1108,7 +1128,7 @@ function AddMapList(arrLoadedBlocks,type,MapMapLoaded,MainChains)
 }
 
 
-function SendFileHTML(response,name)
+function SendFileHTML(response,name,StrCookie)
 {
     let type=name.substr(name.length-3,3);
 
@@ -1153,7 +1173,10 @@ function SendFileHTML(response,name)
                     response.writeHead(200, { 'Content-Type': 'image/jpeg'});
                     break;
                 default:
-                    response.writeHead(200, { 'Content-Type': 'text/html'});
+                    if(StrCookie)
+                        response.writeHead(200, { 'Set-Cookie': StrCookie, 'Content-Type': 'text/html'});
+                    else
+                        response.writeHead(200, { 'Content-Type': 'text/html'});
                     break;
             }
          }
@@ -1212,8 +1235,26 @@ function OnGetData(arg)
 }
 
 //RUN HTTP SERVER
+function parseCookies (rc)
+{
+    var list = {};
+
+    rc && rc.split(';').forEach(function( cookie )
+    {
+        var parts = cookie.split('=');
+        list[parts.shift().trim()] = decodeURI(parts.join('='));
+    });
+
+    return list;
+}
 if(HTTP_PORT_NUMBER)
 {
+    var ClientTokenMap={};
+    setInterval(function ()
+    {
+        ClientTokenMap={};
+    },24*3600);
+
     var port = HTTP_PORT_NUMBER;
     var HTTPServer=http.createServer(function (request, response0)
     {
@@ -1222,6 +1263,9 @@ if(HTTP_PORT_NUMBER)
         var host=request.headers.host;
         if(typeof host!=="string")
             return;
+
+
+
         // if(host.substr(0,4)!=="test" && host!=="localhost" && host!=="127.0.0.1")
         //     return;
 
@@ -1249,9 +1293,35 @@ if(HTTP_PORT_NUMBER)
         var fromURL = url.parse(request.url);
         var Path=querystring.unescape(fromURL.path);
         //var Path=decodeURIComponent(fromURL.path);//??
+
+        if(global.HTTP_PORT_PASSWORD)
+        {
+            var cookies = parseCookies(request.headers.cookie);
+            if(cookies.token && cookies.hash && ClientTokenMap[cookies.token]===0)
+            {
+                var hash=ClientHex(cookies.token+"-"+global.HTTP_PORT_PASSWORD);
+                if(hash===cookies.hash)
+                {
+                    ClientTokenMap[cookies.token]=1;
+                }
+            }
+
+            //ToLog(""+request.method+"   path: "+Path+"  cookies:"+JSON.stringify(cookies));
+
+            if(!cookies.token || !ClientTokenMap[cookies.token])
+            {
+                var StrToken=GetHexFromArr(crypto.randomBytes(16));
+                ClientTokenMap[StrToken]=0;
+
+                SendFileHTML(response,"./HTML/password.html","token="+StrToken+";path=/");
+                return;
+            }
+        }
+
+
         var params=Path.split('/',5);
         params.splice(0,1);
-        //ToLog(""+Type+":"+Path)
+
 
         var Type=request.method;
         if(Type==="POST")

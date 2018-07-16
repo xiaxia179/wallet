@@ -132,7 +132,7 @@ table.form_input
 }
 .hash
 {
-    width: 250px;
+    width: 270px;
     font-family: "courier new", "times new roman", monospace;
     font-size: 60%;
     align-content: left;
@@ -273,6 +273,7 @@ table.keys
     align-content: center;
     text-align: center;
 }
+
 
 #MAIN
 {

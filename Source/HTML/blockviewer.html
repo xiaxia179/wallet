@@ -33,11 +33,12 @@
             if(i>0)
             {
                 var BlockNum=ParseNum(document.URL.substr(i+1));
-                document.title="Block: "+BlockNum;
-                document.getElementById("view_header_tr").innerText="Transactions on block: "+BlockNum;
-
-                DefTr.Param3=BlockNum;
-                ViewCurrent(DefTr);
+//                document.title="Block: "+BlockNum;
+//                document.getElementById("view_header_tr").innerText="Transactions on block: "+BlockNum;
+//
+//                DefTr.Param3=BlockNum;
+//                ViewCurrent(DefTr);
+                ViewBlock(BlockNum);
             }
 
             window.onkeydown = function (e)
@@ -47,15 +48,33 @@
                     window.close();
                 }
             };
+        }
+        function ViewBlock(BlockNum)
+        {
+            if(BlockNum)
+                document.getElementById("idViewBlockNum").value=BlockNum;
+            else
+                BlockNum=ParseNum(document.getElementById("idViewBlockNum").value);
 
+            document.title="Block: "+BlockNum;
+            DefTr.Param3=BlockNum;
+            ViewCurrent(DefTr);
         }
     </script>
 </head>
 <body>
 
+<DIV align='center'>
+
 <DIV id="idTransactionBlock" style="display: block">
     <BR>
-    <DIV id="view_header_tr" >Transactions on block<BR></DIV>
+    <DIV id="view_header_tr" >Transactions on block: <INPUT type="number" id="idViewBlockNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewBlock()"> </DIV>
+    <BR>
+    <!--<INPUT type="button" onclick="ViewPrev(DefBlock)" class="btdoit bt" value="<< Prev">-->
+    <!--<INPUT type="number" id="idViewBlockNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefBlock)">-->
+    <!--<INPUT type="button" onclick="ViewNext(DefBlock,MaxBlockNum-8)" class="btdoit bt" value="Next >>">-->
+
+
     <INPUT type="button" onclick="ViewPrev(DefTr)" class="btdoit bt" value="<< Prev">
     <INPUT type="number" id="idViewTrNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefTr)">
     <INPUT type="button" onclick="ViewNext(DefTr,5000)" class="btdoit bt" value="Next >>">
@@ -71,8 +90,13 @@
             <th id="Item.power" class="num">power</th>
         </tr>
     </table>
+
+    <INPUT type="button" onclick="ViewPrev(DefTr)" class="btdoit bt" value="<< Prev">
+    <INPUT type="button" onclick="ViewNext(DefTr,5000)" class="btdoit bt" value="Next >>">
+
 </DIV>
 
+</DIV>
 
 <DIV id="idStableScroll">
     @terafoundation

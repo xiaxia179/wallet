@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=33;
-"update 33";
+global.UPDATE_CODE_VERSION_NUM=34;
+"update 34";
 
 require("./startlib.js");
 
@@ -115,19 +115,17 @@ global.FIRST_TIME_BLOCK=START_NETWORK_DATE;
 global.START_BLOCK_RUN=0;
 
 
+if(global.START_PORT_NUMBER===undefined)
+    global.START_PORT_NUMBER = 30000;
 if(global.HTTP_PORT_NUMBER===undefined)
     global.HTTP_PORT_NUMBER = 80;
-if(global.START_PORT_NUMBER ===undefined)
-    global.START_PORT_NUMBER = 30000;
-
+if(global.HTTP_PORT_PASSWORD===undefined)
+    global.HTTP_PORT_PASSWORD="";
 
 
 //**********************
 //Тестирование и отладка
 //**********************
-
-
-
 
 
 

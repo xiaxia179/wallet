@@ -772,7 +772,16 @@ function Mesh(s,Count)
 };
 
 
+function ClientHex(Str)
+{
+    var arr=[];
+    for(var i=0;i<Str.length;i++)
+        arr[i]=Str.charCodeAt(i);
+    Mesh(arr,100);
+    return GetHexFromArr(arr);
+}
 
+global.ClientHex=ClientHex;
 
 
 

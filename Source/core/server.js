@@ -2445,6 +2445,9 @@ module.exports = class CTransport extends require("./connect")
 
     RunListenServer()
     {
+        if(!START_PORT_NUMBER || START_PORT_NUMBER==="undefined")
+            START_PORT_NUMBER=30000;
+
         let SELF=this;
         SELF.port=START_PORT_NUMBER;
         ToLogClient("Prepare to run TCP server on port: "+SELF.port);

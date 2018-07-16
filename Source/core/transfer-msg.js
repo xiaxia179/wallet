@@ -355,8 +355,8 @@ module.exports = class CMessages extends require("./transaction-validator")
 
     TRANSACTION(Info,CurTime)
     {
-        if(this.CurrentBlockNum<1240000)
-            return;
+        // if(this.CurrentBlockNum<1240000)
+        //     return;
 
         var Tr=this.DataFromF(Info);
 

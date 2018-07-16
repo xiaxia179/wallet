@@ -33,6 +33,8 @@
 
 
 <script>
+    var HTTPPort;
+    var HTTPPassword;
     var ServerBlockNumDB=0;
     var ServerVersionNum=0;
     var ServerCurBlockNum=0;
@@ -1000,6 +1002,9 @@
         var Str="Saved block: <B>"+Data.BlockNumDB+"</B>  Current block: <B>"+Data.CurBlockNum+"</B>";
         document.getElementById("idCurrentBlockNum").innerHTML=Str;
 
+        HTTPPort=Data.HTTPPort;
+        HTTPPassword=Data.HTTPPassword;
+
 
 
         SetArrLog(Data.ArrLog);
@@ -1069,6 +1074,20 @@
     //NetworkParams
     //NetworkParams
     //NetworkParams
+    function ViewNetworkMode()
+    {
+        if(IsVisibleBlock('idNetworkView'))
+        {
+            SetVisibleBlock('idNetworkView',false);
+        }
+        else
+        {
+            SetVisibleBlock('idNetworkView',true);
+            document.getElementById("idHTTPPort").value=HTTPPort;
+            document.getElementById("idHTTPPassword").value=HTTPPassword;
+
+        }
+    }
 
     function UpdateNetworkMode(Data)
     {
@@ -1127,6 +1146,41 @@
             SetStatus("Set net work params OK");
         });
 
+    }
+
+
+
+    //REMOTE HTTP
+    function ViewRemoteParams()
+    {
+        if(IsVisibleBlock('idRemoteView'))
+        {
+            SetVisibleBlock('idRemoteView',false);
+        }
+        else
+        {
+            SetVisibleBlock('idRemoteView',true);
+            document.getElementById("idHTTPPort").value=HTTPPort;
+            document.getElementById("idHTTPPassword").value=HTTPPassword;
+
+        }
+    }
+    function SetRemoteParams(bRestart)
+    {
+        var PrevHTTPPassword=HTTPPassword;
+        HTTPPort=ParseNum(document.getElementById("idHTTPPort").value);
+        HTTPPassword=document.getElementById("idHTTPPassword").value;
+
+        GetData("/SetHTTPParams",{HTTPPort:HTTPPort,HTTPPassword:HTTPPassword,RestartNode:bRestart}, function (Data)
+        {
+            if(!PrevHTTPPassword && HTTPPassword)
+                window.location.reload();
+            else
+            {
+                SetVisibleBlock('idRemoteView',false);
+                SetStatus("Set HTTP params OK");
+            }
+        });
     }
 
 </script>
@@ -1743,6 +1797,7 @@
 
 <DIV id="TabAccounts" style="display: block">
     <BR>
+    <DIV id="idCurrentBlockNum"></DIV>
     Wallet data path: <B id="idDataPath"></B><BR>
     Public key: <B id="idPubKey"></B><BR>
     Node addr: <B id="idNodeAddr"></B>
@@ -1830,20 +1885,45 @@
         </tr>
     </table>
 
-    <HR>
-    Network connections:<BR>
-    <INPUT type="checkbox" id="idUseDirectIP">Run server and use direct IPv4 address on this computer (recommended):<BR>
-    IP:<INPUT  maxlength="16" id="idIP"> Port:<INPUT maxlength="9" id="idPort"><BR>
-    <!--<INPUT type="checkbox" id="idUseIncomeGrayIP">Allow connection users without a direct ip:<BR>-->
-    White list nodes (HEX-format):<BR>
-    <TEXTAREA id="idNodeWhiteList" rows="4" cols="100"> </TEXTAREA>
-    <BR>
+    <INPUT type="button" id="idDown" onclick="ViewNetworkMode();SetImg(this,'idNetworkView')"
+           class="btdoit bt" value="NET CONNECT">
+    <INPUT type="button" id="idDown" onclick="ViewRemoteParams();SetImg(this,'idRemoteView')"
+           class="btdoit bt" value="HTTP ACCESS">
 
-    <INPUT type="button" onclick="SetNetworkParams(0)" class="btdoit bt" value="Save">
-    <INPUT type="button" onclick="SetNetworkParams(1)" class="btdoit bt" value="Save and Restart">
+    <DIV id="idNetworkView" style="display: none">
+        <H3>Network connections:</H3>
+        <INPUT type="checkbox" id="idUseDirectIP">Run server and use direct IPv4 address on this computer (recommended):<BR>
+        IP:<INPUT  maxlength="16" id="idIP"> Port:<INPUT maxlength="9" id="idPort"><BR>
+        <!--<INPUT type="checkbox" id="idUseIncomeGrayIP">Allow connection users without a direct ip:<BR>-->
+        White list nodes (HEX-format):<BR>
+        <TEXTAREA id="idNodeWhiteList" rows="4" cols="100"> </TEXTAREA>
+        <BR>
+
+        <INPUT type="button" onclick="SetNetworkParams(0)" class="btdoit bt" value="Save">
+        <INPUT type="button" onclick="SetNetworkParams(1)" class="btdoit bt" value="Save and Restart">
+        <HR>
+    </DIV>
+
+    <DIV id="idRemoteView" style="display: none">
+        <H3>Remote access:</H3>
+
+        <table class="form_input keys">
+            <tr>
+                <td>HTTP port:</td>
+                <td><INPUT type="string" id="idHTTPPort" maxlength="6" value="80"></td>
+            </tr>
+            <tr>
+                <td>Password on HTTP:</td>
+                <td><INPUT type="string" id="idHTTPPassword"></td>
+            </tr>
+        </table>
+        <BR>
+        <INPUT type="button" onclick="SetRemoteParams(0)" class="btdoit bt" value="Save">
+        <INPUT type="button" onclick="SetRemoteParams(1)" class="btdoit bt" value="Save and Restart">
+        <HR>
+    </DIV>
 
     <DIV id="idDevelopService" style="display: none">
-        <HR>
         <H3>Developer service:</H3>
         <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
                class="btdoit bt" value="DEV SERVICE">
@@ -1857,9 +1937,10 @@
             <TEXTAREA id="idCheckTimeData" rows="8" cols="40"> </TEXTAREA><BR>
             <INPUT type="button" onclick="SetCheckDeltaTime()" class="btdoit btlong bt" value="START TOME CORRECT">
         </DIV>
+        <HR>
     </DIV>
 
-    <BR>
+
     Style:
     <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
         <option value="styleBrown">Brown</option>
@@ -1867,7 +1948,6 @@
         <option value="styleGreen">Green</option>
     </select>
 
-    <DIV id="idCurrentBlockNum"></DIV>
 
 </DIV>
 
@@ -1997,6 +2077,10 @@
                 <th id="(RetOpenBlock(Item.BlockNumCreate,1))" class="num">Block Num</th>
             </tr>
         </table>
+
+        <INPUT type="button" onclick="ViewPrev(DefAccounts)" class="btdoit bt" value="<< Prev">
+        <INPUT type="button" onclick="ViewNext(DefAccounts,MaxAccID)" class="btdoit bt" value="Next >>">
+
     <BR>
     <B><DIV id="idTotalSum"></DIV></B>
     <BR>
@@ -2018,9 +2102,12 @@
                 <th id="Item.TrDataLen" class="num">Bytes</th>
                 <th id="Item.Power" class="num">Pow</th>
                 <th id="Item.Miner" class="num">Miner</th>
-
             </tr>
         </table>
+
+        <INPUT type="button" onclick="ViewPrev(DefBlock)" class="btdoit bt" value="<< Prev">
+        <INPUT type="button" onclick="ViewNext(DefBlock,MaxBlockNum-8)" class="btdoit bt" value="Next >>">
+
     </DIV>
 
 
@@ -2045,6 +2132,9 @@
                 <th id="SUM_TO_STRING(Item.PrevValue)" class="sum">Prev. amount</th>
             </tr>
         </table>
+        <INPUT type="button" onclick="ViewPrev(DefActs)" class="btdoit bt" value="<< Prev">
+        <INPUT type="button" onclick="ViewNext(DefActs,MaxActNum)" class="btdoit bt" value="Next >>">
+
     </DIV>
 
     <DIV id="idPaginationHash" style="display: none">
@@ -2061,6 +2151,8 @@
                 <th id="GetHexFromArr(Item.Hash)" class="code">Hash</th>
             </tr>
         </table>
+        <INPUT type="button" onclick="ViewPrev(DefHash)" class="btdoit bt" value="<< Prev">
+        <INPUT type="button" onclick="ViewNext(DefHash,MaxBlockNum-8)" class="btdoit bt" value="Next >>">
     </DIV>
 
     <DIV id="idUtilView" style="display: none">
