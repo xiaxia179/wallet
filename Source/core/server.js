@@ -2479,25 +2479,26 @@ module.exports = class CTransport extends require("./connect")
         {
             var value=stunMsg.getAttribute(STUN_ATTR_XOR_MAPPED_ADDRESS).value;
             ToLog("INTERNET IP:"+value.address)
-            SELF.ip=value.address;
             SELF.CanSend++;
+            global.INTERNET_IP_FROM_STUN=value.address;
+            if(!SELF.ip)
+                SELF.ip=INTERNET_IP_FROM_STUN;
 
-
-
-            if(SELF.Net4)
-            {
-                SELF.port=value.port;
-                SELF.Net4.setRecvBufferSize(UDP_BUF_SIZE);
-                SELF.Net4.setSendBufferSize(UDP_BUF_SIZE);
-            }
-            else
-            {
-                SELF.port=START_PORT_NUMBER;
-            }
-
-            if(!global.NET_WORK_MODE)
-                global.NET_WORK_MODE={};
-            NET_WORK_MODE.StunIP=true;
+            // SELF.ip=value.address;
+            // if(SELF.Net4)//UDP
+            // {
+            //     SELF.port=value.port;
+            //     SELF.Net4.setRecvBufferSize(UDP_BUF_SIZE);
+            //     SELF.Net4.setSendBufferSize(UDP_BUF_SIZE);
+            // }
+            // else
+            // {
+            //     SELF.port=START_PORT_NUMBER;
+            // }
+            //
+            // if(!global.NET_WORK_MODE)
+            //     global.NET_WORK_MODE={};
+            // NET_WORK_MODE.StunIP=true;
 
             server.close()
         })

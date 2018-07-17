@@ -629,6 +629,8 @@ module.exports = class CDB extends require("../code")
     TruncateBlockDB(LastBlockNum)
     {
         this.UseTruncateBlockDB=undefined;
+        if(LastBlockNum<BLOCK_PROCESSING_LENGTH2)
+            LastBlockNum=BLOCK_PROCESSING_LENGTH2-1;
 
         var Block=this.ReadBlockDB(LastBlockNum);
         if(!Block)

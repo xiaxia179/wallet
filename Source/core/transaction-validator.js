@@ -15,7 +15,6 @@ require("./wallet");
 
 const RBTree = require('bintrees').RBTree;
 
-const COUNT_MEM_BLOCKS=1;//BLOCK_PROCESSING_LENGTH2
 
 module.exports = class CSmartContract extends require("./block-exchange")
 {
@@ -24,6 +23,34 @@ module.exports = class CSmartContract extends require("./block-exchange")
         super(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual);
 
         this.BufHashTree = new RBTree(CompareArr);
+        this.BufHashTree.LastAddNum=0;
+    }
+    AddBlockToHashTree(Block)
+    {
+        //ToLog("ADD "+Block.BlockNum)
+        this.BufHashTree.LastAddNum=Block.BlockNum;
+        var arr=Block.arrContent;
+        if(arr)
+        {
+            for(var i=0;i<arr.length;i++)
+            {
+                var HASH=shaarr(arr[i]);
+                this.BufHashTree.insert(HASH);
+            }
+        }
+    }
+    DeleteBlockFromHashTree(Block)
+    {
+        //ToLog("DEL "+Block.BlockNum)
+        var arr=Block.arrContent;
+        if(arr)
+        {
+            for(var i=0;i<arr.length;i++)
+            {
+                var HASH=shaarr(arr[i]);
+                this.BufHashTree.remove(HASH);
+            }
+        }
     }
 
 
@@ -35,20 +62,34 @@ module.exports = class CSmartContract extends require("./block-exchange")
         if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
             return;
 
+        var COUNT_MEM_BLOCKS=0;
 
-
-        if(Block.BlockNum>1240000)
+        //ToLog("BlockNum "+Block.BlockNum)
+        var NUM1=1240000;
+        var NUM2=1400000;
+        if(global.LOCAL_RUN)
         {
-            this.BufHashTree.clear();
-            for(var num=COUNT_MEM_BLOCKS;num>=1;num--)
+            NUM1=15;
+            NUM2=100;
+        }
+
+        if(Block.BlockNum>NUM1)
+        {
+            COUNT_MEM_BLOCKS=1;
+            if(Block.BlockNum>NUM2)
+                COUNT_MEM_BLOCKS=60;
+
+
+            if(this.BufHashTree.LastAddNum!==Block.BlockNum-1)
             {
-                var BlockPrev=this.ReadBlockDB(Block.BlockNum-num);
-                var arr=BlockPrev.arrContent;
-                if(arr)
-                for(var i=0;i<arr.length;i++)
+                this.BufHashTree.clear();
+                for(var num=COUNT_MEM_BLOCKS;num>=1;num--)
                 {
-                    var HASH=shaarr(arr[i]);
-                    this.BufHashTree.insert(HASH);
+                    var Block2=this.ReadBlockDB(Block.BlockNum-num);
+                    if(Block2)
+                    {
+                        this.AddBlockToHashTree(Block2);
+                    }
                 }
             }
         }
@@ -72,6 +113,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
             if(this.BufHashTree.find(HASH))
             {
+                //ToLog("Double !!")
                 continue;
             }
 
@@ -83,6 +125,14 @@ module.exports = class CSmartContract extends require("./block-exchange")
             }
         }
 
+        if(COUNT_MEM_BLOCKS)
+        {
+            var Block2=this.ReadBlockDB(Block.BlockNum-COUNT_MEM_BLOCKS);
+            if(Block2)
+                this.DeleteBlockFromHashTree(Block2);
+
+            this.AddBlockToHashTree(Block);
+        }
 
 
         for(var key in DApps)
@@ -93,6 +143,8 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
     OnDelete(Block)
     {
+        this.BufHashTree.LastAddNum=0;
+
         for(var key in DApps)
         {
             DApps[key].OnDeleteBlock(Block);
@@ -145,6 +197,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
         if(EndNum===undefined)
             EndNum=this.BlockNumDB;
 
+        var startTime = process.hrtime();
         ToLog("Rewrite from: "+StartNum+" to "+EndNum);
         for(var Num=StartNum;Num<=EndNum;Num++)
         {
@@ -152,15 +205,21 @@ module.exports = class CSmartContract extends require("./block-exchange")
             {
                 var Block=this.ReadBlockDB(Num);
                 if(Block)
-                    this.OnWriteBlock(Block);
+                     this.OnWriteBlock(Block);
             }
         }
-        ToLog("Rewriting complete");
+        var Time = process.hrtime(startTime);
+        var deltaTime=(Time[0]*1000 + Time[1]/1e6)/1000;//s
+
+        ToLog("Rewriting complete: "+deltaTime+" sec");
     }
 
     AddDAppTransactions(BlockNum,Arr)
     {
         var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
+        if(BlockNumHash<0)
+            BlockNumHash=0;
+
         if(Arr.length)
         {
             var Hash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
@@ -188,7 +247,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
 // setTimeout(function ()
 // {
 //     console.time("*****************************************************************************ReWriteDAppTransactions")
-//     SERVER.ReWriteDAppTransactions(948767,948767);
+//     SERVER.ReWriteDAppTransactions(1,1000);
 //     console.timeEnd("*****************************************************************************ReWriteDAppTransactions")
 //     process.exit()
 // },1000)

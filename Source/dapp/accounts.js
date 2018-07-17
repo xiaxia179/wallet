@@ -103,8 +103,6 @@ class AccountApp extends require("./dapp")
         this.DBAccountsHash=new DBRow("accounts-hash",6+32 +12,"{BlockNum:uint,Hash:hash, Reserve: arr12}");
 
 
-
-
         this.Start();
 
         setInterval(this.ControlActSize.bind(this),60*1000);
@@ -200,7 +198,6 @@ class AccountApp extends require("./dapp")
         if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
             return;
         this.OnDeleteBlock(Block);
-
 
 
         //do coin base
@@ -396,9 +393,11 @@ class AccountApp extends require("./dapp")
             return 0;
         }
 
-        var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
-        if(TR.BlockNum!==BlockNumHash)
-            return 0;
+        // var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
+        // if(BlockNumHash<0)
+        //     BlockNumHash=0;
+        // if(TR.BlockNum!==BlockNumHash)
+        //     return 0;
 
         var Item=this.DBAccountsHash.Read(TR.BlockNum);
         if(Item)
@@ -431,7 +430,8 @@ class AccountApp extends require("./dapp")
             return "Error transaction format (retry transaction)";
         }
 
-        var Data= TR;
+
+        var Data = TR;
         Data.Num=undefined;
         Data.Value={};
         Data.BlockNumCreate=BlockNum;
@@ -869,7 +869,8 @@ class AccountApp extends require("./dapp")
             var Data=this.ReadState(Num);
             if(Data)
             {
-                Data.PubKey=GetHexFromArr(Data.PubKey);
+                if(!Data.PubKeyStr)
+                    Data.PubKeyStr=GetHexFromArr(Data.PubKey);
                 arr.push(Data);
             }
         }
@@ -900,7 +901,8 @@ class AccountApp extends require("./dapp")
             var Data=this.ReadState(num);
             if(!Data)
                 break;
-            Data.PubKey=GetHexFromArr(Data.PubKey);
+            if(!Data.PubKeyStr)
+                Data.PubKeyStr=GetHexFromArr(Data.PubKey);
             arr.push(Data);
         }
         return arr;
@@ -970,12 +972,17 @@ class AccountApp extends require("./dapp")
     }
     CalcMerkleTree()
     {
-        //TODO (do recalc only change)
+        // if(global.LOCAL_RUN)
+        // {
+        //     return {Root:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
+        // }
+
+        //TODO (do recalc only changes)
 
         var Count=1+this.GetMaxAccount();
         if(!Count)
         {
-            return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            return {Root:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
         }
 
         //var Buf=Buffer.alloc(this.ACCOUNT_ROW_SIZE);
@@ -998,6 +1005,12 @@ class AccountApp extends require("./dapp")
         //return shaarr(Buf);
     }
 
+    /////////////////////////////
+    GetHashFromKeyDescription(Item)
+    {
+        var DescArr=shaarr(Item.Description);
+        return shaarr2(Item.PubKey,DescArr);
+    }
     /////////////////////////////
 
 

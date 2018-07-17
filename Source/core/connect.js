@@ -325,14 +325,27 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         if(!CODE_VERSION.StartLoadVersionNum)
             CODE_VERSION.StartLoadVersionNum=0;
-        if(!IsZeroArr(Data.CodeVersion.Hash) && Data.CodeVersion.VersionNum && Data.CodeVersion.VersionNum>CODE_VERSION.VersionNum
-            && Data.CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+
+
+        if(!IsZeroArr(Data.CodeVersion.Hash)
+            && (Data.CodeVersion.VersionNum>CODE_VERSION.VersionNum && Data.CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum
+                || Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
         {
+
             var SignArr=arr2(Data.CodeVersion.Hash,GetArrFromValue(Data.CodeVersion.VersionNum));
             if(CheckDevelopSign(SignArr,Data.CodeVersion.Sign))
             {
                 ToLog("Get new CodeVersion = "+Data.CodeVersion.VersionNum+" HASH:"+GetHexFromArr(Data.CodeVersion.Hash));
-                this.StartLoadCode(Node,Data.CodeVersion);
+
+                if(Data.CodeVersion.VersionNum>CODE_VERSION.VersionNum && Data.CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+                {
+                    this.StartLoadCode(Node,Data.CodeVersion);
+                }
+                else
+                if(Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash))//was restart
+                {
+                    CODE_VERSION=Data.CodeVersion;
+                }
             }
             else
             {

@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 
-
+//const RBTree = require('bintrees').RBTree;
 
 module.exports = class CDBState extends require("./db")
 {
@@ -25,6 +25,18 @@ module.exports = class CDBState extends require("./db")
         this.LastHash=undefined;
         this.WasUpdate=1;
 
+
+        this.BufMap={};
+        this.BufMapCount=0;
+        setInterval(this.CheckBufMap.bind(this),1000);
+    }
+    CheckBufMap()
+    {
+        if(this.BufMapCount>1000)
+        {
+            this.BufMap={};
+            this.BufMapCount=0;
+        }
     }
 
 
@@ -45,6 +57,8 @@ module.exports = class CDBState extends require("./db")
         if(Data.Num===undefined)//new row
             Data.Num=this.GetMaxNum()+1;
 
+        delete this.BufMap[Data.Num];
+
         var BufWrite=BufLib.GetBufferFromObject(Data,this.Format,this.DataSize,this.WorkStruct);
         var Position=Data.Num*this.DataSize;
         var FI=this.OpenDBFile(this.FileName);
@@ -55,14 +69,14 @@ module.exports = class CDBState extends require("./db")
             TO_ERROR_LOG("DB-STATE",10,"Error write to file:" +written+" <> "+BufWrite.length);
             return false;
         }
-        else
+
+
+        if(Position>=FI.size)
         {
-            if(Position>=FI.size)
-            {
-                FI.size=Position+this.DataSize;
-            }
-            return true;
+            FI.size=Position+this.DataSize;
         }
+
+        return true;
     }
 
 
@@ -70,10 +84,20 @@ module.exports = class CDBState extends require("./db")
 
     Read(Num,GetBufOnly)
     {
+        var Data;
         if(isNaN(Num) || Num<0 || Num>this.GetMaxNum())
         {
             return undefined;
         }
+
+        if(!GetBufOnly)
+        {
+            var Item=this.BufMap[Num];
+            if(Item)
+                return Item;
+        }
+
+
 
         var BufRead=BufLib.GetNewBuffer(this.DataSize);
         var Position=Num*this.DataSize;
@@ -91,15 +115,16 @@ module.exports = class CDBState extends require("./db")
 
         try
         {
-            var Data=BufLib.GetObjectFromBuffer(BufRead,this.Format,this.WorkStruct);
+            Data=BufLib.GetObjectFromBuffer(BufRead,this.Format,this.WorkStruct);
         }
         catch (e)
         {
             return undefined;
         }
 
-
         Data.Num=Num;
+        this.BufMap[Num]=Data;
+        this.BufMapCount++;
         return Data;
     }
     GetHash()
@@ -157,6 +182,9 @@ module.exports = class CDBState extends require("./db")
                 ToLog("Truncate "+this.FileName+" after Num="+LastNum)
             FI.size=Position;
             fs.ftruncateSync(FI.fd,FI.size);
+
+            this.BufMap={};
+            this.BufMapCount=0;
         }
     }
 
@@ -168,8 +196,6 @@ module.exports = class CDBState extends require("./db")
         var MaxNum=this.GetMaxNum();
         if(MaxNum===-1)
             return;
-
-        //return;
 
         for(var num=MaxNum;num>=0;num--)
         {

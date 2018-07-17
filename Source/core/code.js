@@ -46,12 +46,13 @@ module.exports = class CCode extends require("./base")
 
     StartLoadCode(Node,CodeVersion)
     {
+        var VersionNum=CodeVersion.VersionNum;
+
         CODE_VERSION.StartLoad=CodeVersion;
         CODE_VERSION.StartLoadNode=Node;
         CODE_VERSION.StartLoadVersionNum=VersionNum;
         CODE_VERSION.StartLoadVersionNumTime=new Date();
 
-        var VersionNum=CodeVersion.VersionNum;
         var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");
         if(fs.existsSync(fname))
         {

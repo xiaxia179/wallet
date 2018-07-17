@@ -29,8 +29,17 @@ function DoCommand(response,Path,params)
         response.writeHead(200, { 'Content-Type': 'application/json' });
 
         var Ret=F(params[1],params[2],params[3]);
-
-        response.end(JSON.stringify(Ret));
+        try
+        {
+            var Str=JSON.stringify(Ret);
+            response.end(Str);
+        }
+        catch (e)
+        {
+            //ToLog("Ret="+Ret)
+            ToLog(e);
+            response.end();
+        }
         return;
     }
 
@@ -270,6 +279,8 @@ HTTPCaller.GetWalletInfo=function ()
             ip:SERVER.ip,
             port:SERVER.port,
             NET_WORK_MODE:global.NET_WORK_MODE,
+            INTERNET_IP_FROM_STUN:global.INTERNET_IP_FROM_STUN,
+
             HistoryMaxNum:WALLET.GetHistoryMaxNum(),
 
             DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
@@ -420,8 +431,8 @@ HTTPCaller.TruncateBlockChain=function (BlockNum,Param2,Param3)
         return {result:0};
     }
 
-    SERVER.BlockNumDB=BlockNum;
-    SERVER.TruncateBlockDB(SERVER.BlockNumDB);
+    //SERVER.BlockNumDB=BlockNum;
+    SERVER.TruncateBlockDB(BlockNum);
     return {result:1,text:"Truncate after BlockNum="+BlockNum};
 }
 

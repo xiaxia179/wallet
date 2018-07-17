@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=35;
-"update 35";
+global.UPDATE_CODE_VERSION_NUM=36;
+"update 36";
 
 require("./startlib.js");
 
@@ -50,7 +50,7 @@ global.TOTAL_TER_MONEY=1e9;
 //Настройки DApp.accounts
 global.TRANSACTION_PROOF_COUNT=1000*1000;
 global.MIN_POWER_POW_ACC_CREATE=16;
-global.DELTA_BLOCK_ACCOUNT_HASH=8;
+global.DELTA_BLOCK_ACCOUNT_HASH=16;
 
 
 
@@ -82,10 +82,12 @@ global.DEF_MAJOR_VERSION="0001";//4
 
 InitParams();
 
+
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=((new Date)-0)-50*1000;
-    global.TEST_TRANSACTION_GENERATE=1;
+    global.START_NETWORK_DATE=1531843650280;//((new Date)-0)-50*1000;
+    global.DELTA_BLOCK_ACCOUNT_HASH=16;
+    global.TEST_TRANSACTION_GENERATE=0;
     global.MIN_POWER_POW_TR=0;
     global.MIN_POWER_POW_ACC_CREATE=0;
 
@@ -109,12 +111,13 @@ global.GetNetworkName=function()
 
 global.DEF_VERSION=DEF_MAJOR_VERSION+"."+UPDATE_CODE_VERSION_NUM;//9
 global.DEF_CLIENT="TERA-CORE";//16
-global.START_IP="";
 
 global.FIRST_TIME_BLOCK=START_NETWORK_DATE;
 global.START_BLOCK_RUN=0;
 
 
+if(global.START_IP===undefined)
+    global.START_IP = "";
 if(global.START_PORT_NUMBER===undefined)
     global.START_PORT_NUMBER = 30000;
 if(global.HTTP_PORT_NUMBER===undefined)

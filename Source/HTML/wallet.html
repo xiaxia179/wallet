@@ -39,7 +39,6 @@
     var ServerVersionNum=0;
     var ServerCurBlockNum=0;
     var CanSendTransaction=1;
-    var Net_Work_Mode;
     var MiningAccount=0;
     var min_power_pow_acc_create=0;
     var WalletStatus;
@@ -50,6 +49,11 @@
     var MapAccounts={};
     var MapCheckTransaction={};
     var MapSendTransaction={};
+
+    var NET_WORK_MODE;
+    var INTERNET_IP_FROM_STUN;
+    var SERVER_IP;
+    var SERVER_PORT;
 
     var CurTabName;
     var TabArr=[{name:"TabAccounts",log:1},{name:"TabSend",log:1},{name:"TabHistory"},{name:"TabExplorer"}];
@@ -1026,7 +1030,10 @@
             SetStatus("<H1 align='center' style='color:blue'>Wallet updating complete. Please restart program.</H1>");
         }
 
-        UpdateNetworkMode(Data);
+        NET_WORK_MODE=Data.NET_WORK_MODE;
+        INTERNET_IP_FROM_STUN=Data.INTERNET_IP_FROM_STUN;
+        SERVER_IP=Data.ip;
+        SERVER_PORT=Data.port;
     }
 
     function SetArrLog(arr)
@@ -1083,65 +1090,42 @@
         else
         {
             SetVisibleBlock('idNetworkView',true);
-            document.getElementById("idHTTPPort").value=HTTPPort;
-            document.getElementById("idHTTPPassword").value=HTTPPassword;
 
+            if(!NET_WORK_MODE)
+            {
+                //default:
+                NET_WORK_MODE={};
+                NET_WORK_MODE.UseDirectIP=true;
+                INTERNET_IP_FROM_STUN
+                if(INTERNET_IP_FROM_STUN)
+                    NET_WORK_MODE.ip=INTERNET_IP_FROM_STUN;
+                else
+                    NET_WORK_MODE.ip=SERVER_IP;
+                NET_WORK_MODE.port=SERVER_PORT;
+            }
+
+
+            document.getElementById("idUseDirectIP").checked=NET_WORK_MODE.UseDirectIP;
+            document.getElementById("idIP").value=NET_WORK_MODE.ip;
+            document.getElementById("idPort").value=NET_WORK_MODE.port;
         }
     }
 
-    function UpdateNetworkMode(Data)
-    {
-        if(Data.NET_WORK_MODE)
-        {
-            if(!Net_Work_Mode)
-            {
-                Net_Work_Mode=Data.NET_WORK_MODE;
-                document.getElementById("idUseDirectIP").checked=Net_Work_Mode.UseDirectIP;
-                if(Net_Work_Mode.ip)
-                    document.getElementById("idIP").value=Net_Work_Mode.ip;
-                if(Net_Work_Mode.port)
-                    document.getElementById("idPort").value=Net_Work_Mode.port;
-//                document.getElementById("idUseIncomeGrayIP").checked=Net_Work_Mode.UseIncomeGrayIP;
-                if(Net_Work_Mode.NodeWhiteList)
-                    document.getElementById("idNodeWhiteList").value=Net_Work_Mode.NodeWhiteList;
-            }
-            else
-            {
-                if(Data.NET_WORK_MODE.StunIP && !Net_Work_Mode.WasSets && !document.getElementById("idIP").value)
-                {
-                    if(Data.ip)
-                        document.getElementById("idIP").value=Data.ip;
-                    if(Data.port)
-                        document.getElementById("idPort").value=Data.port;
-
-                    if(Data.ip && Data.port)
-                    {
-                        Net_Work_Mode.WasSets=true;
-                        document.getElementById("idUseDirectIP").checked=true;
-                        if(Net_Work_Mode.ip===undefined)
-                        {
-                            SetNetworkParams(0);
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     function SetNetworkParams(bRestart)
     {
-        if(!Net_Work_Mode)
-            Net_Work_Mode={};
-        Net_Work_Mode.UseDirectIP=document.getElementById("idUseDirectIP").checked;
-        Net_Work_Mode.ip=document.getElementById("idIP").value;
-        Net_Work_Mode.port=ParseNum(document.getElementById("idPort").value);
-        //Net_Work_Mode.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
-        Net_Work_Mode.NodeWhiteList=document.getElementById("idNodeWhiteList").value;
+
+        NET_WORK_MODE={};
+        NET_WORK_MODE.UseDirectIP=document.getElementById("idUseDirectIP").checked;
+        NET_WORK_MODE.ip=document.getElementById("idIP").value;
+        NET_WORK_MODE.port=ParseNum(document.getElementById("idPort").value);
+        //NET_WORK_MODE.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
+        NET_WORK_MODE.NodeWhiteList=document.getElementById("idNodeWhiteList").value;
 
 
-        Net_Work_Mode.RestartNode=bRestart;
+        NET_WORK_MODE.RestartNode=bRestart;
 
-        GetData("/SetNetMode",Net_Work_Mode, function (Data)
+        GetData("/SetNetMode",NET_WORK_MODE, function (Data)
         {
             SetStatus("Set net work params OK");
         });
@@ -2071,7 +2055,7 @@
                 <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
                 <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
                 <th id="Item.Description" class="name">Account name</th>
-                <th id="Item.PubKey" class="pubkey">PubKey</th>
+                <th id="Item.PubKeyStr" class="pubkey">PubKey</th>
                 <th id="Item.Value.OperationID" class="num">Operation</th>
                 <th id="(RetOpenBlock(Item.BlockNumCreate,1))" class="num">Block Num</th>
             </tr>

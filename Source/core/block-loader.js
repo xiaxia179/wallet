@@ -321,6 +321,24 @@ module.exports = class CBlock extends require("./db/block-db")
     LoopHistoryLoad()
     {
         var Context=this.LoadHistoryContext;
+
+        //check timeout
+        if(Context.PrevBlockNum===Context.BlockNum)
+        {
+            var DeltaTime=new Date()-Context.StartBlockNum;
+            if(DeltaTime>120*1000)
+            {
+                ToLog("DETECT TIMEOUT LOADHISTORY");
+                this.StartLoadHistory();
+                return;
+            }
+        }
+        else
+        {
+            Context.PrevBlockNum=Context.BlockNum;
+            Context.StartBlockNum=new Date();
+        }
+
         if(Context.Pause)
         {
             if(this.LoadedChainList.length)
@@ -334,7 +352,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
         var BlockDB=this.ReadBlockHeaderDB(Context.BlockNum);
 
-        if(!BlockDB || this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH-2)
+        if(!BlockDB || this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH)//-2
         {
             this.LoadHistoryMode=false;
             ToLogClient("Finish synchronization")
@@ -359,17 +377,17 @@ module.exports = class CBlock extends require("./db/block-db")
                 }
             );
         }
-        else
-        {
-            if(!Ret.timewait)
-            {
-                if(!Context.RestartGetNextNode)
-                {
-                    Context.RestartGetNextNode=1;
-                    Context.MapSend={};
-                }
-            }
-        }
+        // else
+        // {
+        //     if(!Ret.timewait)
+        //     {
+        //         if(!Context.RestartGetNextNode)
+        //         {
+        //             Context.RestartGetNextNode=1;
+        //             Context.MapSend={};
+        //         }
+        //     }
+        // }
     }
 
     SetChainNum(chain)
@@ -642,12 +660,15 @@ module.exports = class CBlock extends require("./db/block-db")
         }
 
         //TODO:
-        // if(!timewait && !task.RestartGetNextNode)
-        // {
-        //     task.RestartGetNextNode=1;
-        //     task.MapSend={};
-        //     return {Result:false,timewait:true};
-        // }
+        if(!task.RestartGetNextNode)
+            task.RestartGetNextNode=0;
+        if(!timewait && task.RestartGetNextNode<3)
+        {
+            ToLog("RestartGetNextNode : "+task.RestartGetNextNode);
+            task.RestartGetNextNode++;
+            task.MapSend={};
+            return {Result:false,timewait:true};
+        }
 
         return {Result:false,timewait:timewait};
     }
@@ -978,11 +999,11 @@ module.exports = class CBlock extends require("./db/block-db")
                 //ToLog("Not found: "+Context.BlockNum+" from node:"+Info.Node.port);
                 Context.BlockNum=Math.floor(Context.BlockNum-Context.DeltaBlockNum);
                 Context.DeltaBlockNum=Context.DeltaBlockNum*1.2;
-                if(Context.BlockNum<0)
-                    Context.BlockNum=0;
+                if(Context.BlockNum<BLOCK_PROCESSING_LENGTH2)
+                    Context.BlockNum=BLOCK_PROCESSING_LENGTH2-1;
 
-                this.BlockNumDB=Context.BlockNum;
-                //this.TruncateBlockDB(Context.BlockNum);
+                this.BlockNumDB=Context.BlockNum;//?
+                this.SetTruncateBlockDB(Context.BlockNum);
             }
             else
             {
@@ -1587,33 +1608,27 @@ module.exports = class CBlock extends require("./db/block-db")
 
         //удаляем более поздние блоки как возможно не валидные
 
-        if(!Block)
-            return;
-
-        var CurNum=Block.BlockNum+1;
-        while(true)
+        if(Block)
         {
-            var BlockMem=this.BlockChain[CurNum];
-            if(BlockMem)
+            var CurNum=Block.BlockNum+1;
+            while(true)
             {
-                BlockMem.bSave=false;
-                this.ReloadTrTable(BlockMem);
-                BlockMem.Info+="\n--delete old--"
+                var BlockMem=this.BlockChain[CurNum];
+                if(BlockMem)
+                {
+                    BlockMem.bSave=false;
+                    this.ReloadTrTable(BlockMem);
+                    BlockMem.Info+="\n--delete old--"
+                }
+
+                if(!BlockMem)
+                    break;
+
+                CurNum++;
             }
-
-            if(!BlockMem)
-                break;
-
-            CurNum++;
+            ADD_TO_STAT("WRITECHAIN_TO_DB_COUNT",arr.length);
         }
 
-
-
-
-
-
-
-        ADD_TO_STAT("WRITECHAIN_TO_DB_COUNT",arr.length);
         this.FREE_ALL_MEM_CHAINS();
 
     }

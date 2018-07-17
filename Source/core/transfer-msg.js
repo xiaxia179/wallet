@@ -297,6 +297,10 @@ module.exports = class CMessages extends require("./transaction-validator")
 
         this.SendTransaction(Tr);
 
+        // var Tr2=CopyObjValue(Tr);Tr2.num++;this.TimePoolTransaction.push(Tr2);
+        // Tr2=CopyObjValue(Tr2);Tr2.num++;this.TimePoolTransaction.push(Tr2);
+
+
         if(Res===-3)
         {
             var delta=Tr.num-this.CurrentBlockNum;
@@ -355,9 +359,6 @@ module.exports = class CMessages extends require("./transaction-validator")
 
     TRANSACTION(Info,CurTime)
     {
-        // if(this.CurrentBlockNum<1240000)
-        //     return;
-
         var Tr=this.DataFromF(Info);
 
         // this.CheckCreateTransactionHASH(Tr);
