@@ -59,7 +59,9 @@ module.exports = class CSmartContract extends require("./block-exchange")
     //EVENTS
     OnWriteBlock(Block)
     {
-        if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+        // if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+        //     return;
+        if(Block.BlockNum<1)
             return;
 
         var COUNT_MEM_BLOCKS=0;

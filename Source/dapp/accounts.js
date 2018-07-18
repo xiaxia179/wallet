@@ -154,7 +154,9 @@ class AccountApp extends require("./dapp")
 
     OnDeleteBlock(Block)
     {
-        if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+        // if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+        //     return;
+        if(Block.BlockNum<1)
             return;
         this.DeleteAct(Block.BlockNum);
     }
@@ -195,7 +197,9 @@ class AccountApp extends require("./dapp")
 
     OnWriteBlockStart(Block)
     {
-        if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+        // if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
+        //     return;
+        if(Block.BlockNum<1)
             return;
         this.OnDeleteBlock(Block);
 
@@ -209,6 +213,7 @@ class AccountApp extends require("./dapp")
     OnWriteBlockFinish(Block)
     {
         this.CalcHash(Block.BlockNum);
+
     }
 
 
@@ -970,6 +975,7 @@ class AccountApp extends require("./dapp")
 
         var Data={Num:BlockNum,BlockNum:BlockNum,Hash:Hash};
         this.DBAccountsHash.Write(Data);
+        this.DBAccountsHash.Truncate(BlockNum);
 
     }
     CalcMerkleTree()

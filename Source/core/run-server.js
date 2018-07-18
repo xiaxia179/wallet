@@ -322,7 +322,7 @@ function RunOnUpdate()
                 // var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
                 // if(AccountsHash && IsZeroArr(AccountsHash))
                 {
-                    if(CurNum<=41)
+                    if(CurNum<=43)
                         SERVER.ReWriteDAppTransactions(0);
                 }
             }

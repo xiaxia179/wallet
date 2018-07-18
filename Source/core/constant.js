@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=42;
-"update 42-2";
+global.UPDATE_CODE_VERSION_NUM=44;
+"update 44";
 
 require("./startlib.js");
 
@@ -120,8 +120,8 @@ if(global.START_IP===undefined)
     global.START_IP = "";
 if(global.START_PORT_NUMBER===undefined)
     global.START_PORT_NUMBER = 30000;
-if(global.HTTP_PORT_NUMBER===undefined)
-    global.HTTP_PORT_NUMBER = 80;
+// if(global.HTTP_PORT_NUMBER===undefined)
+//     global.HTTP_PORT_NUMBER = 80;
 if(global.HTTP_PORT_PASSWORD===undefined)
     global.HTTP_PORT_PASSWORD="";
 

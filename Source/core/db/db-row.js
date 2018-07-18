@@ -90,23 +90,18 @@ module.exports = class CDBState extends require("./db")
             return undefined;
         }
 
-        if(!GetBufOnly)
+        var BufRead=this.BufMap[Num];
+        if(!BufRead)
         {
-            var Item=this.BufMap[Num];
-            if(Item)
-                return CopyObjValue(Item);
+            BufRead=BufLib.GetNewBuffer(this.DataSize);
+            var Position=Num*this.DataSize;
+            var FI=this.OpenDBFile(this.FileName);
+            var bytesRead=fs.readSync(FI.fd, BufRead,0,BufRead.length, Position);
+            if(bytesRead!==BufRead.length)
+                return undefined;
+            this.BufMap[Num]=BufRead;
+            this.BufMapCount++;
         }
-
-
-
-        var BufRead=BufLib.GetNewBuffer(this.DataSize);
-        var Position=Num*this.DataSize;
-        var FI=this.OpenDBFile(this.FileName);
-
-
-        var bytesRead=fs.readSync(FI.fd, BufRead,0,BufRead.length, Position);
-        if(bytesRead!==BufRead.length)
-            return undefined;
 
         if(GetBufOnly)
         {
@@ -123,8 +118,6 @@ module.exports = class CDBState extends require("./db")
         }
 
         Data.Num=Num;
-        this.BufMap[Num]=Data;
-        this.BufMapCount++;
         return Data;
     }
     GetHash()

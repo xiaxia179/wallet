@@ -289,18 +289,9 @@ module.exports = class CDB extends require("../code")
     }
 
 
-    GetBodyName(Block)
-    {
-        return FILE_NAME_BODY;
-        // if(Block.BodyFileNum===undefined)
-        //     Block.BodyFileNum=this.BodyFileNum;
-        //
-        // return FILE_NAME_BODY+"-"+Block.BodyFileNum;
-    }
-
     WriteBodyDB(Block)
     {
-        var FileItem=BlockDB.OpenDBFile(this.GetBodyName(Block));
+        var FileItem=BlockDB.OpenDBFile(FILE_NAME_BODY);
         var FD=FileItem.fd;
         var Position=FileItem.size;
         Block.TrDataPos=Position;
@@ -533,7 +524,7 @@ module.exports = class CDB extends require("../code")
 
     ReadBlockBodyDB(Block)
     {
-        var FileItem=BlockDB.OpenDBFile(this.GetBodyName(Block));
+        var FileItem=BlockDB.OpenDBFile(FILE_NAME_BODY);
         var FD=FileItem.fd;
 
         var Position=Block.TrDataPos;
@@ -630,7 +621,10 @@ module.exports = class CDB extends require("../code")
     {
         this.UseTruncateBlockDB=undefined;
         if(LastBlockNum<BLOCK_PROCESSING_LENGTH2)
+        {
             LastBlockNum=BLOCK_PROCESSING_LENGTH2-1;
+            this.TruncateBlockBodyDBInner();
+        }
 
         var Block=this.ReadBlockDB(LastBlockNum);
         if(!Block)
@@ -655,20 +649,19 @@ module.exports = class CDB extends require("../code")
             FItem1.size=size;
             fs.ftruncateSync(FItem1.fd,FItem1.size);
         }
-        return;
+    }
+    TruncateBlockBodyDBInner()
+    {
 
-        //TODO
-        var FItem2=BlockDB.OpenDBFile(this.GetBodyName(LastBlock));
-        var size2=LastBlock.TrDataPos+LastBlock.TrDataLen;
+        var FItem2=BlockDB.OpenDBFile(FILE_NAME_BODY);
+        var size2=0;
         if(FItem2.size!==size2)
         {
             FItem2.size=size2;
             fs.ftruncateSync(FItem2.fd,FItem2.size);
         }
-
-        if(USE_KEY_DB)
-            this.TruncateKeyDB(LastBlock);
     }
+
     TruncateFileBuf(Tree,size)
     {
         while(true)

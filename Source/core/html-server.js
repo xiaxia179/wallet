@@ -292,7 +292,7 @@ HTTPCaller.GetWalletInfo=function ()
             NodeAddrStr:SERVER.addrStr,
             STAT_MODE:global.STAT_MODE,
 
-            HTTPPort:HTTP_PORT_NUMBER,
+            HTTPPort:global.HTTP_PORT_NUMBER,
             HTTPPassword:HTTP_PORT_PASSWORD,
 
 };
@@ -625,7 +625,7 @@ HTTPCaller.GetNodes=function ()
             DEF_NETWORK:GetNetworkName(),
             DEF_VERSION:DEF_VERSION,
             port:SERVER.port,
-            webport:HTTP_PORT_NUMBER,
+            webport:global.HTTP_PORT_NUMBER,
         };
     return Result;
 }
@@ -1263,7 +1263,7 @@ function parseCookies (rc)
 
     return list;
 }
-if(HTTP_PORT_NUMBER)
+if(global.HTTP_PORT_NUMBER)
 {
     var ClientTokenMap={};
     setInterval(function ()
@@ -1271,7 +1271,7 @@ if(HTTP_PORT_NUMBER)
         ClientTokenMap={};
     },24*3600*1000);
 
-    var port = HTTP_PORT_NUMBER;
+    var port = global.HTTP_PORT_NUMBER;
     var HTTPServer=http.createServer(function (request, response0)
     {
         if(!request.headers)
