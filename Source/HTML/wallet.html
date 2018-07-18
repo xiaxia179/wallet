@@ -38,6 +38,7 @@
     var ServerBlockNumDB=0;
     var ServerVersionNum=0;
     var ServerCurBlockNum=0;
+    var ServerTime=0;
     var CanSendTransaction=1;
     var MiningAccount=0;
     var min_power_pow_acc_create=0;
@@ -956,6 +957,8 @@
         ServerVersionNum=Data.VersionNum;
         ServerBlockNumDB=Data.BlockNumDB;
         ServerCurBlockNum=Data.CurBlockNum;
+        ServerTime=Data.CurTime;
+        var DeltaTime=Data.DELTA_CURRENT_TIME/1000;
 
         document.title="TERA 1."+ServerVersionNum;
         SetBlockChainConstant(Data);
@@ -971,7 +974,7 @@
                 var Percent=100*Data.BlockNumDB/MaxNum;
                 if(Percent<0)
                     Percent=0;
-                Percent=Percent.toPrecision(4);
+                Percent=Percent.toFixed(2);
                 StrMode=" "+Percent+"% "+" ("+Data.BlockNumDB+"/"+MaxNum+")";
             }
 
@@ -1006,7 +1009,8 @@
         SetVisibleBlock("wallet_config_tab",WalletOpen!==false);
         HistoryMaxNum=Data.HistoryMaxNum;
 
-        var Str="Saved block: <B>"+Data.BlockNumDB+"</B>  Current block: <B>"+Data.CurBlockNum+"</B>";
+        DeltaTime=DeltaTime.toFixed(3);
+        var Str="Saved block: <B>"+Data.BlockNumDB+"</B>  Current block: <B>"+Data.CurBlockNum+"</B> Time delta:<B>"+DeltaTime+" sec</B>";
         document.getElementById("idCurrentBlockNum").innerHTML=Str;
 
         HTTPPort=Data.HTTPPort;
@@ -2077,7 +2081,7 @@
         <DIV id="view_header" >Blocks<BR></DIV>
         <INPUT type="button" onclick="ViewPrev(DefBlock)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewBlockNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefBlock)">
-        <INPUT type="button" onclick="ViewNext(DefBlock,MaxBlockNum-8)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewNext(DefBlock,ServerBlockNumDB)" class="btdoit bt" value="Next >>">
 
         <table id="grid_block_all" class="grid">
             <tr>
@@ -2092,7 +2096,7 @@
         </table>
 
         <INPUT type="button" onclick="ViewPrev(DefBlock)" class="btdoit bt" value="<< Prev">
-        <INPUT type="button" onclick="ViewNext(DefBlock,MaxBlockNum-8)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewNext(DefBlock,ServerBlockNumDB)" class="btdoit bt" value="Next >>">
 
     </DIV>
 
@@ -2128,7 +2132,7 @@
         <DIV id="view_header" >Accounts hash<BR></DIV>
         <INPUT type="button" onclick="ViewPrev(DefHash)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewHashNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefHash)">
-        <INPUT type="button" onclick="ViewNext(DefHash,MaxBlockNum-8)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewNext(DefHash,ServerBlockNumDB)" class="btdoit bt" value="Next >>">
 
         <table id="grid_hash_all" class="grid">
             <tr>
@@ -2138,7 +2142,7 @@
             </tr>
         </table>
         <INPUT type="button" onclick="ViewPrev(DefHash)" class="btdoit bt" value="<< Prev">
-        <INPUT type="button" onclick="ViewNext(DefHash,MaxBlockNum-8)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewNext(DefHash,ServerBlockNumDB)" class="btdoit bt" value="Next >>">
     </DIV>
 
     <DIV id="idUtilView" style="display: none">

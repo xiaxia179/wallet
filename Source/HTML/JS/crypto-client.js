@@ -111,14 +111,18 @@ function CreateHashBody(body,Num,Nonce)
 
 window.SetBlockChainConstant=function(Data)
 {
-    window.DELTA_CURRENT_TIME=Data.DELTA_CURRENT_TIME;
-    if(!window.DELTA_CURRENT_TIME)
-        window.DELTA_CURRENT_TIME=0;
+    var DeltaServerClient=new Date()-Data.CurTime;
+    if(!Data.DELTA_CURRENT_TIME)
+        Data.DELTA_CURRENT_TIME=0;
+    window.DELTA_CURRENT_TIME2=Data.DELTA_CURRENT_TIME-DeltaServerClient;
+
+
+
     window.FIRST_TIME_BLOCK=Data.FIRST_TIME_BLOCK;
     window.CONSENSUS_PERIOD_TIME=Data.CONSENSUS_PERIOD_TIME;
     window.GetCurrentBlockNumByTime=function()
     {
-        var Time=(new Date)-(-DELTA_CURRENT_TIME);
+        var Time=(new Date)-(-DELTA_CURRENT_TIME2);
         var CurTimeNum=Time-FIRST_TIME_BLOCK-CONSENSUS_PERIOD_TIME/2;
         var StartBlockNum=Math.floor((CurTimeNum+CONSENSUS_PERIOD_TIME)/CONSENSUS_PERIOD_TIME);
         return StartBlockNum;

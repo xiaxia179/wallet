@@ -263,6 +263,7 @@ HTTPCaller.GetWalletInfo=function ()
             RelayMode:SERVER.RelayMode,
             BlockNumDB:SERVER.BlockNumDB,
             CurBlockNum:GetCurrentBlockNumByTime(),
+            CurTime:(new Date())-0,
             IsDevelopAccount:(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)===0),
 
             MiningAccount:global.GENERATE_BLOCK_ACCOUNT,
