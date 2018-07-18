@@ -1597,3 +1597,37 @@ global.GetCurrentBlockNumByTime=function GetCurrentBlockNumByTime()
     return StartBlockNum;
 }
 
+global.TestCreateTr=TestCreateTr;
+function TestCreateTr()
+{
+    const FORMAT_CREATE=
+        "{\
+        Type:byte,\
+        Currency:uint,\
+        PubKey:arr33,\
+        Description:str40,\
+        RefID:uint,\
+        Reserve:arr7,\
+        POWCreate:arr12,\
+        }";//1+6+33+40+6+7=93
+
+
+    var TR=
+        {
+            Type:100,
+            Currency:0,
+            PubKey:[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            Description:"Description",
+            RefID:4,
+        };
+    var Body=BufLib.GetBufferFromObject(TR,FORMAT_CREATE,1000,{});
+    var startTime = process.hrtime();
+    var nonce=CreateHashBodyPOWInnerMinPower(Body,1000,17);
+    var Time = process.hrtime(startTime);
+
+    var power=GetPowPower(shaarr(Body));
+    var deltaTime=(Time[0]*1000 + Time[1]/1e6)/1000;//s
+    ToLog("power="+power+"  nonce="+nonce+" TIME="+deltaTime+" sec")
+    //return {body:Body};
+    return deltaTime;
+}

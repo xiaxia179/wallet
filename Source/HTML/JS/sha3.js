@@ -46,13 +46,15 @@
     '256': 136
   };
 
-  if (root.JS_SHA3_NO_NODE_JS || !Array.isArray) {
+  if (root.JS_SHA3_NO_NODE_JS || !Array.isArray)
+  {
     Array.isArray = function (obj) {
       return Object.prototype.toString.call(obj) === '[object Array]';
     };
   }
 
-  var createOutputMethod = function (bits, padding, outputType) {
+  var createOutputMethod = function (bits, padding, outputType)
+  {
     return function (message) {
       return new Keccak(bits, padding, bits).update(message)[outputType]();
     };
@@ -160,7 +162,8 @@
 
   var methods = {}, methodNames = [];
 
-  for (var i = 0; i < algorithms.length; ++i) {
+  for (var i = 0; i < algorithms.length; ++i)
+  {
     var algorithm = algorithms[i];
     var bits  = algorithm.bits;
     for (var j = 0; j < bits.length; ++j) {
@@ -175,7 +178,8 @@
     }
   }
 
-  function Keccak(bits, padding, outputBits) {
+  function Keccak(bits, padding, outputBits)
+  {
     this.blocks = [];
     this.s = [];
     this.padding = padding;
@@ -193,7 +197,8 @@
     }
   }
 
-  Keccak.prototype.update = function (message) {
+  Keccak.prototype.update = function (message)
+  {
     var notString = typeof message !== 'string';
     if (notString && message.constructor === root.ArrayBuffer)
     {
@@ -264,7 +269,8 @@
     return this;
   };
 
-  Keccak.prototype.encode = function (x, right) {
+  Keccak.prototype.encode = function (x, right)
+  {
     var o = x & 255, n = 1;
     var bytes = [o];
     x = x >> 8;
@@ -284,7 +290,8 @@
     return bytes.length;
   };
 
-  Keccak.prototype.encodeString = function (str) {
+  Keccak.prototype.encodeString = function (str)
+  {
     str = str || '';
     var notString = typeof str !== 'string';
     if (notString && str.constructor === root.ArrayBuffer) {
@@ -324,7 +331,8 @@
     return bytes;
   };
 
-  Keccak.prototype.bytepad = function (strs, w) {
+  Keccak.prototype.bytepad = function (strs, w)
+  {
     var bytes = this.encode(w);
     for (var i = 0;i < strs.length;++i) {
       bytes += this.encodeString(strs[i]);
@@ -336,23 +344,28 @@
     return this;
   };
 
-  Keccak.prototype.finalize = function () {
+  Keccak.prototype.finalize = function ()
+  {
     var blocks = this.blocks, i = this.lastByteIndex, blockCount = this.blockCount, s = this.s;
     blocks[i >> 2] |= this.padding[i & 3];
-    if (this.lastByteIndex === this.byteCount) {
+    if (this.lastByteIndex === this.byteCount)
+    {
       blocks[0] = blocks[blockCount];
-      for (i = 1; i < blockCount + 1; ++i) {
+      for (i = 1; i < blockCount + 1; ++i)
+      {
         blocks[i] = 0;
       }
     }
     blocks[blockCount - 1] |= 0x80000000;
-    for (i = 0; i < blockCount; ++i) {
+    for (i = 0; i < blockCount; ++i)
+    {
       s[i] ^= blocks[i];
     }
     f(s);
   };
 
-  Keccak.prototype.toString = Keccak.prototype.hex = function () {
+  Keccak.prototype.toString = Keccak.prototype.hex = function ()
+  {
     this.finalize();
 
     var blockCount = this.blockCount, s = this.s, outputBlocks = this.outputBlocks,
@@ -416,7 +429,8 @@
 
   Keccak.prototype.buffer = Keccak.prototype.arrayBuffer;
 
-  Keccak.prototype.digest = Keccak.prototype.array = function () {
+  Keccak.prototype.digest = Keccak.prototype.array = function ()
+  {
     this.finalize();
 
     var blockCount = this.blockCount, s = this.s, outputBlocks = this.outputBlocks,
@@ -451,18 +465,21 @@
     return array;
   };
 
-  function Kmac(bits, padding, outputBits) {
+  function Kmac(bits, padding, outputBits)
+  {
     Keccak.call(this, bits, padding, outputBits);
   }
 
   Kmac.prototype = new Keccak();
 
-  Kmac.prototype.finalize = function () {
+  Kmac.prototype.finalize = function ()
+  {
     this.encode(this.outputBits, true);
     return Keccak.prototype.finalize.call(this);
   };
 
-  var f = function (s) {
+  var f = function (s)
+  {
     var h, l, n, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9,
         b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17,
         b18, b19, b20, b21, b22, b23, b24, b25, b26, b27, b28, b29, b30, b31, b32, b33,
@@ -685,12 +702,10 @@
 
 })();
 
-//TER PROJECT
+//TERA PROJECT
 
 function meshhash(hash)
 {
-    //return hash;
-
     var regs=[hash[3],hash[2],hash[1],hash[0]];
     var mem=[];
     for(var i=0;i<16;i++)
@@ -770,13 +785,6 @@ function meshhash(hash)
     return shaarr_original(ret);
 }
 
-// if(typeof global==="object")
-// {
-//     global.CalcStat=0;
-//     global.CompareArrCount1=0;
-//     global.CompareArrCount2=0;
-//     global.CompareArrCountStat=0;
-// }
 
 
 function TestSpeed(name,F)

@@ -997,7 +997,13 @@ function CopyBlockDraw(Block,MainChains)
     if(Block.AddrHash)
     {
         Block.AddrHash.len=0;
-        MinerID=ReadUintFromArr(Block.AddrHash);
+        var Num=ReadUintFromArr(Block.AddrHash);
+        var Item=DApps.Accounts.ReadState(Num);
+        if(Item && Item.Description)
+            MinerID=Item.Description.substr(0,8);
+        else
+            MinerID=Num;
+
     }
 
     GetGUID(Block);
