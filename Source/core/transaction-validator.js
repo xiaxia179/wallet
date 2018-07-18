@@ -194,7 +194,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
     {
         if(StartNum===undefined)
             return;
-        if(EndNum===undefined)
+        if(!EndNum)
             EndNum=this.BlockNumDB;
 
         var startTime = process.hrtime();
@@ -216,6 +216,9 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
     AddDAppTransactions(BlockNum,Arr)
     {
+        if(BlockNum<1500000)
+            return;
+
         var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
         if(BlockNumHash<0)
             BlockNumHash=0;

@@ -732,11 +732,14 @@
             return;
         }
 
+        var EndNum=ParseNum(document.getElementById("idBlockNumEnd").value);
+        if(!EndNum)
+            EndNum=MaxBlockNum;
 
         SetVisibleBlock("idServerBlock",1);
-        SetStatus("Start rewrite transactions from: "+BlockNum);
+        SetStatus("Start rewrite transactions from: "+BlockNum+" to: "+EndNum);
 
-        GetData("/RewriteTransactions",BlockNum, function (Data)
+        GetData("/RewriteTransactions",{StartNum:BlockNum,EndNum:EndNum}, function (Data)
         {
             if(Data && Data.result)
             {
@@ -2142,7 +2145,7 @@
         <HR>
         <DIV id="view_header" >UTILITES<BR></DIV>
 
-        Operation with Block number:<INPUT type="number" id="idBlockNum" value="0"><BR>
+        Operation with Block number:<INPUT type="number" id="idBlockNum" value="0"> - <INPUT type="number" id="idBlockNumEnd" value="0"><BR>
         <INPUT type="button" onclick="RewriteTransactions()"  class="bt btdoit btlong" value="Rewrite Transactions">
         <INPUT type="button" onclick="CheckBlocks()"  class="bt btdoit btlong" value="Check Blocks">
         <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit btlong bt" value="Truncate chain <!>">

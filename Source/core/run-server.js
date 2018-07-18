@@ -35,7 +35,7 @@ var FindList=LoadParams(GetDataPath("finds-server.lst"),undefined);
 if(!FindList)
 {
     FindList=[{"ip":"194.1.237.94","port":30000},{"ip":"91.235.136.81","port":30002}];
-    FindList.push({"ip":"18.218.103.82","port":30000});
+    //FindList.push({"ip":"18.218.103.82","port":30000});
     SaveParams(GetDataPath("finds-server.lst"),FindList);
 }
 
@@ -316,13 +316,13 @@ function RunOnUpdate()
             //DO UPDATE
             //----------------------------------------------------------------------------------------------------------
 
-            if(SERVER.BlockNumDB>=BLOCK_PROCESSING_LENGTH2 && SERVER.BlockNumDB<1000000)
+            if(SERVER.BlockNumDB>=BLOCK_PROCESSING_LENGTH2 && SERVER.BlockNumDB<1500000)
             {
-                var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
-                var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
-                if(AccountsHash && IsZeroArr(AccountsHash))
+                // var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
+                // var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
+                // if(AccountsHash && IsZeroArr(AccountsHash))
                 {
-                    if(CurNum<=31)
+                    if(CurNum<=41)
                         SERVER.ReWriteDAppTransactions(0);
                 }
             }

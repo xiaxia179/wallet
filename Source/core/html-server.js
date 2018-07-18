@@ -585,12 +585,10 @@ HTTPCaller.ClearStat=function (flag)
 }
 
 
-HTTPCaller.RewriteTransactions=function (StartNum)
+HTTPCaller.RewriteTransactions=function (Param)
 {
-    if(!StartNum)
-        StartNum=0;
     global.SendLogToClient=1;
-    SERVER.ReWriteDAppTransactions(StartNum);
+    SERVER.ReWriteDAppTransactions(Param.StartNum,Param.EndNum);
     global.SendLogToClient=0;
     return {result:1,sessionid:sessionid};
 }

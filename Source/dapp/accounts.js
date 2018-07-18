@@ -19,7 +19,7 @@ const TYPE_TRANSACTION_CREATE=100;
 //const TYPE_TRANSACTION_CHANGE=102;
 const TYPE_TRANSACTION_TRANSFER=105;
 const TYPE_TRANSACTION_TRANSFER2=110;
-global.TYPE_TRANSACTION_ACC_HASH=115;
+global.TYPE_TRANSACTION_ACC_HASH=116;
 
 global.FORMAT_CREATE=
     "{\
@@ -249,8 +249,10 @@ class AccountApp extends require("./dapp")
                 if(!Result)
                 {
                     var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
-                    ToLog("2 *************************************** FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash+ " DO BLOCK="+BlockNum);
-                    SERVER.SetTruncateBlockDB(BlockNum-1);
+                    ToLog("****FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash+ " DO BLOCK="+BlockNum);
+                    //SERVER.SetTruncateBlockDB(BlockNum-1);
+                    SERVER.SetTruncateBlockDB(BlockNumHash-1);
+
                 }
 
                 break;

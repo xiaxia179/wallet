@@ -558,12 +558,19 @@ global.GetCurrentTime=function(Delta_Time)
 }
 
 
-function CopyObjValue(obj)
+function CopyObjValue(obj,num)
 {
+    if(num && num>5)
+        return obj;
+
     var ret={};
     for(var key in obj)
     {
-        ret[key]=obj[key];
+        var val=obj[key];
+        if((typeof val === "object") && !(val instanceof Buffer) && !(val instanceof ArrayBuffer) && !(val instanceof Array))
+            val=CopyObjValue(val,num+1);
+
+        ret[key]=val;
     }
     return ret;
 }

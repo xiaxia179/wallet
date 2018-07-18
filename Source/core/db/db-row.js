@@ -94,7 +94,7 @@ module.exports = class CDBState extends require("./db")
         {
             var Item=this.BufMap[Num];
             if(Item)
-                return Item;
+                return CopyObjValue(Item);
         }
 
 
