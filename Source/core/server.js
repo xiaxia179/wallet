@@ -36,21 +36,6 @@ const BUF_PACKET_SIZE=16*1024;
 
 global.USE_TCP=1;
 global.MAX_PACKET_LENGTH=1.5*1000000;//1Mb
-// global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint}";
-// global.FORMAT_POW_TO_SERVER=
-// "{\
-//     DEF_NETWORK:str15,\
-//     DEF_VERSION:str9,\
-//     DEF_CLIENT:str16, \
-//     addrArr:addres, \
-//     ToIP:str26,\
-//     ToPort:uint16, \
-//     FromIP:str26,\
-//     FromPort:uint16, \
-//     nonce:uint,\
-//     Reconnect:byte,\
-//     SendBytes:uint\
-// }";
 
 global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint,Reserve:arr100}";
 global.FORMAT_POW_TO_SERVER=
@@ -68,9 +53,6 @@ global.FORMAT_POW_TO_SERVER=
         SendBytes:uint,\
         Reserve:arr100\
     }";
-
-
-
 
 const WorkStructPacketSend={};
 const FORMAT_PACKET_SEND_TCP=

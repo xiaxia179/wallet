@@ -253,12 +253,22 @@ HTTPCaller.GetHistoryAct=function (num,count,Direct)
 
 HTTPCaller.GetWalletInfo=function ()
 {
+
+    var Constants={};
+    for(var i=0;i<global.CONST_NAME_ARR.length;i++)
+    {
+        var key=global.CONST_NAME_ARR[i];
+        Constants[key]=global[key];
+    }
+
+
     var Ret=
         {
             result:1,
 
             WalletOpen:WALLET.WalletOpen,
 
+            CODE_VERSION:CODE_VERSION,
             VersionNum:Math.max(CODE_VERSION.VersionNum,global.UPDATE_CODE_VERSION_NUM),
             RelayMode:SERVER.RelayMode,
             BlockNumDB:SERVER.BlockNumDB,
@@ -294,6 +304,8 @@ HTTPCaller.GetWalletInfo=function ()
 
             HTTPPort:global.HTTP_PORT_NUMBER,
             HTTPPassword:HTTP_PORT_PASSWORD,
+
+            CONSTANTS:Constants,
 
 };
 
@@ -469,7 +481,7 @@ HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
     return {result:1,text:"Set check point on BlockNum="+BlockNum};
 }
 
-HTTPCaller.SetNewCodeVersion=function (Num,Param2,Param3)
+HTTPCaller.SetNewCodeVersion=function (Data)
 {
     if(WALLET.WalletOpen===false)
     {
@@ -484,9 +496,7 @@ HTTPCaller.SetNewCodeVersion=function (Num,Param2,Param3)
     }
 
 
-    Num=parseInt(Num);
-
-    var Ret=SERVER.SetNewCodeVersion(Num,WALLET.KeyPair.getPrivateKey(''));
+    var Ret=SERVER.SetNewCodeVersion(Data,WALLET.KeyPair.getPrivateKey(''));
     return {result:1,text:Ret};
 }
 
@@ -519,7 +529,19 @@ HTTPCaller.SetCheckDeltaTime=function (Data)
     return {result:1,text:"Set check time Num="+Data.Num};
 }
 
+HTTPCaller.SaveConstant=function (SetObj)
+{
+    for(var key in SetObj)
+    {
+        global[key]=SetObj[key];
+    }
+    SAVE_CONST(true);
 
+    if(SetObj.RestartNode)
+        RestartNode();
+
+    return {result:1};
+}
 
 HTTPCaller.SetHTTPParams=function (SetObj)
 {
@@ -1397,9 +1419,11 @@ if(global.ELECTRON)
 }
 exports.SendData = OnGetData;
 
-function RunConsole()
+function RunConsole(StrRun)
 {
     var Str = fs.readFileSync("./EXPERIMENTAL/!run-console.js",{encoding : "utf8"});
+    if(StrRun)
+        Str+="\n"+StrRun;
 
     try
     {

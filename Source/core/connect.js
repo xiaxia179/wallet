@@ -15,7 +15,10 @@ global.PERIOD_FOR_RECONNECT=3600*1000;//ms
 
 global.CHECK_DELTA_TIME={Num:0,bUse:0,StartBlockNum:0,EndBlockNum:0,bAddTime:0,DeltaTime:0,Sign:[]};
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
-global.CODE_VERSION={VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
+global.CODE_VERSION={BlockNum:0,addrArr:[],LevelUpdate:0,BlockPeriod:0, VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
+
+
+
 
 const MAX_PERIOD_GETNODES=60*1000;
 
@@ -216,6 +219,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 AccountsHash:AccountsHash,
                 MemoryUsage:Math.trunc(process.memoryUsage().heapTotal/1024/1024),
                 CheckDeltaTime:CHECK_DELTA_TIME,
+                CodeVersion2:CODE_VERSION,
                 Reserve:[],
             };
 
@@ -240,6 +244,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             AccountsHash:hash,\
             MemoryUsage:uint,\
             CheckDeltaTime:{Num:uint,bUse:byte,StartBlockNum:uint,EndBlockNum:uint,bAddTime:byte,DeltaTime:uint,Sign:arr64},\
+            CodeVersion2:{BlockNum:uint,addrArr:arr32,LevelUpdate:byte,BlockPeriod:uint,VersionNum:uint,Hash:hash,Sign:arr64},\
             Reserve:arr40,\
             }";
     }
@@ -327,36 +332,51 @@ module.exports = class CConnect extends require("./transfer-msg")
             CODE_VERSION.StartLoadVersionNum=0;
 
 
-        if(!IsZeroArr(Data.CodeVersion.Hash)
-            && (Data.CodeVersion.VersionNum>CODE_VERSION.VersionNum && Data.CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum
-                || Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
+        //{BlockNum:0,addrArr:[],LevelUpdate:0,BlockPeriod:0, VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
+
+        var CodeVersion=Data.CodeVersion2;
+        if(CodeVersion.BlockNum && CodeVersion.BlockNum<=GetCurrentBlockNumByTime() && CodeVersion.BlockNum > CODE_VERSION.BlockNum
+            && !IsZeroArr(CodeVersion.Hash)
+            && (CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum
+                || CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
         {
 
-            var SignArr=arr2(Data.CodeVersion.Hash,GetArrFromValue(Data.CodeVersion.VersionNum));
-            if(CheckDevelopSign(SignArr,Data.CodeVersion.Sign))
+            var Level=AddrLevelArr(this.addrArr,CodeVersion.addrArr);
+            if(CodeVersion.BlockPeriod)
             {
-                ToLog("Get new CodeVersion = "+Data.CodeVersion.VersionNum+" HASH:"+GetHexFromArr(Data.CodeVersion.Hash));
+                var Delta=GetCurrentBlockNumByTime()-CodeVersion.BlockNum;
+                Level+=Delta/CodeVersion.BlockPeriod;
+            }
 
-                if(Data.CodeVersion.VersionNum>CODE_VERSION.VersionNum && Data.CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+            if(Level>=CodeVersion.LevelUpdate)
+            {
+                var SignArr=arr2(CodeVersion.Hash,GetArrFromValue(CodeVersion.VersionNum));
+                if(CheckDevelopSign(SignArr,CodeVersion.Sign))
                 {
-                    this.StartLoadCode(Node,Data.CodeVersion);
+                    ToLog("Get new CodeVersion = "+CodeVersion.VersionNum+" HASH:"+GetHexFromArr(CodeVersion.Hash));
+
+                    if(CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+                    {
+                        this.StartLoadCode(Node,CodeVersion);
+                    }
+                    else
+                    if(CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash))//was restart
+                    {
+                        CODE_VERSION=CodeVersion;
+                    }
                 }
                 else
-                if(Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash))//was restart
                 {
-                    CODE_VERSION=Data.CodeVersion;
+                    ToLog("Error Sign CodeVersion="+CodeVersion.VersionNum+" from "+NodeInfo(Node)+" HASH:"+GetHexFromArr(CodeVersion.Hash));
+                    ToLog(JSON.stringify(CodeVersion));
+                    this.AddCheckErrCount(Node,1,"Error Sign CodeVersion");
+                    Node.NextConnectDelta=60*1000;
                 }
-            }
-            else
-            {
-                ToLog("Error Sign CodeVersion="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node)+" HASH:"+GetHexFromArr(Data.CodeVersion.Hash));
-                ToLog(JSON.stringify(Data.CodeVersion));
-                this.AddCheckErrCount(Node,1,"Error Sign CodeVersion");
-                Node.NextConnectDelta=60*1000;
             }
         }
 
-        if(Data.CodeVersion.VersionNum===CODE_VERSION.VersionNum && !Data.LoadHistoryMode)
+        //if(CodeVersion.VersionNum===CODE_VERSION.VersionNum && !Data.LoadHistoryMode)
+        if(CodeVersion.VersionNum>=MIN_CODE_VERSION_NUM && !Data.LoadHistoryMode)
         {
             Node.CanHot=true;
 
@@ -370,9 +390,9 @@ module.exports = class CConnect extends require("./transfer-msg")
         else
         {
             Node.CanHot=false;
-            if(Data.CodeVersion.VersionNum<CODE_VERSION.VersionNum)
+            if(CodeVersion.VersionNum<CODE_VERSION.VersionNum)
             {
-                ToLog("ERR VersionNum="+Data.CodeVersion.VersionNum+" from "+NodeInfo(Node));
+                ToLog("ERR VersionNum="+CodeVersion.VersionNum+" from "+NodeInfo(Node));
                 Node.NextConnectDelta=60*1000;
             }
         }
@@ -795,7 +815,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(Node.GrayConnect)
             return MAX_LEVEL_SPECIALIZATION-1;//TODO с учетом номера серого соединения
 
-        return AddrLevelArr(this.addrArr,Node.addrArr);;
+        return AddrLevelArr(this.addrArr,Node.addrArr);
     }
 
     ADDLEVELCONNECT(Info,CurTime)

@@ -1,17 +1,17 @@
 //Copyright: Yuriy Ivanov, 2017 e-mail: progr76@gmail.com
-//Use:
-//require("./library.js");
 
-// var a="001"
-// var b="002"
-// if(a<b)
-//     console.log("-1");
-// else
-// if(a>b)
-//     console.log("+1");
-// else
-//     console.log(" 0")
-// return;
+global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
+    "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD","WALLET_NAME"];
+global.DELTA_CURRENT_TIME=0;
+global.SERVER_PRIVATE_KEY_HEX=undefined;
+global.NET_WORK_MODE=undefined;
+global.STAT_MODE=0;
+global.UPDATE_NUM_COMPLETE=0;
+global.WALLET_NAME="TERA";
+
+
+
+
 
 var fs = require('fs');
 require("./constant.js");
@@ -439,25 +439,15 @@ global.CompareItemTimePow=function(a,b)
 
 
 
-var const_name_arr=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
-    "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD"];
-
-
-global.DELTA_CURRENT_TIME=0;
-global.SERVER_PRIVATE_KEY_HEX=undefined;
-global.NET_WORK_MODE=undefined;
-global.STAT_MODE=0;
-global.UPDATE_NUM_COMPLETE=0;
-
 
 global.LOAD_CONST=function ()
 {
     var Count=0;
     var constants=LoadParams(GetDataPath("const.lst"),{});
     if(constants)
-    for(var i=0;i<const_name_arr.length;i++)
+    for(var i=0;i<CONST_NAME_ARR.length;i++)
     {
-        var key=const_name_arr[i];
+        var key=CONST_NAME_ARR[i];
         if(constants[key]!==undefined)
         {
             Count++;
@@ -472,9 +462,9 @@ var WasStartSaveConst=false;
 function SaveConst()
 {
     var constants={};
-    for(var i=0;i<const_name_arr.length;i++)
+    for(var i=0;i<CONST_NAME_ARR.length;i++)
     {
-        var key=const_name_arr[i];
+        var key=CONST_NAME_ARR[i];
         if(global[key]!==undefined)
             constants[key]=global[key];
     }

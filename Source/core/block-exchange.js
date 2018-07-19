@@ -457,7 +457,7 @@ module.exports = class CConsensus extends require("./block-loader")
                 if(DeltaTime>Transfer.MustDeltaTime)
                 {
                     bNext=true;
-                    Block.ErrRun=""+Transfer.LocalLevel+"t "+Block.ErrRun;
+                    Block.ErrRun=""+Transfer.LocalLevel+" "+Block.ErrRun;
 
                     ADD_TO_STAT("TimeOutLevel");
                 }
@@ -1152,41 +1152,28 @@ module.exports = class CConsensus extends require("./block-loader")
         var Str="";
         for(var b=start;b<=finish;b++)
         {
-            var hashStr;
+            var hashStr="";
             var Block=this.GetBlock(b);
-            // if(Block && !Block.Active)
-            //     continue;
             if(Block && Block.ErrRun)
             {
-                hashStr=Block.ErrRun.substr(0,4);
-                if(!hashStr)
+                if(Block.ErrRun)
+                    hashStr=Block.ErrRun.substr(0,5);
+                else
                 if(Block && Block.TreeHash)
-                    hashStr="-"+GetHexFromAddres(Block.TreeHash).substr(0,2)+"-";
+                    hashStr="-"+GetHexFromAddres(Block.TreeHash).substr(0,3)+"-";
             }
             else
             if(Block && Block.TreeHash)
             {
-                hashStr=GetHexFromAddres(Block.TreeHash).substr(0,4);
-                //hashStr=hashStr+"-"+GetHexFromAddres(Block.MaxTreeHash).substr(0,4);
-                //hashStr=Block.BlockNum.toStringZ(4)+"="+hashStr;
-            }
-            else
-            {
-                hashStr="    ";
-                //hashStr="     "+hashStr;
+                hashStr=GetHexFromAddres(Block.TreeHash).substr(0,5);
             }
 
-            Str=Str+":"+hashStr;
+            Str=Str+"|"+(hashStr+"     ").substr(0,5);
         }
         Str=Str.substr(1);
 
 
-        //var FF=""+this.BlockBufer.CalcMaxPosCluster()+"/"+this.BlockBufer.CountDoubleValue+"/"+this.BlockBufer.CalcPosItem()+":"+this.BlockBufer.FF();
-        //var FF=""+this.BlockBufer.FF();
-        var FF="";
-
-
-        ToInfo(""+FF+" "+finish+" -> "+Str+" "+DopStr);
+        ToInfo(""+finish+" -> "+Str+" "+DopStr);
 
     }
 
@@ -1589,9 +1576,6 @@ module.exports = class CConsensus extends require("./block-loader")
 
 global.GetCurrentBlockNumByTime=function GetCurrentBlockNumByTime()
 {
-    // if(!CAN_START)
-    //     return 0;
-
     var CurTimeNum=GetCurrentTime()-FIRST_TIME_BLOCK-CONSENSUS_PERIOD_TIME/2;
     var StartBlockNum=Math.floor((CurTimeNum+CONSENSUS_PERIOD_TIME)/CONSENSUS_PERIOD_TIME);
     return StartBlockNum;
@@ -1631,3 +1615,7 @@ function TestCreateTr()
     //return {body:Body};
     return deltaTime;
 }
+
+
+
+

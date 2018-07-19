@@ -263,7 +263,7 @@ function RunServer(bVirtual)
                 break;
         }
 
-        global.SERVER_PRIVATE_KEY_HEX=GetHexFromArr(crypto.randomBytes(32));
+        global.SERVER_PRIVATE_KEY_HEX=GetHexFromArr(Arr);
         SAVE_CONST(true);
     }
     KeyPair.setPrivateKey(Buffer.from(GetArrFromHex(global.SERVER_PRIVATE_KEY_HEX)));

@@ -33,8 +33,7 @@
 
 
 <script>
-    var HTTPPort;
-    var HTTPPassword;
+    var CONFIG_DATA={};
     var ServerBlockNumDB=0;
     var ServerVersionNum=0;
     var ServerCurBlockNum=0;
@@ -51,7 +50,7 @@
     var MapCheckTransaction={};
     var MapSendTransaction={};
 
-    var NET_WORK_MODE;
+
     var INTERNET_IP_FROM_STUN;
     var SERVER_IP;
     var SERVER_PORT;
@@ -954,13 +953,18 @@
         if(!Data || !Data.result)
             return;
 
+        CONFIG_DATA=Data;
         ServerVersionNum=Data.VersionNum;
         ServerBlockNumDB=Data.BlockNumDB;
         ServerCurBlockNum=Data.CurBlockNum;
         ServerTime=Data.CurTime;
         var DeltaTime=Data.DELTA_CURRENT_TIME/1000;
 
-        document.title="TERA 1."+ServerVersionNum;
+        var Name="TERA";
+        if(CONFIG_DATA.CONSTANTS.WALLET_NAME)
+            Name=CONFIG_DATA.CONSTANTS.WALLET_NAME;
+        document.title=Name+" v"+ServerVersionNum+"";
+
         SetBlockChainConstant(Data);
         MaxBlockNum=GetCurrentBlockNumByTime();
 
@@ -1013,8 +1017,7 @@
         var Str="Saved block: <B>"+Data.BlockNumDB+"</B>  Current block: <B>"+Data.CurBlockNum+"</B> Time delta:<B>"+DeltaTime+" sec</B>";
         document.getElementById("idCurrentBlockNum").innerHTML=Str;
 
-        HTTPPort=Data.HTTPPort;
-        HTTPPassword=Data.HTTPPassword;
+
 
 
 
@@ -1037,7 +1040,7 @@
             SetStatus("<H1 align='center' style='color:blue'>Wallet updating complete. Please restart program.</H1>");
         }
 
-        NET_WORK_MODE=Data.NET_WORK_MODE;
+
         INTERNET_IP_FROM_STUN=Data.INTERNET_IP_FROM_STUN;
         SERVER_IP=Data.ip;
         SERVER_PORT=Data.port;
@@ -1098,23 +1101,25 @@
         {
             SetVisibleBlock('idNetworkView',true);
 
-            if(!NET_WORK_MODE)
+            var Mode=CONFIG_DATA.CONSTANTS.NET_WORK_MODE;
+            if(!Mode)//default:
             {
-                //default:
-                NET_WORK_MODE={};
-                NET_WORK_MODE.UseDirectIP=true;
-                INTERNET_IP_FROM_STUN
+                Mode={};
+                Mode.UseDirectIP=true;
+
                 if(INTERNET_IP_FROM_STUN)
-                    NET_WORK_MODE.ip=INTERNET_IP_FROM_STUN;
+                    Mode.ip=INTERNET_IP_FROM_STUN;
                 else
-                    NET_WORK_MODE.ip=SERVER_IP;
-                NET_WORK_MODE.port=SERVER_PORT;
+                    Mode.ip=SERVER_IP;
+                Mode.port=SERVER_PORT;
             }
 
 
-            document.getElementById("idUseDirectIP").checked=NET_WORK_MODE.UseDirectIP;
-            document.getElementById("idIP").value=NET_WORK_MODE.ip;
-            document.getElementById("idPort").value=NET_WORK_MODE.port;
+            document.getElementById("idUseDirectIP").checked=Mode.UseDirectIP;
+            document.getElementById("idIP").value=Mode.ip;
+            document.getElementById("idPort").value=Mode.port;
+            document.getElementById("idNodeWhiteList").value=Mode.NodeWhiteList;
+
         }
     }
 
@@ -1122,23 +1127,63 @@
     function SetNetworkParams(bRestart)
     {
 
-        NET_WORK_MODE={};
-        NET_WORK_MODE.UseDirectIP=document.getElementById("idUseDirectIP").checked;
-        NET_WORK_MODE.ip=document.getElementById("idIP").value;
-        NET_WORK_MODE.port=ParseNum(document.getElementById("idPort").value);
-        //NET_WORK_MODE.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
-        NET_WORK_MODE.NodeWhiteList=document.getElementById("idNodeWhiteList").value;
+        var Mode={};
+        Mode.UseDirectIP=document.getElementById("idUseDirectIP").checked;
+        Mode.ip=document.getElementById("idIP").value;
+        Mode.port=ParseNum(document.getElementById("idPort").value);
+        //Mode.UseIncomeGrayIP=document.getElementById("idUseIncomeGrayIP").checked;
+        Mode.NodeWhiteList=document.getElementById("idNodeWhiteList").value;
 
 
-        NET_WORK_MODE.RestartNode=bRestart;
+        Mode.RestartNode=bRestart;
 
-        GetData("/SetNetMode",NET_WORK_MODE, function (Data)
+        GetData("/SetNetMode",Mode, function (Data)
         {
-            SetStatus("Set net work params OK");
+            if(Data && Data.result)
+            {
+                SetStatus("Set net work params OK");
+                SetVisibleBlock('idNetworkView',false);
+            }
         });
 
     }
 
+    //CONSTANT
+    function ViewConstant()
+    {
+        if(IsVisibleBlock('idConstantView'))
+        {
+            SetVisibleBlock('idConstantView',false);
+        }
+        else
+        {
+            SetVisibleBlock('idConstantView',true);
+            document.getElementById("idConstant").value=JSON.stringify(CONFIG_DATA.CONSTANTS,"",2);
+        }
+    }
+    function SaveConstant(bRestart)
+    {
+        try
+        {
+            var Data=JSON.parse(document.getElementById("idConstant").value);
+        }
+        catch (e)
+        {
+            SetError("Error JSON format setting constant");
+            return;
+        }
+
+        Data.RestartNode=bRestart;
+
+        GetData("/SaveConstant",Data, function (Data)
+        {
+            if(Data && Data.result)
+            {
+                SetStatus("Save Constant OK");
+                SetVisibleBlock('idConstantView',false);
+            }
+        });
+    }
 
 
     //REMOTE HTTP
@@ -1151,16 +1196,16 @@
         else
         {
             SetVisibleBlock('idRemoteView',true);
-            document.getElementById("idHTTPPort").value=HTTPPort;
-            document.getElementById("idHTTPPassword").value=HTTPPassword;
+            document.getElementById("idHTTPPort").value=CONFIG_DATA.HTTPPort;
+            document.getElementById("idHTTPPassword").value=CONFIG_DATA.HTTPPassword;
 
         }
     }
     function SetRemoteParams(bRestart)
     {
         var PrevHTTPPassword=HTTPPassword;
-        HTTPPort=ParseNum(document.getElementById("idHTTPPort").value);
-        HTTPPassword=document.getElementById("idHTTPPassword").value;
+        var HTTPPort=ParseNum(document.getElementById("idHTTPPort").value);
+        var HTTPPassword=document.getElementById("idHTTPPassword").value;
 
         GetData("/SetHTTPParams",{HTTPPort:HTTPPort,HTTPPassword:HTTPPassword,RestartNode:bRestart}, function (Data)
         {
@@ -1511,16 +1556,35 @@
             }
         });
     }
+
+    function SetCodeVersion()
+    {
+        var Data=JSON.parse(JSON.stringify(CONFIG_DATA.CODE_VERSION));
+        Data.VersionNum++;
+        Data.BlockNum=CONFIG_DATA.CurBlockNum;
+        Data.addrArr=GetHexFromArr(Data.addrArr);
+        Data.Hash=GetHexFromArr(Data.Hash);
+        Data.Sign=GetHexFromArr(Data.Sign);
+
+        var Str=JSON.stringify(Data,"",2);
+        document.getElementById("idDevService").value=Str;
+
+    }
+
     function SetNewCodeVersion()
     {
-        var VersionNum=document.getElementById("idVersionNum").value;
-        if(VersionNum<ServerVersionNum)
+        try
         {
-            SetError("Version num must be more "+(ServerVersionNum-1));
+            var Data=JSON.parse(document.getElementById("idDevService").value);
+        }
+        catch (e)
+        {
+            SetError("Error format setting data");
             return;
         }
+        Data.addrArr=GetArrFromHex(Data.addrArr);
 
-        GetData("/SetNewCodeVersion/"+VersionNum,function (Data)
+        GetData("/SetNewCodeVersion",Data,function (Data)
         {
             if(Data && Data.result===1)
             {
@@ -1529,22 +1593,10 @@
         });
     }
 
-    function AutoSetCheckTime()
+    function SetCorrTime()
     {
-        var AutoDelta=parseInt(document.getElementById("idAutoSetDelta").value);
-        try
-        {
-            var Data=JSON.parse(document.getElementById("idCheckTimeData").value);
-            var Num=Data.Num;
-        }
-        catch (e)
-        {
-        }
-        if(!Num)
-            Num=0;
-        Num++;
-
-        Data={Num:Num,bUse:1,bAddTime:1};
+        var AutoDelta=parseInt(document.getElementById("idDevValue").value);
+        var Data={Num:CONFIG_DATA.CurBlockNum,bUse:1,bAddTime:1};
         if(AutoDelta<0)
         {
             AutoDelta=-AutoDelta;
@@ -1555,15 +1607,15 @@
         Data.EndBlockNum=Data.StartBlockNum+Math.trunc(AutoDelta/Data.DeltaTime);
 
         var Str=JSON.stringify(Data,"",2);
-        document.getElementById("idCheckTimeData").value=Str;
+        document.getElementById("idDevService").value=Str;
 
     }
 
-    function SetCheckDeltaTime()
+    function StartTimeCorrect()
     {
         try
         {
-            var Data=JSON.parse(document.getElementById("idCheckTimeData").value);
+            var Data=JSON.parse(document.getElementById("idDevService").value);
         }
         catch (e)
         {
@@ -1788,6 +1840,37 @@
 
 <DIV id="TabAccounts" style="display: block">
     <BR>
+
+
+    <DIV id="idDevelopService" style="display: none">
+        <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
+               class="btdoit bt" value="DEV SERVICE">
+        <DIV id="idDevelopServiceView" style="display: none">
+
+            <table>
+                <tr>
+                    <td style="width: 100px">
+                        <BR>
+                        <INPUT type="button" class="bt btdoit" onclick="SetCodeVersion()" value="CODE VERS>>"><BR>
+                        <INPUT type="button" class="bt btdoit" onclick="SetCorrTime()" value="DELTA TIME >>"><BR>
+
+                    </td>
+                    <td style="width: 500px">
+                        Value:<INPUT type="string" id="idDevValue" value="0"><BR>
+                        <TEXTAREA id="idDevService" rows="15" cols="90"> </TEXTAREA><BR>
+                    </td>
+                    <!--<td style="width: 100px">-->
+                    <!--</td>-->
+                </tr>
+            </table>
+            <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit  bt" value="CHECK POINT">
+            <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit  bt" value=">>NEW VERSION">
+            <INPUT type="button" onclick="StartTimeCorrect()" class="btdoit  bt" value=">>TIME CORR.">
+            <HR>
+        </DIV>
+    </DIV>
+
+
     <DIV id="idCurrentBlockNum"></DIV>
     Wallet data path: <B id="idDataPath"></B><BR>
     Public key: <B id="idPubKey"></B><BR>
@@ -1880,6 +1963,8 @@
            class="btdoit bt" value="NET CONNECT">
     <INPUT type="button" id="idDown" onclick="ViewRemoteParams();SetImg(this,'idRemoteView')"
            class="btdoit bt" value="HTTP ACCESS">
+    <INPUT type="button" id="idDown" onclick="ViewConstant();SetImg(this,'idConstantView')"
+           class="btdoit bt" value="CONSTANTS">
 
     <DIV id="idNetworkView" style="display: none">
         <H3>Network connections:</H3>
@@ -1914,6 +1999,16 @@
         <HR>
     </DIV>
 
+    <DIV id="idConstantView" style="display: none">
+        <H3>All constants:</H3>
+        <TEXTAREA id="idConstant" rows="20" cols="110"> </TEXTAREA><BR>
+        <BR>
+        <INPUT type="button" onclick="SaveConstant(0)" class="btdoit bt" value="Save">
+        <INPUT type="button" onclick="SaveConstant(1)" class="btdoit bt" value="Save and Restart">
+        <HR>
+    </DIV>
+
+
     Style:
     <select size="1" id="idSelStyle" onkeyup="SelectStyle();SaveValues()" onchange="SelectStyle();SaveValues()">
         <option value="styleBrown">Brown</option>
@@ -1921,22 +2016,6 @@
         <option value="styleGreen">Green</option>
     </select>
 
-    <DIV id="idDevelopService" style="display: none">
-        <H3>Developer service:</H3>
-        <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
-               class="btdoit bt" value="DEV SERVICE">
-        <DIV id="idDevelopServiceView" style="display: none">
-
-            <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit btlong bt" value="Create check point">
-            <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit btlong bt" value="Set new code version:">
-            <INPUT type="string" id="idVersionNum" maxlength="6" value="1"><BR>
-            <B>Time correct:</B><BR>
-            <INPUT type="button" class="bt"onclick="AutoSetCheckTime()" value="Auto set on, ms:"><INPUT type="number" id="idAutoSetDelta" value="0"><BR>
-            <TEXTAREA id="idCheckTimeData" rows="8" cols="40"> </TEXTAREA><BR>
-            <INPUT type="button" onclick="SetCheckDeltaTime()" class="btdoit btlong bt" value="START TOME CORRECT">
-            <HR>
-        </DIV>
-    </DIV>
 
 
 </DIV>

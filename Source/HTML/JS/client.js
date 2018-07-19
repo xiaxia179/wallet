@@ -169,8 +169,10 @@ function GetArrFromHex(Str)
 
 function GetHexFromArr(arr)
 {
-    var Str="";
+    if(!(arr instanceof Array))
+        arr=arr.data;
 
+    var Str="";
     for(var i=0;arr && i<arr.length;i++)
     {
         if(!arr[i])

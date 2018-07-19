@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=46;
-"update 46";
+global.UPDATE_CODE_VERSION_NUM=47;
+global.MIN_CODE_VERSION_NUM=47;
 
 require("./startlib.js");
 
@@ -82,10 +82,10 @@ global.DEF_MAJOR_VERSION="0001";//4
 
 InitParams();
 
-
+//global.LOCAL_RUN=1;
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=1531843650280;//((new Date)-0)-50*1000;
+    global.START_NETWORK_DATE=1532015389992//((new Date)-0)-50*1000;
     global.DELTA_BLOCK_ACCOUNT_HASH=16;
     global.TEST_TRANSACTION_GENERATE=0;
     global.MIN_POWER_POW_TR=0;

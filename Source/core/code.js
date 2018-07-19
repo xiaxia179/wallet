@@ -96,11 +96,13 @@ module.exports = class CCode extends require("./base")
 
     RETCODE(Info)
     {
+        //получение файла обновления
+
+
         var VersionNum=Info.Context.VersionNum;
-        if(!VersionNum)
+        if(!VersionNum || !CODE_VERSION.StartLoad)
             return;
 
-        //получение файла обновления
 
         //положить в спец. каталог
         var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");
@@ -126,36 +128,36 @@ module.exports = class CCode extends require("./base")
             }
         }
 
-        //распаковать
-        //установить флаг перезапуска приложения
-    }
+     }
 
     UseCode(VersionNum,bRestart)
     {
         if(bRestart)
         {
+            //распаковать
             UpdateCodeFiles(VersionNum);
         }
 
 
 
-        if(!CODE_VERSION.StartLoad)
-            return;
+        if(global.CODE_VERSION.StartLoad)
+        {
+            global.CODE_VERSION=CODE_VERSION.StartLoad;
+            // CODE_VERSION.VersionNum=CODE_VERSION.StartLoad.VersionNum;
+            // CODE_VERSION.Hash=CODE_VERSION.StartLoad.Hash;
+            // CODE_VERSION.Sign=CODE_VERSION.StartLoad.Sign;
 
-        CODE_VERSION.VersionNum=CODE_VERSION.StartLoad.VersionNum;
-        CODE_VERSION.Hash=CODE_VERSION.StartLoad.Hash;
-        CODE_VERSION.Sign=CODE_VERSION.StartLoad.Sign;
-
-        this.ClearLoadCode();
+            this.ClearLoadCode();
+        }
     }
 
-    SetNewCodeVersion(VersionNum,PrivateKey)
+    SetNewCodeVersion(Data,PrivateKey)
     {
 
         var fname=GetDataPath("ToUpdate/wallet.zip");
         if(fs.existsSync(fname))
         {
-            var fname2=GetDataPath("Update/wallet-"+VersionNum+".zip");
+            var fname2=GetDataPath("Update/wallet-"+Data.VersionNum+".zip");
             if(fs.existsSync(fname2))
             {
                 fs.unlinkSync(fname2);
@@ -169,13 +171,15 @@ module.exports = class CCode extends require("./base")
             fs.writeSync(file_handle, data,0,data.length);
             fs.closeSync(file_handle);
 
-            var SignArr=arr2(Hash,GetArrFromValue(VersionNum));
+            var SignArr=arr2(Hash,GetArrFromValue(Data.VersionNum));
             var Sign = secp256k1.sign(shabuf(SignArr), PrivateKey).signature;
-            global.CODE_VERSION={VersionNum:VersionNum,Hash:Hash,Sign:Sign};
+            global.CODE_VERSION=Data;
+            global.CODE_VERSION.Hash=Hash;
+            global.CODE_VERSION.Sign=Sign;
 
 
             //ToLog("SetNewCodeVersion="+VersionNum);
-            return "OK Set new code version="+VersionNum;
+            return "OK Set new code version="+Data.VersionNum;
         }
         else
         {
