@@ -134,7 +134,7 @@
     {
         var arr = new Uint8Array(32);
         window.crypto.getRandomValues(arr);
-        var Str=GetStrFromAddr(arr);
+        var Str=GetHexFromArr(arr);
 
         document.getElementById("idKeyNew").value=Str;
         SetVisibleEditKeys(1);
@@ -2000,7 +2000,7 @@
     </DIV>
 
     <DIV id="idConstantView" style="display: none">
-        <H3>All constants:</H3>
+        <H3>All constants (only for advanced users):</H3>
         <TEXTAREA id="idConstant" rows="20" cols="110"> </TEXTAREA><BR>
         <BR>
         <INPUT type="button" onclick="SaveConstant(0)" class="btdoit bt" value="Save">

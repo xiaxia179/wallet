@@ -169,7 +169,7 @@ function GetArrFromHex(Str)
 
 function GetHexFromArr(arr)
 {
-    if(!(arr instanceof Array))
+    if(!(arr instanceof Array) && arr.data)
         arr=arr.data;
 
     var Str="";
