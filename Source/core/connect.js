@@ -360,7 +360,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                         this.StartLoadCode(Node,CodeVersion);
                     }
                     else
-                    if(CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash))//was restart
+                    //if(CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash))//was restart
                     {
                         CODE_VERSION=CodeVersion;
                     }
@@ -390,7 +390,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         else
         {
             Node.CanHot=false;
-            if(CodeVersion.VersionNum<CODE_VERSION.VersionNum)
+            if(CodeVersion.VersionNum<MIN_CODE_VERSION_NUM)
             {
                 ToLog("ERR VersionNum="+CodeVersion.VersionNum+" from "+NodeInfo(Node));
                 Node.NextConnectDelta=60*1000;
