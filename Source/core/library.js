@@ -1,18 +1,5 @@
 //Copyright: Yuriy Ivanov, 2017 e-mail: progr76@gmail.com
 
-global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
-    "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD","WALLET_NAME"];
-global.DELTA_CURRENT_TIME=0;
-global.SERVER_PRIVATE_KEY_HEX=undefined;
-global.NET_WORK_MODE=undefined;
-global.STAT_MODE=0;
-global.UPDATE_NUM_COMPLETE=0;
-global.WALLET_NAME="TERA";
-
-
-
-
-
 var fs = require('fs');
 require("./constant.js");
 require("./log.js");

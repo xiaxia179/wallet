@@ -32,9 +32,14 @@ var CServer=require("./server");
 global.glCurNumFindArr=0;
 global.ArrReconnect=[];
 var FindList=LoadParams(GetDataPath("finds-server.lst"),undefined);
-if(!FindList)
+if(!FindList || UPDATE_CODE_VERSION_NUM<55)
 {
-    FindList=[{"ip":"194.1.237.94","port":30000},{"ip":"91.235.136.81","port":30002},{"ip":"103.102.45.224","port":30000}];
+    FindList=[
+        {"ip":"194.1.237.94","port":30000},//3
+        {"ip":"91.235.136.81","port":30002},//5
+        {"ip":"103.102.45.224","port":30000},//12
+        {"ip":"185.17.122.144","port":30000},//14
+        ];
 
     SaveParams(GetDataPath("finds-server.lst"),FindList);
 }
@@ -101,10 +106,6 @@ if(cluster.isMaster)
     require("./html-server");
     RunServer(false);
 
-    if(global.ADDRLIST_MODE)
-    {
-        return;
-    }
 
     setInterval(function run1()
     {
@@ -116,6 +117,10 @@ if(cluster.isMaster)
     }, 200);
 
 
+    if(global.ADDRLIST_MODE)
+    {
+        return;
+    }
 
 
     if(OnlyOneProcess)
@@ -219,7 +224,7 @@ function ConnectToNodes()
 
     if(global.TEST_DEVELOP_MODE && !Node.StartFindList)
     {
-
+        //
     }
     else
     if(GetSocketStatus(Node.Socket)===100)
