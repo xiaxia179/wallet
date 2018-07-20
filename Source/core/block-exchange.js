@@ -1606,14 +1606,17 @@ function TestCreateTr()
         };
     var Body=BufLib.GetBufferFromObject(TR,FORMAT_CREATE,1000,{});
     var startTime = process.hrtime();
+    var StartData=new Date()-0;
     var nonce=CreateHashBodyPOWInnerMinPower(Body,1000,17);
     var Time = process.hrtime(startTime);
 
     var power=GetPowPower(shaarr(Body));
     var deltaTime=(Time[0]*1000 + Time[1]/1e6)/1000;//s
-    ToLog("power="+power+"  nonce="+nonce+" TIME="+deltaTime+" sec")
+    var DeltaData=(new Date()-StartData)/1000;
+
+    ToLog("power="+power+"  nonce="+nonce+" TIME="+deltaTime+" sec"+"  DeltaData="+DeltaData+" sec")
     //return {body:Body};
-    return deltaTime;
+    return {time1:deltaTime,time2:DeltaData};
 }
 
 
