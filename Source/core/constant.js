@@ -1,6 +1,7 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
 global.UPDATE_CODE_VERSION_NUM=55;
 global.MIN_CODE_VERSION_NUM=55;
+"update 55";
 
 
 global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
