@@ -10,11 +10,11 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
 * If you have already installed the assembly data, you can download only the updates and install them in the same directory:
  https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
 
-## Custom run whith Sorce code
+## Custom run whith Sorce code (win and other)
 * Download nodejs (recommended ver v8.11.1):  https://nodejs.org/en
 * Download Source dir
 * Goto dir Source and run command: npm install
-* Run: node run-node.js
+* Run command: node run-node.js
 * Start the browser with the address: 127.0.0.1
 
 
@@ -24,7 +24,49 @@ Notes:
 
 
 
+##Installation on Linux 
 
+#CentOS 7:
+
+sudo yum install -y git
+curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
+sudo yum  install -y nodejs
+sudo npm install pm2 -g
+
+sudo git clone https://github.com/terafoundation/wallet.git
+cd wallet/Source
+sudo npm install
+sudo pm2 start run-node.js
+
+* open ports (all)
+systemctl stop firewalld 
+systemctl disable firewalld
+
+
+
+#UBUNTU 18.4:
+
+sudo apt-get install -y git
+sudo apt-get install -y nodejs
+sudo apt-get install -y npm
+
+sudo npm install pm2 -g
+
+sudo git clone https://github.com/terafoundation/wallet.git
+cd wallet/Source
+sudo npm install
+sudo pm2 start run-node.js
+
+* open ports
+sudo ufw allow 30000/tcp
+sudo ufw allow 80/tcp
+
+
+#Updates
+
+cd wallet
+sudo git reset --hard 
+sudo git pull 
 
 
 
