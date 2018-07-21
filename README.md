@@ -26,7 +26,7 @@ Notes:
 
 ## Installation on Linux 
 
-# CentOS 7:
+### CentOS 7:
 
 sudo yum install -y git
 curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
@@ -44,7 +44,7 @@ systemctl disable firewalld
 
 
 
-# UBUNTU 18.4:
+### UBUNTU 18.4:
 
 sudo apt-get install -y git
 sudo apt-get install -y nodejs
@@ -62,7 +62,7 @@ sudo ufw allow 30000/tcp
 sudo ufw allow 80/tcp
 
 
-# Updates
+### Updates
 
 cd wallet
 sudo git reset --hard 
