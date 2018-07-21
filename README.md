@@ -29,17 +29,24 @@ Notes:
 ### CentOS 7:
 
 sudo yum install -y git
+
 curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
+
 sudo yum  install -y nodejs
+
 sudo npm install pm2 -g
 
 sudo git clone https://github.com/terafoundation/wallet.git
+
 cd wallet/Source
+
 sudo npm install
+
 sudo pm2 start run-node.js
 
 * open ports (all)
 systemctl stop firewalld 
+
 systemctl disable firewalld
 
 
@@ -47,25 +54,33 @@ systemctl disable firewalld
 ### UBUNTU 18.4:
 
 sudo apt-get install -y git
+
 sudo apt-get install -y nodejs
+
 sudo apt-get install -y npm
 
 sudo npm install pm2 -g
 
 sudo git clone https://github.com/terafoundation/wallet.git
+
 cd wallet/Source
+
 sudo npm install
+
 sudo pm2 start run-node.js
 
 * open ports
 sudo ufw allow 30000/tcp
+
 sudo ufw allow 80/tcp
 
 
 ### Updates
 
 cd wallet
+
 sudo git reset --hard 
+
 sudo git pull 
 
 
@@ -96,3 +111,12 @@ sudo git pull
 * Twitter: https://twitter.com/terafoundation
 * Telegram: @Terafoundation
 * Discord: https://discord.gg/CvwrbeG
+
+
+## Tests
+- 1
+- 2
+* 11
+* 22
+** 111
+** 222
