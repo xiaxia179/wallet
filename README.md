@@ -1,4 +1,4 @@
-﻿## TERA Smart money
+﻿# TERA Smart money
 
 
 WARNING: To connect to the network and start sync, you must have a static IP address and an open port
@@ -11,7 +11,7 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
  https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
 
 ## Custom run whith Sorce code (win and other)
-* Download nodejs (recommended ver v8.11.1):  https://nodejs.org/en
+* Download nodejs (recommended ver v8.11):  https://nodejs.org/en
 * Download Source dir
 * Goto dir Source and run command: npm install
 * Run command: node run-node.js
@@ -20,7 +20,7 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
 
 Notes: 
 * When the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js
-* Nodejs uses the default http port for node 80, but you can change it when you start with the command: node run-node.js "httpport: 81"
+* Nodejs uses the default http port for node 80, but you can change it in wallet in tab CONFIG - press button HTTP ACESS
 
 
 
@@ -44,7 +44,7 @@ sudo npm install
 
 sudo pm2 start run-node.js
 
-#### open ports (all)
+#### open ports (all):
 
 systemctl stop firewalld 
 
@@ -70,7 +70,7 @@ sudo npm install
 
 sudo pm2 start run-node.js
 
-#### open ports
+#### open ports:
 
 sudo ufw allow 30000/tcp
 
@@ -111,7 +111,7 @@ sudo git pull
 ## Refs:
 * Btt: https://bitcointalk.org/index.php?topic=4573801.0
 * Twitter: https://twitter.com/terafoundation
-* Telegram: @Terafoundation
+* Telegram: https://t.me/Terafoundation
 * Discord: https://discord.gg/CvwrbeG
 
 
