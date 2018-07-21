@@ -44,7 +44,8 @@ sudo npm install
 
 sudo pm2 start run-node.js
 
-* open ports (all)
+#### open ports (all)
+
 systemctl stop firewalld 
 
 systemctl disable firewalld
@@ -69,7 +70,8 @@ sudo npm install
 
 sudo pm2 start run-node.js
 
-* open ports
+#### open ports
+
 sudo ufw allow 30000/tcp
 
 sudo ufw allow 80/tcp
@@ -113,10 +115,3 @@ sudo git pull
 * Discord: https://discord.gg/CvwrbeG
 
 
-## Tests
-- 1
-- 2
-* 11
-* 22
-** 111
-** 222
