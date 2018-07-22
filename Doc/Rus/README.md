@@ -59,10 +59,9 @@ systemctl disable firewalld
 
 ### Дистрибутив UBUNTU 18.4:
 
+```
 sudo apt-get install -y git
-
 sudo apt-get install -y nodejs
-
 sudo apt-get install -y npm
 
 sudo npm install pm2 -g
@@ -80,7 +79,7 @@ sudo pm2 start run-node.js
 sudo ufw allow 30000/tcp
 
 sudo ufw allow 80/tcp
-
+```
 
 ### Updates
 
