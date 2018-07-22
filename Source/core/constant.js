@@ -1,6 +1,7 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
 global.UPDATE_CODE_VERSION_NUM=80;
 global.MIN_CODE_VERSION_NUM=70;
+"update 80"
 
 
 
