@@ -60,13 +60,17 @@ String.prototype.right=function(count)
 
 
 
-global.ReadUintFromArr=function(arr)
+global.ReadUintFromArr=function(arr,len)
 {
-    var len=arr.len;
+    if(len===undefined)
+    {
+        len=arr.len;
+        arr.len+=6;
+    }
+
     var value=(arr[len+5]<<23)*2 + (arr[len+4]<<16)  + (arr[len+3]<<8) + arr[len+2];
     value=value*256 + arr[len+1];
     value=value*256 + arr[len];
-    arr.len+=6;
     return value;
 }
 global.WriteUintToArr=function (arr,Num)

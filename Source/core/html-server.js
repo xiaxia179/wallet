@@ -975,7 +975,7 @@ function GetCopyBlock(Block)
             TrDataLen:Block.TrDataLen,
             SeqHash:GetHexFromAddres(Block.SeqHash),
             Hash:GetHexFromAddres(Block.Hash),
-            Power:Block.Power,
+            Power:GetPowPower(Block.Hash),
 
             TrCount:Block.TrCount,
             arrContent:Block.arrContent,
@@ -1027,8 +1027,8 @@ function CopyBlockDraw(Block,MainChains)
     var MinerID=0;
     if(Block.AddrHash)
     {
-        Block.AddrHash.len=0;
-        var Num=ReadUintFromArr(Block.AddrHash);
+        //Block.AddrHash.len=0;
+        var Num=ReadUintFromArr(Block.AddrHash,0);
         var Item=DApps.Accounts.ReadState(Num);
         if(Item && Item.Description)
             MinerID=Item.Description.substr(0,8);
@@ -1062,7 +1062,7 @@ function CopyBlockDraw(Block,MainChains)
             TrCount:Block.TrCount,
             ArrLength:0,
             TrDataLen:Block.TrDataLen,
-            Power:Block.Power,
+            Power:GetPowPower(Block.Hash),
         };
     if(Block.chain)
         Item.chainid=Block.chain.id;

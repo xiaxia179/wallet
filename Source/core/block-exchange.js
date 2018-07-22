@@ -1208,11 +1208,15 @@ module.exports = class CConsensus extends require("./block-loader")
 
 
         Block.Prepared=true;
-        Block.StartMining=true;
-        this.MiningBlock=Block;
 
-        if(global.SetCalcPOW)
-            global.SetCalcPOW(Block);
+        if(!bSimplePow)
+        {
+            Block.StartMining=true;
+            this.MiningBlock=Block;
+            if(global.SetCalcPOW)
+                global.SetCalcPOW(Block);
+        }
+
 
         return true;
     }
@@ -1457,14 +1461,9 @@ module.exports = class CConsensus extends require("./block-loader")
 
             // if(i===this.CurrentBlockNum+TIME_START_POW_EXCHANGE && Block.StartMining)
             // {
-            //     var item={
-            //         SeqHash:Block.SeqHash,
-            //         AddrHash:Block.AddrHash,
-            //         PrevHash:Block.PrevHash,
-            //         TreeHash:Block.TreeHash,
-            //     };
-            //
-            //     this.AddToMaxPOW(Block,item);
+            //     var Num=ReadUintFromArr(Block.AddrHash,0);
+            //     if(Num===GENERATE_BLOCK_ACCOUNT)
+            //         ADD_TO_STAT("MAX:WIN:POWER_MY2",GetPowPower(Block.Hash));
             // }
 
 
@@ -1542,9 +1541,14 @@ module.exports = class CConsensus extends require("./block-loader")
                     // ADD_TO_STAT("MAX:BlockConfirmation",TimeDelta);
                     this.AddToStatBlockConfirmation(Block);
 
-
                     if(this.WriteBlockDB(Block))
                     {
+                        var Num=ReadUintFromArr(Block.AddrHash,0);
+                        if(Num===GENERATE_BLOCK_ACCOUNT)
+                            ADD_TO_STAT("MAX:WIN:POWER_MY",GetPowPower(Block.Hash));
+                        ADD_TO_STAT("MAX:POWER_BLOCKCHAIN",GetPowPower(Block.Hash));
+
+
                         if(Block.arrContent && Block.arrContent.length)
                             ADD_TO_STAT("MAX:TRANSACTION_COUNT",Block.arrContent.length);
 

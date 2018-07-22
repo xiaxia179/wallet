@@ -128,14 +128,8 @@ if(global.ADDRLIST_MODE)
 
 //ToLog("global.USE_MINING="+global.USE_MINING);
 var ArrWrk=[];
-if(global.USE_MINING)
-{
-    RunStopPOWProcess();
-}
-
-
-global.RunStopPOWProcess=RunStopPOWProcess;
-function RunStopPOWProcess()
+var BlockMining;
+global.RunStopPOWProcess=function()
 {
     const os = require('os');
     var cpus = os.cpus();
@@ -165,42 +159,12 @@ function RunStopPOWProcess()
 
     const child_process = require('child_process');
     ToLog("START POW PROCESS COUNT="+CountRun);
-    let BLOCK;
     for(var R=0;R<CountRun;R++)
     {
         let Worker = child_process.fork("./core/pow-process.js");
-        console.log(`**************************Worker pid: ${Worker.pid}`);
+        console.log(`Worker pid: ${Worker.pid}`);
         ArrWrk.push(Worker);
         Worker.Num=ArrWrk.length;
-
-        let bOnline=0;
-        global.SetCalcPOW=function(Block)
-        {
-            if(!global.USE_MINING)
-                return;
-
-            BLOCK=Block;
-            for(var i=0;i<ArrWrk.length;i++)
-            {
-                var CurWorker=ArrWrk[i];
-                if(!CurWorker.bOnline)
-                    continue;
-
-                CurWorker.send(
-                    {
-                        cmd:"SetBlock",
-                        Account:GENERATE_BLOCK_ACCOUNT,
-                        SeqHash:Block.SeqHash,
-                        Hash:Block.Hash,
-                        Time:new Date()-0,
-                        Num:i,
-                        RunPeriod:global.POWRunPeriod,
-                        RunCount:global.POWRunCount,
-                        Percent:global.POW_MAX_PERCENT,
-                    });
-            }
-
-        }
 
         Worker.on('message',
             function (msg)
@@ -220,22 +184,24 @@ function RunStopPOWProcess()
                 {
                     //ToLog("POW: "+JSON.stringify(msg))
 
-                    if(BLOCK && BLOCK.Hash && BLOCK.SeqHash
-                        && CompareArr(BLOCK.SeqHash,msg.SeqHash)===0
-                        && CompareArr(BLOCK.Hash,msg.Hash)>=0)
+
+                    if(BlockMining && BlockMining.Hash && BlockMining.SeqHash
+                        && CompareArr(BlockMining.SeqHash,msg.SeqHash)===0
+                        && CompareArr(BlockMining.Hash,msg.Hash)>=0)
                     {
-                        BLOCK.Hash=msg.Hash;
-                        BLOCK.AddrHash=msg.AddrArr;
+                        BlockMining.Hash=msg.Hash;
+                        BlockMining.AddrHash=msg.AddrArr;
 
-                        BLOCK.Power=GetPowPower(BLOCK.Hash);
-                        ADD_TO_STAT("MAX:POWER",BLOCK.Power);
+                        BlockMining.Power=GetPowPower(msg.Hash);
+                        //ADD_TO_STAT("MAX:POWER:"+msg.Num,GetPowPower(msg.Hash));
+                        ADD_TO_STAT("MAX:POWER",GetPowPower(msg.Hash));
 
-                        SERVER.AddToMaxPOW(BLOCK,
+                        SERVER.AddToMaxPOW(BlockMining,
                             {
-                                SeqHash:BLOCK.SeqHash,
-                                AddrHash:BLOCK.AddrHash,
-                                PrevHash:BLOCK.PrevHash,
-                                TreeHash:BLOCK.TreeHash,
+                                SeqHash:BlockMining.SeqHash,
+                                AddrHash:BlockMining.AddrHash,
+                                PrevHash:BlockMining.PrevHash,
+                                TreeHash:BlockMining.TreeHash,
                             });
                     }
                 }
@@ -243,6 +209,8 @@ function RunStopPOWProcess()
                 if(msg.cmd==="HASHRATE")
                 {
                     ADD_TO_STAT("HASHRATE",msg.CountNonce);
+                    //ADD_TO_STAT("MAX:POWER2",GetPowPower(msg.Hash));
+
                 }
 
             });
@@ -263,6 +231,121 @@ function RunStopPOWProcess()
         });
     }
 }
+global.SetCalcPOW=function(Block)
+{
+    if(!global.USE_MINING)
+        return;
+
+    if(GENERATE_BLOCK_ACCOUNT<8)
+        global.USE_MINING=0;
+
+    BlockMining=Block;
+    for(var i=0;i<ArrWrk.length;i++)
+    {
+        var CurWorker=ArrWrk[i];
+        if(!CurWorker.bOnline)
+            continue;
+
+        CurWorker.send(
+            {
+                cmd:"SetBlock",
+                Account:GENERATE_BLOCK_ACCOUNT,
+                BlockNum:Block.BlockNum,
+                SeqHash:Block.SeqHash,
+                Hash:Block.Hash,
+                Time:new Date()-0,
+                Num:i,
+                RunPeriod:global.POWRunPeriod,
+                RunCount:global.POWRunCount,
+                Percent:global.POW_MAX_PERCENT,
+            });
+    }
+
+}
+
+//if(global.LOCAL_RUN)
+if(0)
+{
+    global.DEBUGPROCESS={on:function (mode,fff)
+    {
+        DEBUGPROCESS.map[mode]=fff;
+        //ToLog("|||||||||||||||||||||||| "+mode+" set:"+fff);
+    },
+        send:function (msg)
+        {
+            if(DEBUGPROCESS.map.message)
+                DEBUGPROCESS.map.message(msg);
+            else
+                ToLog("|||||||||||||||||||||||| msg: "+msg);
+        },
+        map:{},
+    };
+
+    global.RunStopPOWProcess=function()
+    {
+        ToLog("|||||||||||||||||||||||| RunStopPOWProcess");
+
+        if(global.USE_MINING)
+        {
+            require("./pow-process.js");
+            ArrWrk=[DEBUGPROCESS];
+            ArrWrk[0].bOnline=1;
+        }
+    };
+    // global.SetCalcPOW=function(Block)
+    // {
+    //     ToLog("|||||||||||||||||||||||| SetCalcPOW: "+Block);
+    //
+    // };
+
+
+    process.send=function (msg)
+    {
+        if(msg.cmd==="log")
+        {
+            ToLog(msg.message);
+        }
+        else
+        if(msg.cmd==="online")
+        {
+
+        }
+        else
+        if(msg.cmd==="POW")
+        {
+            //ToLog("POW: "+JSON.stringify(msg))
+
+            if(BLOCK && BLOCK.Hash && BLOCK.SeqHash
+                && CompareArr(BLOCK.SeqHash,msg.SeqHash)===0
+                && CompareArr(BLOCK.Hash,msg.Hash)>=0)
+            {
+                BLOCK.Hash=msg.Hash;
+                BLOCK.AddrHash=msg.AddrArr;
+
+                BLOCK.Power=GetPowPower(BLOCK.Hash);
+                ADD_TO_STAT("MAX:POWER",BLOCK.Power);
+
+                SERVER.AddToMaxPOW(BLOCK,
+                    {
+                        SeqHash:BLOCK.SeqHash,
+                        AddrHash:BLOCK.AddrHash,
+                        PrevHash:BLOCK.PrevHash,
+                        TreeHash:BLOCK.TreeHash,
+                    });
+            }
+        }
+        else
+        if(msg.cmd==="HASHRATE")
+        {
+            ADD_TO_STAT("HASHRATE",msg.CountNonce);
+        }
+
+    };
+
+}
+
+RunStopPOWProcess();
+
 
 
 function ReconnectingFromServer()

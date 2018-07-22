@@ -768,8 +768,8 @@ module.exports = class CDB extends require("../code")
             Block.Num=Block.BlockNum;
             if(Block.AddrHash)
             {
-                Block.AddrHash.len=0;
-                Block.Miner=ReadUintFromArr(Block.AddrHash);
+                //Block.AddrHash.len=0;
+                Block.Miner=ReadUintFromArr(Block.AddrHash,0);
             }
 
             arr.push(Block);

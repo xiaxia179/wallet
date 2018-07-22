@@ -208,6 +208,8 @@ global.GET_STATDIAGRAMS=function(Keys)
             MinLength=arr.length;
     }
 
+    const MaxSizeArr=512;
+
     for(var i=0;i<Data.length;i++)
     {
         var ItemServer=Data[i];
@@ -220,10 +222,23 @@ global.GET_STATDIAGRAMS=function(Keys)
 
 
         var StepTime=1;
-        while(arr.length>=512)
+
+        //if(ItemServer.name.substr(0,4)==="MAX:")
+        if(ItemServer.name.indexOf("ERR")>=0)
         {
-            arr=ResizeArr(arr);
-            StepTime=StepTime*2;
+            while(arr.length>=MaxSizeArr)
+            {
+                arr=ResizeArrMax(arr);
+                StepTime=StepTime*2;
+            }
+        }
+        else
+        {
+            while(arr.length>=MaxSizeArr)
+            {
+                arr=ResizeArrAvg(arr);
+                StepTime=StepTime*2;
+            }
         }
         ItemServer.steptime=StepTime;
         ItemServer.arr=arr.slice(1);
@@ -249,12 +264,22 @@ global.ClearCommonStat=function()
 
 
 
-function ResizeArr(arr)
+function ResizeArrMax(arr)
 {
     var arr2=[];
     for(var i=0;i<arr.length/2;i++)
     {
         arr2[i]=Math.max(arr[i*2],arr[i*2+1]);
+    }
+    return arr2;
+}
+
+function ResizeArrAvg(arr)
+{
+    var arr2=[];
+    for(var i=0;i<arr.length/2;i++)
+    {
+        arr2[i]=(arr[i*2]+arr[i*2+1])/2;
     }
     return arr2;
 }
@@ -412,9 +437,6 @@ function SaveToLogFileSync(fname,Str)
     try
     {
         var StrLog=GetStrTime() +" : "+Str+"\r\n";
-
-        if(process.send)
-            process.send({cmd:"log",message:StrLog});
 
         var file_handle=fs.openSync(fname, "a");
         fs.writeSync(file_handle, StrLog, null, 'utf8');

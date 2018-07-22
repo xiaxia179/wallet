@@ -341,6 +341,7 @@ function GetHashWithValues(hash0,value1,value2,bNotCopy)
 function GetPowPower(arrhash)
 {
     var SumBit=0;
+    if(arrhash)
     for(var i=0;i<arrhash.length;i++)
     {
         var CurSum=Math.clz32(arrhash[i])-24;

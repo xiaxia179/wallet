@@ -160,8 +160,8 @@ module.exports = class CSmartContract extends require("./block-exchange")
     {
         if(!Tr.hashPow)
         {
-            Tr.body.len=Tr.body.length-12;
-            Tr.num=ReadUintFromArr(Tr.body);
+            //Tr.body.len=Tr.body.length-12;
+            Tr.num=ReadUintFromArr(Tr.body,Tr.body.length-12);
             Tr.hashPow=shaarr(Tr.body);
             Tr.HASH=Tr.hashPow;
             // Tr.time=Tr.num;

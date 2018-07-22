@@ -187,6 +187,6 @@ Version = 2 - цифровая подпись содержимого транз�
 * Btt: https://bitcointalk.org/index.php?topic=4573801.0
 * Twitter: https://twitter.com/terafoundation
 * Telegram: https://t.me/Terafoundation
-* Discord: https://discord.gg/CvwrbeG
+* Discord [RUS]: https://discord.gg/dzSGKyR
 
 

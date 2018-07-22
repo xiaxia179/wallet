@@ -191,7 +191,7 @@ module.exports = class CCode extends require("./base")
 
 
 
-global.RestartNode=function()
+global.RestartNode=function RestartNode()
 {
     global.NeedRestart=1;
 
@@ -264,7 +264,7 @@ function UpdateCodeFiles(StartNum)
             {
                 ToLog("UnpackCodeFile:"+Name);
                 UnpackCodeFile(Path);
-                RestartNode();
+                global.RestartNode();
                 return 1;
             }
             else

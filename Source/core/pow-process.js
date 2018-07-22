@@ -6,38 +6,45 @@ global.NWMODE=1;
 require("./library");
 require("./crypto-library");
 
-global.ToLog=function (Str)
-{
-    process.send({cmd:"log",message:Str});
-}
 
-if(process.send)
+
+var PROCESS=process;
+if(process.send && !global.DEBUGPROCESS)
 {
+    global.ToLog=function (Str)
+    {
+        process.send({cmd:"log",message:Str});
+    }
+
     process.send({cmd:"online",message:"OK"});
+
+}
+else
+{
+    PROCESS=global.DEBUGPROCESS;
 }
 
 var idInterval;
 var Block={};
 
-process.on('message', (msg) =>
+PROCESS.on('message', (msg) =>
 {
     //ToLog("CHILD GET: "+JSON.stringify(msg))
 
     if(msg.cmd==="SetBlock")
     {
-        var StartNonce=10000000*msg.Num;
+
+        var StartNonce=10000000*(1+msg.Num);
         if(Block.LastNonce)
         {
-            process.send({cmd:"HASHRATE",CountNonce:Block.LastNonce-StartNonce});
+            // var Power=GetPowPower(Block.Hash);
+            // if(msg.Num===0)
+            //     ToLog("PrevPower="+Power+"  "+JSON.stringify(msg));
+            process.send({cmd:"HASHRATE",CountNonce:Block.LastNonce-StartNonce, Hash:Block.Hash});
         }
+        Block=msg;
+        Block.Time=(new Date())-0;
         Block.LastNonce=StartNonce;
-        Block.Account=msg.Account;
-        Block.SeqHash=msg.SeqHash;
-        Block.Hash=msg.Hash;
-        Block.Time=msg.Time;
-        Block.RunCount=msg.RunCount;
-        Block.RunPeriod=msg.RunPeriod;
-        Block.Percent=msg.Percent;
 
         Block.Period=CONSENSUS_PERIOD_TIME*Block.Percent/100;
         if(Block.Period>0 && Block.RunPeriod>0)
@@ -53,7 +60,7 @@ process.on('message', (msg) =>
     else
     if(msg.cmd==="Exit")
     {
-        process.exit(0);
+        PROCESS.exit(0);
     }
 });
 
@@ -62,8 +69,14 @@ function CalcPOWHash()
 {
     if(!Block.SeqHash)
         return;
+
     if(new Date()-Block.Time>Block.Period)
+    {
+        clearInterval(idInterval);
+        idInterval=0;
+        //ToLog(""+Block.Num+". Stop interval on block="+Block.BlockNum)
         return;
+    }
 
 
     var AddrArr=GetArrFromValue(Block.Account);
@@ -74,9 +87,9 @@ function CalcPOWHash()
     if(Ret.bFind)
     {
         Block.Hash=Ret.MaxHash;
-        //ToLog("FIND MAX CALC: LastNonce="+Block.LastNonce+" Block.Hash="+Block.Hash)
+        //ToLog(""+Block.Num+". FIND MAX CALC: LastNonce="+Block.LastNonce+" Block.Hash="+Block.Hash)
 
-        process.send({cmd:"POW",SeqHash:Block.SeqHash,Hash:Block.Hash,AddrArr:AddrArr});
+        process.send({cmd:"POW",SeqHash:Block.SeqHash,Hash:Block.Hash,AddrArr:AddrArr,Num:Block.Num});
     }
 
 }

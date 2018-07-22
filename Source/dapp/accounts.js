@@ -280,17 +280,15 @@ class AccountApp extends require("./dapp")
 
     DoCoinBaseTR(Block)
     {
-        if(Block.BlockNum<2000000)
+        if(Block.BlockNum<global.START_MINING)
             return;
 
         var SysData=this.ReadValue(0);
         var SysBalance=SysData.Value.SumTER;
-        const REF_PERIOD=2*1000*1000;
-        const REF_PERIOD_END=30*REF_PERIOD;
-        //const REF_PERIOD=100;
-        //const REF_PERIOD_END=4*REF_PERIOD;
-        Block.AddrHash.len=0;
-        var AccountID=ReadUintFromArr(Block.AddrHash);
+        const REF_PERIOD_START=global.START_MINING;
+        const REF_PERIOD_END=30*1000*1000;
+        //Block.AddrHash.len=0;
+        var AccountID=ReadUintFromArr(Block.AddrHash,0);
         if(AccountID<8)
             return;
 
@@ -309,12 +307,12 @@ class AccountApp extends require("./dapp")
                 if(Data.RefID>=8 && Block.BlockNum<REF_PERIOD_END)
                 {
                     var RefData=this.ReadValue(Data.RefID);
-                    if(RefData && RefData.BlockNumCreate<Block.BlockNum-REF_PERIOD)
+                    if(RefData && RefData.BlockNumCreate<Block.BlockNum-REF_PERIOD_MINING)
                     {
-                        var K=(REF_PERIOD_END-Block.BlockNum)/(REF_PERIOD_END-REF_PERIOD);
+                        var K=(REF_PERIOD_END-Block.BlockNum)/(REF_PERIOD_END-REF_PERIOD_START);
                         var CoinAdv=this.COIN_FROM_FLOAT(Sum*K);
 
-                        this.SendMoney(0,Data.RefID,CoinAdv,Block.BlockNum,"Adviser coin base");
+                        this.SendMoney(0,Data.RefID,CoinAdv,Block.BlockNum,"Adviser coin base ["+AccountID+"]");
                         this.ADD(CoinTotal,CoinAdv);
 
                         this.ADD(CoinSum,CoinAdv);
