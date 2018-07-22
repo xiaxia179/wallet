@@ -1,6 +1,6 @@
 ﻿# TERA Smart money
 
-Русскя версия: https://github.com/terafoundation/wallet/Doc/Rus
+Русскя версия: https://github.com/terafoundation/wallet/tree/master/Doc/Rus
 
 WARNING: To connect to the network and start sync, you must have a static IP address and an open port
 
@@ -114,5 +114,5 @@ sudo git pull
 * Twitter: https://twitter.com/terafoundation
 * Telegram: https://t.me/Terafoundation
 * Discord: https://discord.gg/CvwrbeG
-
+* Документация на русском: https://github.com/terafoundation/wallet/tree/master/Doc/Rus
 
