@@ -1156,7 +1156,7 @@
         Mode.NodeWhiteList=document.getElementById("idNodeWhiteList").value;
 
 
-        Mode.RestartNode=bRestart;
+        Mode.DoRestartNode=bRestart;
 
         GetData("/SetNetMode",Mode, function (Data)
         {
@@ -1194,7 +1194,7 @@
             return;
         }
 
-        Data.RestartNode=bRestart;
+        Data.DoRestartNode=bRestart;
 
         GetData("/SaveConstant",Data, function (Data)
         {
@@ -1217,7 +1217,8 @@
         else
         {
             SetVisibleBlock('idRemoteView',true);
-            document.getElementById("idHTTPPort").value=CONFIG_DATA.HTTPPort;
+            if(CONFIG_DATA.HTTPPort)
+                document.getElementById("idHTTPPort").value=CONFIG_DATA.HTTPPort;
             document.getElementById("idHTTPPassword").value=CONFIG_DATA.HTTPPassword;
 
         }
@@ -1228,7 +1229,7 @@
         var HTTPPort=ParseNum(document.getElementById("idHTTPPort").value);
         var HTTPPassword=document.getElementById("idHTTPPassword").value;
 
-        GetData("/SetHTTPParams",{HTTPPort:HTTPPort,HTTPPassword:HTTPPassword,RestartNode:bRestart}, function (Data)
+        GetData("/SetHTTPParams",{HTTPPort:HTTPPort,HTTPPassword:HTTPPassword,DoRestartNode:bRestart}, function (Data)
         {
             if(!PrevHTTPPassword && HTTPPassword)
                 window.location.reload();
@@ -1665,6 +1666,11 @@
 
     function UseMining()
     {
+        if(!MiningAccount)
+        {
+            SetError("Not set mining account");
+            return;
+        }
         var Data={USE_MINING:document.getElementById("idUseMining").checked,DoMining:1};
 
         GetData("/SaveConstant",Data, function (Data)
@@ -1892,7 +1898,7 @@
 
 
     <input type="checkbox" class="checkbox" id="idUseMining" onchange = "UseMining()"/>
-    <label for="idUseMining">MINING</label> <DIV id="idPrecentBlock" style="display: none"> CPU use:<input type="number" min=0 max=100 id="idPercentMining" onchange="SetPercentMining()"/>%</DIV><BR>
+    <label for="idUseMining">MINING</label> <DIV id="idPrecentBlock" style="color: blue;display: none"> CPU use:<input type="number" min=0 max=100 id="idPercentMining" onchange="SetPercentMining()"/>%</DIV><BR>
     <DIV id="idDevelopService" style="display: none">
         <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
                class="btdoit bt" value="DEV SERVICE">

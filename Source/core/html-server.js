@@ -147,7 +147,7 @@ var sessionid=GetHexFromAddres(crypto.randomBytes(20));
 
 HTTPCaller.RestartNode=function (id,Param2,Param3)
 {
-    RestartNode();
+    global.RestartNode();
     return {result:1};
 }
 
@@ -541,8 +541,8 @@ HTTPCaller.SaveConstant=function (SetObj)
 
 
 
-    if(SetObj.RestartNode)
-        RestartNode();
+    if(SetObj.DoRestartNode)
+        global.RestartNode();
     else
     {
         if(SetObj.DoMining)
@@ -560,8 +560,8 @@ HTTPCaller.SetHTTPParams=function (SetObj)
     SAVE_CONST(true);
 
 
-    if(SetObj.RestartNode)
-        RestartNode();
+    if(SetObj.DoRestartNode)
+        global.RestartNode();
 
     return {result:1};
 }
@@ -584,8 +584,8 @@ HTTPCaller.SetNetMode=function (SetObj)
     SAVE_CONST(true);
 
 
-    if(SetObj.RestartNode)
-        RestartNode();
+    if(SetObj.DoRestartNode)
+        global.RestartNode();
 
     return {result:1};
 }
