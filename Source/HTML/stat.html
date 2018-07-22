@@ -135,7 +135,10 @@
 
     function SetStatMode()
     {
-        GetData("/SetStatMode",!StatMode,function (Data)
+        if(!StatMode)
+            StatMode=0;
+        StatMode=(StatMode+1)%3;
+        GetData("/SetStatMode",StatMode,function (Data)
         {
         });
     }
@@ -150,9 +153,15 @@
         var item = document.getElementById("idStatInfo");
         var button = document.getElementById("idStatButton");
         StatMode=Data.STAT_MODE;
-        if(StatMode)
+        if(StatMode===1)
         {
             item.innerText=" =Stat ON=";
+            button.value="Start detail stat"
+        }
+        else
+        if(StatMode===2)
+        {
+            item.innerText=" =Stat detail ON=";
             button.value="Stop stat"
         }
         else

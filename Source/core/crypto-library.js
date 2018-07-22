@@ -436,35 +436,38 @@ global.CreateNoncePOWInner=function(arr0,count)
     return {nonce:maxnonce,Hash:Hash};
 }
 
-global.CreateAddrPOW=function (SeqHash,CountNonce)
+global.CreateAddrPOW=function (SeqHash,AddrArr,MaxHash,Start,CountNonce)
 {
-    //global.CalcStat=1;
-    var Arr=GetArrFromValue(GENERATE_BLOCK_ACCOUNT);
-    var MaxHash=shaarr2(SeqHash,Arr);
+
     var MaxNonce=0;
+    var bFind=0;
 
-    for(var nonce=1;nonce<CountNonce;nonce++)
+    for(var nonce=Start;nonce<Start+CountNonce;nonce++)
     {
-        Arr[6]=nonce&0xFF;
-        Arr[7]=(nonce>>>8) & 0xFF;
-        Arr[8]=(nonce>>>16) & 0xFF;
-        Arr[9]=(nonce>>>24) & 0xFF;
+        AddrArr[6]=nonce&0xFF;
+        AddrArr[7]=(nonce>>>8) & 0xFF;
+        AddrArr[8]=(nonce>>>16) & 0xFF;
+        AddrArr[9]=(nonce>>>24) & 0xFF;
 
-        var HashTest=shaarr2(SeqHash,Arr);
-        if(CompareArr(MaxHash,HashTest)>0)
+        var HashTest=shaarr2(SeqHash,AddrArr);
+        if(CompareArr(MaxHash,HashTest)>=0)
         {
             MaxHash=HashTest;
             MaxNonce=nonce;
+            bFind=1;
         }
     }
 
-    Arr[6]=MaxNonce&0xFF;
-    Arr[7]=(MaxNonce>>>8) & 0xFF;
-    Arr[8]=(MaxNonce>>>16) & 0xFF;
-    Arr[9]=(MaxNonce>>>24) & 0xFF;
+    if(bFind)
+    {
+        AddrArr[6]=MaxNonce&0xFF;
+        AddrArr[7]=(MaxNonce>>>8) & 0xFF;
+        AddrArr[8]=(MaxNonce>>>16) & 0xFF;
+        AddrArr[9]=(MaxNonce>>>24) & 0xFF;
+    }
 
-    //global.CalcStat=0;
-    return {AddrHash:Arr,Hash:MaxHash};
+
+    return {MaxHash:MaxHash,LastNonce:nonce,bFind:bFind};
 }
 
 
@@ -497,11 +500,8 @@ function CalcHashFromArray(ArrHashes,bOriginalSeq)
     for(var i=0;i<ArrHashes.length;i++)
     {
         var Value=ArrHashes[i];
-        //if(!IsZeroArr(Value))
-        {
-            for(var n=0;n<Value.length;n++)
-                Buf.push(Value[n]);
-        }
+        for(var n=0;n<Value.length;n++)
+            Buf.push(Value[n]);
     }
     if(Buf.length===0)
         return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];

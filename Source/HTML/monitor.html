@@ -96,7 +96,10 @@
     }
     function SetStatMode()
     {
-        GetData("/SetStatMode",!StatMode,function (Data)
+        if(!StatMode)
+            StatMode=0;
+        StatMode=(StatMode+1)%2;
+        GetData("/SetStatMode",StatMode,function (Data)
         {
         });
     }
@@ -395,10 +398,18 @@
     var DiagramArr=[];
     var DiagramArrR=
         [
+            {isLine:true,text:"SYSTEM"},
+            {name:"MAX:MEMORY_USAGE",text:"Mem usage, Mbyte",value:300},
+            //{name:"MAX:CPU_USER_MODE",text:"CPU USER WORK, ms",value:0,red:"#06A"},
+            {name:"MAX:CPU",text:"CPU ALL WORK, ms",value:0,red:"#06A"},
+            {name:"HASHRATE",text:"Hash Rate",value:0,red:"#95d6b9"},
+//            {name:"MINING-COUNT",text:"MINING-COUNT",value:0,red:"#95d6b9"},
+            {name:"MAX:POWER",text:"MAX:POWER",value:0,red:"#95d6b9"},
+
             {isLine:true,text:"NETWORK"},
 
-            {name:"SENDDATA",text:"Packets send, Kbyte",value:0,red:"#2b1e8a"},
-            {name:"GETDATA",text:"Packets receive, Kbyte",value:0,red:"#3b8a7f"},
+            {name:"SENDDATA(KB)",text:"Packets send, Kbyte",value:0,red:"#2b1e8a"},
+            {name:"GETDATA(KB)",text:"Packets receive, Kbyte",value:0,red:"#3b8a7f"},
             {name:"WRITECHAIN_TO_DB_COUNT",text:"Loaded blocks, count",value:0},
             {name:"MAX:TRANSACTION_COUNT",text:"Count transactions in block",value:0,red:"#2d628a"},
 
@@ -407,24 +418,26 @@
             {name:"ERRORS",text:"ERRORS",value:0,red:"#A00"},
             {name:"MAX:LOADEDCHAINLIST",text:"Loaded chains, count",value:0,red:"#95d6b9"},
 
-            {isLine:true,text:"SYSTEM"},
-            {name:"MAX:MEMORY_USAGE",text:"Mem usage, Mbyte",value:300},
-            //{name:"MAX:CPU_USER_MODE",text:"CPU USER WORK, ms",value:0,red:"#06A"},
-            {name:"MAX:CPU",text:"CPU ALL WORK, ms",value:0,red:"#06A"},
-
-
         ];
 
     var DiagramArrD=
         [
+            {isLine:true,text:"SYSTEM"},
+            {name:"MAX:MEMORY_USAGE",text:"Используемая память, Mb",value:300},
+            {name:"MAX:CPU",text:"CPU WORK, мс",value:0,red:"#06A"},
+//            {name:"MAX:CPU_USER_MODE",text:"USER MODE, мс",value:0,red:"#06A"},
+//            {name:"MAX:CPU_SYS_MODE",text:"USER SYS, мс",value:0,red:"#06A"},
+//            {name:"MAX:CPU_IDLE_MODE",text:"USER IDLE, мс",value:0,red:"#0A6"},
+
+            {name:"HASHRATE",text:"Hash Rate",value:0,red:"#95d6b9"},
+//            {name:"MINING-COUNT",text:"MINING-COUNT",value:0,red:"#95d6b9"},
+            {name:"MAX:POWER",text:"MAX:POWER",value:0,red:"#95d6b9"},
+
 
             {isLine:true,text:"Пакеты отправленные"},
-            {name:"SENDDATA",text:"Отправлено, кбайт",value:0,red:"#2b1e8a"},
+            {name:"SENDDATA(KB)",text:"Отправлено, кбайт",value:0,red:"#2b1e8a"},
 //            {name:"SEND_DATA_HARD",text:"Отправлено Hard, кбайт",value:0,red:"#2b1e8a"},
 //            {name:"SEND_DATA_LIGHT",text:"Отправлено Light, кбайт",value:0,red:"#2b1e8a"},
-            //{name:"SENDDATA:30000",text:"Отправлено 30000, кбайт",value:0,red:"#2b1e8a"},
-//            {name:"SENDDATA:30001",text:"Отправлено 30001, кбайт",value:0,red:"#2b1e8a"},
-//            {name:"SENDDATA:30006",text:"Отправлено 30006, кбайт",value:0,red:"#2b1e8a"},
 
 
         //{name:"RECALCSENDSTATICTIC",text:"RECALCSENDSTATICTIC",value:0,red:"#2b1e8a"},
@@ -442,9 +455,6 @@
 //        {name:"MAX:NODE_TRAFFIC_LIMIT:30007",text:"LIMIT:30007, кбайт",value:0,red:"#2b1e8a"},
 
 
-//        {name:"DO_LIMIT_SENDDATA:30000",text:"DO_LIMIT_SENDDATA:30000, кбайт",value:0,red:"#2b1e8a"},
-//        {name:"DO_LIMIT_SENDDATA:30001",text:"DO_LIMIT_SENDDATA:30001, кбайт",value:0,red:"#2b1e8a"},
-//        {name:"DO_LIMIT_SENDDATA:30006",text:"DO_LIMIT_SENDDATA:30006, кбайт",value:0,red:"#2b1e8a"},
 
 
 //        {name:"MAX:NODE_SEND_BUF_PACKET_COUNT:30006",text:"MAX:NODE_SEND_BUF_PACKET_COUNT:30006",value:0,red:"#2b1e8a"},
@@ -455,7 +465,6 @@
 
 //            {name:"SENDFRAGMENT_H",text:"Отправлено H-фрагментов, кбайт",value:0,red:"#20728a"},
 //            {name:"SENDFRAGMENT_L",text:"Отправлено L-фрагментов, кбайт",value:0,red:"#20728a"},
-            //{name:"MAX:SENDDATA",text:"Макс пакет, кбайт",value:0,red:"#2b1e8a"},
 //            {name:"FRAGMENT_LOST",text:"Потерянные фрагменты",value:0},
 //            {name:"FRAGMENT_OVERFLOW",text:"Переполнение массива отправленных фрагментов",value:0},
 //            {name:"SKIPFRAGMENTSEND",text:"SKIPFRAGMENTSEND",value:0},
@@ -464,7 +473,7 @@
 
             {isLine:true,text:"Пакеты полученные"},
             //{name:"TEST_PACKET",text:"TEST_PACKET",value:0,red:"#2b1e8a"},
-            {name:"GETDATA",text:"Получено, кбайт",value:0,red:"#2b1e8a"},
+            {name:"GETDATA(KB)",text:"Получено, кбайт",value:0,red:"#2b1e8a"},
 
 //            {name:"LOADFRAGMENT",text:"Получено фрагментов",value:0,red:"#20728a"},
 //            {name:"LOADPACKET",text:"Получено пакетов",value:0,red:"#7f448a"},
@@ -559,12 +568,6 @@
         {name:"MAX:TRANSACTION_COUNT",text:"Число транзакций в блоке (макс)",value:0,red:"#02A"},
 
 
-        {isLine:true,text:"SYSTEM"},
-        {name:"MAX:MEMORY_USAGE",text:"Используемая память, Mb",value:300},
-        {name:"MAX:CPU",text:"CPU WORK, мс",value:0,red:"#06A"},
-//            {name:"MAX:CPU_USER_MODE",text:"USER MODE, мс",value:0,red:"#06A"},
-//            {name:"MAX:CPU_SYS_MODE",text:"USER SYS, мс",value:0,red:"#06A"},
-//            {name:"MAX:CPU_IDLE_MODE",text:"USER IDLE, мс",value:0,red:"#0A6"},
 
 
         ];

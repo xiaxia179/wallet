@@ -130,18 +130,24 @@ function GetCurrentStatIndex()
     return CurStatIndex%DefMaxStatPeriod;;
 }
 
-global.ADD_TO_STAT=function(Key,Count)
+global.ADD_TO_STAT=function(Key,Count,bDetail)
 {
     if(global.STAT_MODE)
     {
+        if(bDetail && global.STAT_MODE!==2)
+            return;
+
         AddToStatContext(CONTEXT_STATS,Key,Count);
     }
 }
 
-global.ADD_TO_STAT_TIME=function(Name,startTime)
+global.ADD_TO_STAT_TIME=function(Name,startTime,bDetail)
 {
     if(global.STAT_MODE)
     {
+        if(bDetail && global.STAT_MODE!==2)
+            return;
+
         var Time = process.hrtime(startTime);
         var deltaTime=Time[0]*1000 + Time[1]/1e6;//ms
         ADD_TO_STAT(Name,deltaTime);

@@ -25,6 +25,7 @@ const PERIOD_FOR_NEXT_SEND=CONSENSUS_TIK_TIME*3
 global.BLOCK_DELTA_ACTIVATE=1;
 global.TIME_END_EXCHANGE=-3;
 global.TIME_START_POW=-4;
+global.TIME_START_POW_EXCHANGE=-5;
 global.TIME_END_EXCHANGE_POW=-7;
 global.TIME_START_SAVE=-8;
 global.TIME_START_LOAD=-12;
@@ -287,13 +288,13 @@ module.exports = class CConsensus extends require("./block-loader")
 
 
 
-        var startTime = process.hrtime();
+        //var startTime = process.hrtime();
         var it=this.TreePoolTr.iterator(), item;
         while((item = it.next()) !== null)
         {
             var Res=this.AddTrToBlockQuote(Block,item);
         }
-        ADD_TO_STAT_TIME("IsValidTransaction", startTime);
+        //ADD_TO_STAT_TIME("IsValidTransaction", startTime);
 
         this.TreePoolTr.clear();//TODO
 
@@ -341,13 +342,13 @@ module.exports = class CConsensus extends require("./block-loader")
 
 
         Transfer.WasGet=true;
-        var startTime2 = process.hrtime();
+        //var startTime2 = process.hrtime();
         for(var i=0;i<Data.Array.length;i++)
         {
             this.AddTrToBlockQuote(Block,Data.Array[i]);
         }
 
-        ADD_TO_STAT_TIME("IsValidTransaction", startTime2);
+        //ADD_TO_STAT_TIME("IsValidTransaction", startTime2);
 
         this.ToMaxPOWList(Data.MaxPOW);
         this.ToMaxSumList(Data.MaxSum);
@@ -664,6 +665,7 @@ module.exports = class CConsensus extends require("./block-loader")
     {
         if(Block && item)
         {
+
             if(!Block.MaxPOW)
                 Block.MaxPOW={};
             var POW=Block.MaxPOW;
@@ -1182,6 +1184,9 @@ module.exports = class CConsensus extends require("./block-loader")
         if(this.RelayMode)
             bSimplePow=true;
 
+        if(Block.StartMining && !bSimplePow)
+            return true;
+
         var WasHash=Block.Hash;
 
         if(!Block.TreeHash)
@@ -1196,25 +1201,23 @@ module.exports = class CConsensus extends require("./block-loader")
         if(bSimplePow)
             this.CreatePOWNew(Block,1);
         else//расчет POW блока (1 сек) - TODO - перенести в отдельный процесс
-            this.CreatePOWNew(Block,2*(1<<MIN_POWER_POW_BL));
+            this.CreatePOWNew(Block,(1<<MIN_POWER_POW_BL));
 
         if(!WasHash || CompareArr(WasHash,Block.Hash)!==0)
             Block.Info+="\nHASH:"+this.GetStrFromHashShort(WasHash)+"->"+this.GetStrFromHashShort(Block.Hash);
 
 
-        this.AddToMaxPOW(Block,
-            {
-                SeqHash:Block.SeqHash,
-                AddrHash:Block.AddrHash,
-                //port:this.port,
-                PrevHash:Block.PrevHash,
-                TreeHash:Block.TreeHash,
-            });
-
         Block.Prepared=true;
+        Block.StartMining=true;
+        this.MiningBlock=Block;
+
+        if(global.SetCalcPOW)
+            global.SetCalcPOW(Block);
 
         return true;
     }
+
+
 
     ReloadTrTable(Block)
     {
@@ -1352,6 +1355,8 @@ module.exports = class CConsensus extends require("./block-loader")
 
     DoBlockChain()
     {
+        this.MiningBlock=undefined;
+
         if(this.StartMode)
             return;
         if(this.LoadHistoryMode)
@@ -1426,6 +1431,7 @@ module.exports = class CConsensus extends require("./block-loader")
                 AddInfoBlock(Block,"!EndExchange");
                 this.CreateTreeHash(Block);
                 this.PreparePOWHash(Block,true);//not start POW
+                this.AddToMaxPOW(Block);
             }
 
             //POW
@@ -1435,18 +1441,31 @@ module.exports = class CConsensus extends require("./block-loader")
                     this.CreateTreeHash(Block);
 
                 AddInfoBlock(Block,"Start POW!!!");
-                //Block.bSave=false;
+
                 this.PreparePOWHash(Block);//start POW
                 if(!Block.Prepared)
                     AddInfoBlock(Block,"!!Prepared");
                 continue;
             }
+
             if(!Block.Prepared)//Прошли тайминги расчета POW, но он не рассчитан. Рассчитываем упрощенно вручную
             {
                 //AddInfoBlock(Block,"!Prepared");
                 this.PreparePOWHash(Block,true);//not start POW
+                //this.AddToMaxPOW(Block);
             }
 
+            // if(i===this.CurrentBlockNum+TIME_START_POW_EXCHANGE && Block.StartMining)
+            // {
+            //     var item={
+            //         SeqHash:Block.SeqHash,
+            //         AddrHash:Block.AddrHash,
+            //         PrevHash:Block.PrevHash,
+            //         TreeHash:Block.TreeHash,
+            //     };
+            //
+            //     this.AddToMaxPOW(Block,item);
+            // }
 
 
             //Обмен POW
@@ -1488,6 +1507,7 @@ module.exports = class CConsensus extends require("./block-loader")
                 {
                     AddInfoBlock(Block,"New simple pow");
                     this.PreparePOWHash(Block,true);//not start POW
+                    this.AddToMaxPOW(Block);
                 }
 
 

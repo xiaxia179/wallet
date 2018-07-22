@@ -1,5 +1,6 @@
 ﻿# TERA Smart money
 
+Русскя версия: https://github.com/terafoundation/wallet/Doc/Rus
 
 WARNING: To connect to the network and start sync, you must have a static IP address and an open port
 
@@ -92,7 +93,7 @@ sudo git pull
 * Name: TERA
 * Consensus: PoW
 * Algorithm:  sha3 + meshhash (ASIC resistent hashing)
-* Max emission: 1 bln (TER)
+* Max emission: 1 Bln
 * Reward for block: 1-20 coins, depends on network power (one billionth of the remainder of undistributed amount of coins and multiplied by the hundredth part of the square of the logarithm of the network power)
 * Block size 120 KB
 * Premine: 5%

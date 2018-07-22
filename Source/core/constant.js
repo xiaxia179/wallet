@@ -1,17 +1,24 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=60;
-global.MIN_CODE_VERSION_NUM=60;
+global.UPDATE_CODE_VERSION_NUM=75;
+global.MIN_CODE_VERSION_NUM=70;
 
 
 
 global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
-    "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD","WALLET_NAME","ADDRLIST_MODE"];
+    "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD","WALLET_NAME","ADDRLIST_MODE",
+    "USE_MINING","POW_MAX_PERCENT"];
 global.DELTA_CURRENT_TIME=0;
 global.SERVER_PRIVATE_KEY_HEX=undefined;
 global.NET_WORK_MODE=undefined;
 global.STAT_MODE=0;
 global.UPDATE_NUM_COMPLETE=0;
 global.WALLET_NAME="TERA";
+global.USE_MINING=0;
+global.POW_MAX_PERCENT=50;
+
+
+global.POWRunCount=10000;
+global.POWRunPeriod=2;
 
 
 require("./startlib.js");
@@ -55,7 +62,7 @@ global.AVG_TRANSACTION_COUNT=Math.floor(MAX_TRANSACTION_COUNT/2);
 
 global.MIN_POWER_POW_TR=15;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(global.MIN_POWER_POW_BL===undefined)
-    global.MIN_POWER_POW_BL=6;
+    global.MIN_POWER_POW_BL=7;
 global.GENERATE_BLOCK_ACCOUNT=0;
 global.TOTAL_TER_MONEY=1e9;
 
@@ -97,7 +104,7 @@ InitParams();
 //global.LOCAL_RUN=1;
 if(global.LOCAL_RUN)
 {
-    global.START_NETWORK_DATE=1532015389992//((new Date)-0)-50*1000;
+    global.START_NETWORK_DATE=((new Date)-0)-50*1000;
     global.DELTA_BLOCK_ACCOUNT_HASH=16;
     global.TEST_TRANSACTION_GENERATE=0;
     global.MIN_POWER_POW_TR=0;

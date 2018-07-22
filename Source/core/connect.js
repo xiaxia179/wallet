@@ -20,7 +20,7 @@ global.CODE_VERSION={BlockNum:0,addrArr:[],LevelUpdate:0,BlockPeriod:0, VersionN
 
 
 
-const MAX_PERIOD_GETNODES=60*1000;
+const MAX_PERIOD_GETNODES=120*1000;
 
 var MAX_PING_FOR_CONNECT=300;//ms
 var TIME_AUTOSORT_GRAY_LIST=5000;//ms
@@ -147,6 +147,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(global.CAN_START)
             this.PerioadAfterCanStart++;
 
+        //Time correct
         if(CHECK_DELTA_TIME.bUse)
         {
             var BlockNum=GetCurrentBlockNumByTime();
@@ -180,6 +181,12 @@ module.exports = class CConnect extends require("./transfer-msg")
                     Node.PingNumber=0;
                 Node.PingNumber++;
 
+                if(Node.AddrList)
+                    continue;
+                // if(Node.LoadHistoryMode && Node.PingNumber%10!==0)
+                //     continue;
+
+
                 var Context={"StartTime":GetCurrentTime(0),PingNumber:Node.PingNumber};
                 this.SendF(Node,
                     {
@@ -201,6 +208,10 @@ module.exports = class CConnect extends require("./transfer-msg")
         var BlockNumHash=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2;
         var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
 
+        // var LoadHistoryMode=this.LoadHistoryMode;
+        // if(global.ADDRLIST_MODE)
+        //     LoadHistoryMode=1;
+
         var Ret=
             {
                 VERSIONMAX:DEF_VERSION,
@@ -220,6 +231,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 MemoryUsage:Math.trunc(process.memoryUsage().heapTotal/1024/1024),
                 CheckDeltaTime:CHECK_DELTA_TIME,
                 CodeVersion2:CODE_VERSION,
+                AddrList:global.ADDRLIST_MODE,
                 Reserve:[],
             };
 
@@ -245,6 +257,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             MemoryUsage:uint,\
             CheckDeltaTime:{Num:uint,bUse:byte,StartBlockNum:uint,EndBlockNum:uint,bAddTime:byte,DeltaTime:uint,Sign:arr64},\
             CodeVersion2:{BlockNum:uint,addrArr:arr32,LevelUpdate:byte,BlockPeriod:uint,VersionNum:uint,Hash:hash,Sign:arr64},\
+            AddrList:byte,\
             Reserve:arr40,\
             }";
     }
@@ -552,6 +565,8 @@ module.exports = class CConnect extends require("./transfer-msg")
         {
             Node.GetNodesStart=(new Date)-0;
             Node.NextGetNodesDelta=Math.min(Node.NextGetNodesDelta*2,MAX_PERIOD_GETNODES);
+            if(global.ADDRLIST_MODE)
+                Node.NextGetNodesDelta=MAX_PERIOD_GETNODES;
 
             this.Send(Node,
                 {
@@ -560,7 +575,6 @@ module.exports = class CConnect extends require("./transfer-msg")
                 }
             );
         }
-
     }
 
     GETNODES(Info,CurTime)
@@ -569,7 +583,10 @@ module.exports = class CConnect extends require("./transfer-msg")
             {
                 "Method":"RETGETNODES",
                 "Context":Info.Context,
-                "Data":{arr:this.GetDirectNodesArray(false)}
+                "Data":{
+                            arr:this.GetDirectNodesArray(false),
+                            AddrList:global.ADDRLIST_MODE,
+                        }
             },MAX_NODES_RETURN*150+300
         );
     }
@@ -584,7 +601,8 @@ module.exports = class CConnect extends require("./transfer-msg")
                             LastTime:uint,\
                             DeltaTime:uint\
                         }\
-                    ]}";
+                    ],\
+                    AddrList:byte}";
     }
 
 
@@ -599,6 +617,8 @@ module.exports = class CConnect extends require("./transfer-msg")
                 this.AddToArrNodes(arr[i],true);
             }
         }
+        Info.Node.AddrList=Data.AddrList;
+
         //ToLog("RETGETNODES length="+arr.length);
     }
 
@@ -891,6 +911,9 @@ module.exports = class CConnect extends require("./transfer-msg")
         for(var n=0;n<this.NodesArr.length;n++)
         {
             var Node=this.NodesArr[n];
+            if(Node.LoadHistoryMode)
+                return;
+
             if(!Node.Active || Node.addrStr===this.addrStr)
                 continue;
 

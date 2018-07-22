@@ -42,7 +42,7 @@ class CApp
 
         if(Params.Protect)
         {
-            ToLogClient("Wallet protected by password");
+            ToLogClient("Wallet protect by password");
             this.KeyXOR=GetArrFromHex(Params.KeyXOR);
             this.WalletOpen=false;
 

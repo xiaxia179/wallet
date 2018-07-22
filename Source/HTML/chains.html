@@ -629,7 +629,21 @@
 
             //ctx.fillText("P:"+Block.SumPow.toFixed(0),x+2,y+10+48+16);
 
-            ctx.fillText(Block.Miner1,x+2,y+10+48+16);
+            var y2=y+10+48+16;
+            ctx.fillText(Block.Miner1,x+2,y2);
+
+
+            var L1=16;
+            if(Block.Power>L1)
+            {
+                ctx.strokeRect(x, y2-12, L1, 2);
+                ctx.strokeStyle = "#fb8";
+                ctx.strokeRect(x+L1, y2-12, Block.Power-L1, 2);
+            }
+            else
+                ctx.strokeRect(x, y2-12, Block.Power, 2);
+            //ctx.fillRect(x, y, Block.width, Block.height);
+
 
         }
         else
@@ -991,7 +1005,10 @@
             Str+="\nTrDataLen:"+Block.TrDataLen;
 
 
-            Str+="\nPow:"+Block.SumPow.toFixed(4);
+            Str+="\nMiner:"+Block.Miner1;
+            Str+="\nPow:"+Block.Power;
+            Str+="\nSumPow:"+Block.SumPow;
+
             if(!Block.TreeLoaded)
                 Block.TreeLoaded="";
             if(!Block.AddToLoad)

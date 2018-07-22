@@ -177,19 +177,65 @@ module.exports = class CBlock extends require("./db/block-db")
 
     CreatePOWNew(Block,CountNonce)
     {
-        var Ret=CreateAddrPOW(Block.SeqHash,CountNonce);
+        var AddrArr=GetArrFromValue(GENERATE_BLOCK_ACCOUNT);
+        var MaxHash=shaarr2(Block.SeqHash,AddrArr);
 
-        Block.Hash=Ret.Hash;
-        Block.AddrHash=Ret.AddrHash;
+        var Ret=CreateAddrPOW(Block.SeqHash,AddrArr,MaxHash,0,CountNonce);
+        ADD_TO_STAT("HASHRATE",CountNonce);
+
+        Block.Hash=Ret.MaxHash;
+        Block.AddrHash=AddrArr;
+        Block.LastNonce=Ret.LastNonce;
+
         Block.Power=GetPowPower(Block.Hash);
+        ADD_TO_STAT("MAX:POWER",Block.Power);
 
-        var testHash=this.GetHashFromSeq(Block);
-        if(CompareArr(testHash,Ret.Hash)!==0)
+        // var testHash=this.GetHashFromSeq(Block);
+        // if(CompareArr(testHash,Ret.MaxHash)!==0)
+        // {
+        //     ToLogTrace("#1 NO CompareArr");
+        //     throw "NO CompareArr!";
+        // }
+        this.AddToMaxPOW(Block,
+            {
+                SeqHash:Block.SeqHash,
+                AddrHash:Block.AddrHash,
+                PrevHash:Block.PrevHash,
+                TreeHash:Block.TreeHash,
+            });
+    }
+
+    CreatePOWNext(Block,CountNonce)
+    {
+        var AddrArr=GetArrFromValue(GENERATE_BLOCK_ACCOUNT);
+        var Ret=CreateAddrPOW(Block.SeqHash,AddrArr,Block.Hash,Block.LastNonce,CountNonce);
+
+        ADD_TO_STAT("HASHRATE",CountNonce);
+
+        Block.LastNonce=Ret.LastNonce;
+        if(Ret.bFind)
         {
-            ToLogTrace("NO CompareArr");
-            throw "NO CompareArr!";
+            Block.Hash=Ret.MaxHash;
+            Block.AddrHash=AddrArr;
+
+            Block.Power=GetPowPower(Block.Hash);
+            ADD_TO_STAT("MAX:POWER",Block.Power);
+
+            // var testHash=this.GetHashFromSeq(Block);
+            // if(CompareArr(testHash,Ret.MaxHash)!==0)
+            // {
+            //     ToLogTrace("#2 NO CompareArr");
+            //     throw "NO CompareArr!";
+            // }
+            this.AddToMaxPOW(Block,
+                {
+                    SeqHash:Block.SeqHash,
+                    AddrHash:Block.AddrHash,
+                    PrevHash:Block.PrevHash,
+                    TreeHash:Block.TreeHash,
+                });
         }
-     }
+    }
 
 
     //PrevHash
@@ -1800,7 +1846,7 @@ module.exports = class CBlock extends require("./db/block-db")
             Node.SendBlockCount=0;
             Node.LoadBlockCount=0;
 
-            ADD_TO_STAT("NODE_CAN_GET:"+NodeName(Node),Node.CanGetBlocks);
+            ADD_TO_STAT("NODE_CAN_GET:"+NodeName(Node),Node.CanGetBlocks,1);
         }
     }
 

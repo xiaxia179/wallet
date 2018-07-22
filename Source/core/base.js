@@ -174,7 +174,7 @@ class SMemBuffer
             }
             if(Count)
             {
-                ADD_TO_STAT(this.CheckName);
+                ADD_TO_STAT(this.CheckName,1,1);
             }
         }
         this.MetaMap2=this.MetaMap1;
@@ -250,7 +250,7 @@ class STreeBuffer
 
         if(this.CheckName && this.MetaTree2.size)
         {
-            ADD_TO_STAT(this.CheckName,this.MetaTree2.size);
+            ADD_TO_STAT(this.CheckName,this.MetaTree2.size,1);
 
             var it=this.MetaTree2.iterator(), Item;
             while((Item = it.next()) !== null)
@@ -258,7 +258,7 @@ class STreeBuffer
                 var Name=Item.value.Name;
 
 
-                ADD_TO_STAT(this.CheckName+":"+Name);
+                ADD_TO_STAT(this.CheckName+":"+Name,1,1);
             }
 
         }

@@ -1,9 +1,9 @@
 "use strict";
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-
 require("./crypto-library");
 require("./log.js");
 const crypto = require('crypto');
+const os = require('os');
 
 
 //**********************************************************************************************************************
@@ -306,8 +306,9 @@ HTTPCaller.GetWalletInfo=function ()
             HTTPPassword:HTTP_PORT_PASSWORD,
 
             CONSTANTS:Constants,
+            CPU_COUNT:os.cpus().length,
 
-};
+        };
 
 
     Ret.PrivateKey=WALLET.KeyPair.PrivKeyStr;
@@ -537,8 +538,17 @@ HTTPCaller.SaveConstant=function (SetObj)
     }
     SAVE_CONST(true);
 
+
+
+
     if(SetObj.RestartNode)
         RestartNode();
+    else
+    {
+        if(SetObj.DoMining)
+            global.RunStopPOWProcess();
+
+    }
 
     return {result:1};
 }
@@ -1052,6 +1062,7 @@ function CopyBlockDraw(Block,MainChains)
             TrCount:Block.TrCount,
             ArrLength:0,
             TrDataLen:Block.TrDataLen,
+            Power:Block.Power,
         };
     if(Block.chain)
         Item.chainid=Block.chain.id;

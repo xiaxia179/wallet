@@ -5,6 +5,8 @@ require("./constant");
 const crypto = require('crypto');
 
 
+
+
 global.DATA_PATH=GetNormalPathString(global.DATA_PATH);
 global.CODE_PATH=GetNormalPathString(global.CODE_PATH);
 
@@ -26,23 +28,30 @@ if(USE_PARAM_JS)
 
 
 require("./library");
-const cluster = require('cluster');
+// const cluster = require('cluster');
+// if(!cluster.isMaster)
+//     return;
+
+
+
 var CServer=require("./server");
 
 global.glCurNumFindArr=0;
 global.ArrReconnect=[];
 var FindList=LoadParams(GetDataPath("finds-server.lst"),undefined);
-if(!FindList || UPDATE_CODE_VERSION_NUM<55)
+if(!FindList)
 {
     FindList=[
         {"ip":"194.1.237.94","port":30000},//3
         {"ip":"91.235.136.81","port":30002},//5
         {"ip":"103.102.45.224","port":30000},//12
         {"ip":"185.17.122.144","port":30000},//14
+        {"ip":"185.17.122.149","port":30000},//20
         ];
 
     SaveParams(GetDataPath("finds-server.lst"),FindList);
 }
+
 
 
 
@@ -61,107 +70,198 @@ var Worker;
 
 
 
-const OnlyOneProcess=1;//TODO - пока один процесс
-
 global.NeedRestart=0;
 
 
 
-if(cluster.isMaster)
+if(global.nw)
+process.on('uncaughtException', function (err)
 {
-    // var gc = require("gc");
-    // gc();
-    process.on('error', function (err)
+    if(process.send)
     {
-        if(process.send)
-            process.send({cmd:"log",message:err});
-        ToLog(err.stack);
-    });
+        process.send({cmd:"log",message:err});
+    }
 
-    if(global.nw)
-    process.on('uncaughtException', function (err)
+    TO_ERROR_LOG("APP",666,err);
+    ToError(err.stack);
+    ToLog(err.stack);
+
+    if(err.code==="ENOTFOUND"
+    ||err.code==="ECONNRESET")
     {
-        if(process.send)
-            process.send({cmd:"log",message:err});
+        //do work
+    }
+    else
+    {
+        process.exit();
+    }
+});
+process.on('error', function (err)
+{
+    ToError(err.stack);
+    ToLog(err.stack);
+});
 
-        TO_ERROR_LOG("APP",666,err);
-        ToLog(err.stack);
 
-        if(err.code==="ENOTFOUND"
-        ||err.code==="ECONNRESET")
+
+
+
+
+require("./html-server");
+RunServer(false);
+
+
+setInterval(function run1()
+{
+    ReconnectingFromServer();
+}, 100);
+setInterval(function run2()
+{
+    ConnectToNodes();
+}, 200);
+
+
+if(global.ADDRLIST_MODE)
+{
+    return;
+}
+
+//ToLog("global.USE_MINING="+global.USE_MINING);
+var ArrWrk=[];
+if(global.USE_MINING)
+{
+    RunStopPOWProcess();
+}
+
+
+global.RunStopPOWProcess=RunStopPOWProcess;
+function RunStopPOWProcess()
+{
+    const os = require('os');
+    var cpus = os.cpus();
+    var CountRun=cpus.length-1;
+
+    if(CountRun<=0)
+        return;
+
+    if(global.USE_MINING && ArrWrk.length || (!global.USE_MINING) && ArrWrk.length===0)
+        return;
+
+    if(!global.USE_MINING)
+    {
+        //Stop process
+        var Arr=ArrWrk;
+        ArrWrk=[];
+        for(var i=0;i<Arr.length;i++)
         {
-            //do work
+            var CurWorker=Arr[i];
+            CurWorker.send(
+                {
+                    cmd:"Exit"
+                });
         }
-        else
-        {
-            process.exit();
-        }
-    });
-
-
-
-
-
-
-    require("./html-server");
-    RunServer(false);
-
-
-    setInterval(function run1()
-    {
-        ReconnectingFromServer();
-    }, 100);
-    setInterval(function run2()
-    {
-        ConnectToNodes();
-    }, 200);
-
-
-    if(global.ADDRLIST_MODE)
-    {
         return;
     }
 
+    const child_process = require('child_process');
+    ToLog("START POW PROCESS COUNT="+CountRun);
+    let BLOCK;
+    for(var R=0;R<CountRun;R++)
+    {
+        let Worker = child_process.fork("./core/pow-process.js");
+        console.log(`**************************Worker pid: ${Worker.pid}`);
+        ArrWrk.push(Worker);
+        Worker.Num=ArrWrk.length;
 
-    if(OnlyOneProcess)
-        return;
-
-    //дочерний процесс для POW
-    var arr=[];
-    for(var i=1;i<process.argv.length;i++)
-        arr[i-1]=process.argv[i];
-    arr.push("childpow");
-    //ToLog(JSON.stringify(arr))
-    cluster.settings.args=arr;
-
-    //Worker = child_process.fork("child.js",arr,{shell:false});
-    Worker=cluster.fork();
-    Worker.on('message',
-        function (msg)
+        let bOnline=0;
+        global.SetCalcPOW=function(Block)
         {
-            var Node=msg.Node;
-            var buf=Buffer.from(msg.buf);
-            var Meta=Buffer.from(msg.Meta);
+            if(!global.USE_MINING)
+                return;
 
+            BLOCK=Block;
+            for(var i=0;i<ArrWrk.length;i++)
+            {
+                var CurWorker=ArrWrk[i];
+                if(!CurWorker.bOnline)
+                    continue;
 
-            SERVER.SenData.bind(SERVER)(Node,buf);
+                CurWorker.send(
+                    {
+                        cmd:"SetBlock",
+                        Account:GENERATE_BLOCK_ACCOUNT,
+                        SeqHash:Block.SeqHash,
+                        Hash:Block.Hash,
+                        Time:new Date()-0,
+                        Num:i,
+                        RunPeriod:global.POWRunPeriod,
+                        RunCount:global.POWRunCount,
+                        Percent:global.POW_MAX_PERCENT,
+                    });
+            }
 
-            //SERVER.CreateTimeMeta();
-            //var CurTime=GetCurrentTime();
-            SERVER.MetaBuf.SaveValue(Meta,true);
-            //console.log(`Worker: ${msg.buf.data}`);
+        }
+
+        Worker.on('message',
+            function (msg)
+            {
+                if(msg.cmd==="log")
+                {
+                    ToLog(msg.message);
+                }
+                else
+                if(msg.cmd==="online")
+                {
+                    Worker.bOnline=true;
+                    ToLog("ONLINE:"+Worker.Num+":"+msg.message);
+                }
+                else
+                if(msg.cmd==="POW")
+                {
+                    //ToLog("POW: "+JSON.stringify(msg))
+
+                    if(BLOCK && BLOCK.Hash && BLOCK.SeqHash
+                        && CompareArr(BLOCK.SeqHash,msg.SeqHash)===0
+                        && CompareArr(BLOCK.Hash,msg.Hash)>=0)
+                    {
+                        BLOCK.Hash=msg.Hash;
+                        BLOCK.AddrHash=msg.AddrArr;
+
+                        BLOCK.Power=GetPowPower(BLOCK.Hash);
+                        ADD_TO_STAT("MAX:POWER",BLOCK.Power);
+
+                        SERVER.AddToMaxPOW(BLOCK,
+                            {
+                                SeqHash:BLOCK.SeqHash,
+                                AddrHash:BLOCK.AddrHash,
+                                PrevHash:BLOCK.PrevHash,
+                                TreeHash:BLOCK.TreeHash,
+                            });
+                    }
+                }
+                else
+                if(msg.cmd==="HASHRATE")
+                {
+                    ADD_TO_STAT("HASHRATE",msg.CountNonce);
+                }
+
+            });
+
+        Worker.on('error', (err) =>
+        {
+            if(!ArrWrk.length)
+                return;
+            ToError('***********************Error in POW worker: '+err);
         });
 
-}
-else
-{
-    RunServer(true);
-    process.on('message', (msg) =>
-    {
-        //ToLog("Get: "+JSON.stringify(msg))
-
-        SERVER.StartHandshake(msg);
-    });
+        Worker.on('close', (code) =>
+        {
+            if(!ArrWrk.length)
+                return;
+            ToError("*****************************POW Child process exited.");
+            //process.exit();
+        });
+    }
 }
 
 

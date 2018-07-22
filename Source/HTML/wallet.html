@@ -63,13 +63,14 @@
 
 
     var MapCurrency={};
-    MapCurrency[0]="TER";
+    MapCurrency[0]="TERA";
 
     var MaxAccID=0;
     var MaxActNum=0;
     var HistoryMaxNum=0;
     var MaxBlockNum=0;
 
+    var idPercentItem;
 
     var CurrentTR={};
 
@@ -258,6 +259,7 @@
 //        });
 //
 //    }
+
 
     function NewAccount()
     {
@@ -1044,6 +1046,23 @@
         INTERNET_IP_FROM_STUN=Data.INTERNET_IP_FROM_STUN;
         SERVER_IP=Data.ip;
         SERVER_PORT=Data.port;
+
+        document.getElementById("idUseMining").checked=CONFIG_DATA.CONSTANTS.USE_MINING;
+
+
+        if(!idPercentItem || document.activeElement!==idPercentItem)
+        {
+            idPercentItem=document.getElementById("idPercentMining");
+            idPercentItem.value=CONFIG_DATA.CONSTANTS.POW_MAX_PERCENT;
+        }
+
+
+        if(Data.CPU_COUNT>1 && CONFIG_DATA.CONSTANTS.USE_MINING)
+            SetVisibleBlock("idPrecentBlock","inline-block");
+        else
+            SetVisibleBlock("idPrecentBlock",0);
+
+
     }
 
     function SetArrLog(arr)
@@ -1118,6 +1137,8 @@
             document.getElementById("idUseDirectIP").checked=Mode.UseDirectIP;
             document.getElementById("idIP").value=Mode.ip;
             document.getElementById("idPort").value=Mode.port;
+            if(!Mode.NodeWhiteList)
+                Mode.NodeWhiteList="";
             document.getElementById("idNodeWhiteList").value=Mode.NodeWhiteList;
 
         }
@@ -1640,6 +1661,34 @@
     }
 
 
+
+
+    function UseMining()
+    {
+        var Data={USE_MINING:document.getElementById("idUseMining").checked,DoMining:1};
+
+        GetData("/SaveConstant",Data, function (Data)
+        {
+            if(Data && Data.result)
+            {
+                SetStatus("Save Mining: "+document.getElementById("idUseMining").checked);
+            }
+        });
+    }
+    function SetPercentMining()
+    {
+        var Data={POW_MAX_PERCENT: document.getElementById("idPercentMining").value};
+
+        GetData("/SaveConstant",Data, function (Data)
+        {
+            if(Data && Data.result)
+            {
+                SetStatus("Save Mining percent: "+document.getElementById("idPercentMining").value+" %");
+            }
+        });
+    }
+
+
 </script>
 
 <script>
@@ -1842,6 +1891,8 @@
     <BR>
 
 
+    <input type="checkbox" class="checkbox" id="idUseMining" onchange = "UseMining()"/>
+    <label for="idUseMining">MINING</label> <DIV id="idPrecentBlock" style="display: none"> CPU use:<input type="number" min=0 max=100 id="idPercentMining" onchange="SetPercentMining()"/>%</DIV><BR>
     <DIV id="idDevelopService" style="display: none">
         <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
                class="btdoit bt" value="DEV SERVICE">
@@ -1869,7 +1920,6 @@
             <HR>
         </DIV>
     </DIV>
-
 
     <DIV id="idCurrentBlockNum"></DIV>
     Wallet data path: <B id="idDataPath"></B><BR>
@@ -1959,12 +2009,14 @@
         </tr>
     </table>
 
+
     <INPUT type="button" id="idDown" onclick="ViewNetworkMode();SetImg(this,'idNetworkView')"
            class="btdoit bt" value="NET CONNECT">
     <INPUT type="button" id="idDown" onclick="ViewRemoteParams();SetImg(this,'idRemoteView')"
            class="btdoit bt" value="HTTP ACCESS">
     <INPUT type="button" id="idDown" onclick="ViewConstant();SetImg(this,'idConstantView')"
            class="btdoit bt" value="CONSTANTS">
+
 
     <DIV id="idNetworkView" style="display: none">
         <H3>Network connections:</H3>
@@ -2081,7 +2133,7 @@
         <tr>
             <td>Amount</td>
             <td>
-                <INPUT type="number" id="idSumTER" value="" step=0 min=0 max=1000000000 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()">&nbsp;<B>TER</B>
+                <INPUT type="number" id="idSumTER" value="" step=0 min=0 max=1000000000 onkeyup="OnEditTransactionFields()" onchange="OnEditTransactionFields()">&nbsp;<B>TERA</B>
             </td>
         </tr>
         <tr>

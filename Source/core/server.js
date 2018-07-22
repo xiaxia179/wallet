@@ -285,13 +285,14 @@ module.exports = class CTransport extends require("./connect")
             this.MethodPrioritet["GETTRANSFER"]=20;
             this.MethodPrioritet["OKCONTROLHASH"]=25;
 
-            this.MethodPrioritet["HAND"]=100;
-            this.MethodPrioritet["SHAKE"]=100;
+            this.MethodPrioritet["HAND"]=50;
+            this.MethodPrioritet["SHAKE"]=50;
+            this.MethodPrioritet["PING"]=50;
+            this.MethodPrioritet["PONG"]=50;
+            this.MethodPrioritet["GETNODES"]=50;
+            this.MethodPrioritet["RETGETNODES"]=50;
+
             this.MethodPrioritet["RETADDLEVELCONNECT"]=100;
-            this.MethodPrioritet["RETGETNODES"]=100;
-            this.MethodPrioritet["PING"]=100;
-            this.MethodPrioritet["PONG"]=100;
-            this.MethodPrioritet["GETNODES"]=100;
             this.MethodPrioritet["GETHOTLEVELS"]=100;
             this.MethodPrioritet["RETGETHOTLEVELS"]=100;
 
@@ -471,7 +472,7 @@ module.exports = class CTransport extends require("./connect")
 
 
             Node.SendTrafficCurrent=0;
-            ADD_TO_STAT("MAX:NODE_TRAFFIC_LIMIT:"+NodeName(Node),1000/STAT_PERIOD*Node.SendTrafficLimit/1024);
+            ADD_TO_STAT("MAX:NODE_TRAFFIC_LIMIT:"+NodeName(Node),1000/STAT_PERIOD*Node.SendTrafficLimit/1024,1);
         }
 
         //if(!HardSendCount)
@@ -756,7 +757,7 @@ module.exports = class CTransport extends require("./connect")
         var StartTimeNum=(new Date)-0;
         var PacketType=buf[12];
 
-        ADD_TO_STAT("GETDATA",buf.length/1024);
+        ADD_TO_STAT("GETDATA(KB)",buf.length/1024);
         ADD_TO_STAT("LOADFRAGMENT");
 
 
@@ -1809,8 +1810,8 @@ module.exports = class CTransport extends require("./connect")
             return;
 
         var startTime = process.hrtime();
-        ADD_TO_STAT("GETDATA",buf.length/1024);
-        ADD_TO_STAT("GETDATA:"+NodeName(Node),buf.length/1024);
+        ADD_TO_STAT("GETDATA(KB)",buf.length/1024);
+        ADD_TO_STAT("GETDATA(KB):"+NodeName(Node),buf.length/1024,1);
 
 
 
@@ -1823,7 +1824,8 @@ module.exports = class CTransport extends require("./connect")
         }
 
         ADD_TO_STAT("GET:"+Buf.Method);
-        ADD_TO_STAT("GET:"+Buf.Method+":"+NodeName(Node));
+        ADD_TO_STAT("GET:(KB)"+Buf.Method,buf.length/1024);
+        ADD_TO_STAT("GET:"+Buf.Method+":"+NodeName(Node),1,1);
 
         //ToLog("LOAD "+Buf.Method+" ContextID="+GetHexFromAddres(Buf.ContextID));
 
@@ -1838,35 +1840,42 @@ module.exports = class CTransport extends require("./connect")
         Buf.Node=Node;
         Buf.Socket=Socket;
 
-
         var Prioritet=this.MethodPrioritet[Buf.Method];
 
-        if(0)
-        if(Prioritet===500)
+        if(global.ADDRLIST_MODE && Prioritet!==50)
         {
-            Node.WantHardTraffic=1;
-            if(!Node.CanHardTraffic)
-            {
-                TO_DEBUG_LOG(""+Buf.Method+" - ADD TO BUF");
 
-                Node.LoadPacketNum++;
-                Buf.PacketNum=Node.LoadPacketNum;
-                Buf.LoadTimeNum=(new Date)-0;
-                this.HardPacketForSend.insert(Buf);
-
-                return 1;
-            }
         }
+        else
+        {
+            if(0)
+            if(Prioritet===500)
+            {
+                Node.WantHardTraffic=1;
+                if(!Node.CanHardTraffic)
+                {
+                    TO_DEBUG_LOG(""+Buf.Method+" - ADD TO BUF");
+
+                    Node.LoadPacketNum++;
+                    Buf.PacketNum=Node.LoadPacketNum;
+                    Buf.LoadTimeNum=(new Date)-0;
+                    this.HardPacketForSend.insert(Buf);
+
+                    return 1;
+                }
+            }
 
 
-        this.OnPacketTCP(Buf);
+            this.OnPacketTCP(Buf);
 
+        }
 
         //this.LoadedNodes.SaveValue(Node.addrArr,Node);
         ADD_TO_STAT_TIME("TIMEDOGETDATA", startTime);
 
         return 1;
     }
+
 
     DoHardPacketForSend()
     {
@@ -1984,8 +1993,8 @@ module.exports = class CTransport extends require("./connect")
 
             //ToLog("Send to "+Node.port+" PacketNum="+Info.PacketNum)
 
-            ADD_TO_STAT("MAX:NODE_BUF_WRITE:"+NodeName(Node),Node.BufWrite.length/1024);
-            ADD_TO_STAT("MAX:NODE_SEND_BUF_PACKET_COUNT:"+NodeName(Node),Node.SendPacket.size);
+            ADD_TO_STAT("MAX:NODE_BUF_WRITE:"+NodeName(Node),Node.BufWrite.length/1024,1);
+            ADD_TO_STAT("MAX:NODE_SEND_BUF_PACKET_COUNT:"+NodeName(Node),Node.SendPacket.size,1);
 
             if(Node.BufWrite.length>2*TRAFIC_LIMIT_1S)
             {
@@ -2012,7 +2021,9 @@ module.exports = class CTransport extends require("./connect")
                 Node.BufWrite=Buffer.concat([Node.BufWrite,BufWrite]);
 
             ADD_TO_STAT("SEND:"+Info.Method);
-            ADD_TO_STAT("SEND:"+Info.Method+":"+NodeName(Node));
+            ADD_TO_STAT("SEND:(KB)"+Info.Method,BufWrite.length/1024);
+
+            ADD_TO_STAT("SEND:"+Info.Method+":"+NodeName(Node),1,1);
             TO_DEBUG_LOG("SEND "+Info.Method+" to "+NodeInfo(Node)+" LENGTH="+BufWrite.length);
 
             //ToLog("SEND "+Info.Method+"  ContextID="+GetHexFromAddres(Info.ContextID))
@@ -2029,14 +2040,14 @@ module.exports = class CTransport extends require("./connect")
     {
         this.RecalcSendStatictic();
         //ADD_TO_STAT("DOSENDBUF",1);
-
+        var CountNodeSend=0;
         var it=this.ActualNodes.iterator(), Node;
         NEXT_NODE:
         while((Node = it.next()) !== null)
         if(Node.Socket && Node.ConnectStatus()===100)
-        //while(Node.BufWrite.length)
         if(Node.BufWrite.length>0)
         {
+            CountNodeSend++;
 
             var CountSend=Math.min(BUF_PACKET_SIZE,Node.BufWrite.length);
             var Value=CountSend/1024;
@@ -2048,7 +2059,7 @@ module.exports = class CTransport extends require("./connect")
 
                 if(this.SendTrafficFree<CountSend)
                 {
-                    ADD_TO_STAT("LIMIT_SENDDATA:"+NodeName(Node),Value);
+                    ADD_TO_STAT("LIMIT_SENDDATA:"+NodeName(Node),Value,1);
                     continue NEXT_NODE;
                 }
 
@@ -2068,13 +2079,40 @@ module.exports = class CTransport extends require("./connect")
 
 
             this.ADD_CURRENT_STAT_TIME("SEND_DATA",Value);
-            ADD_TO_STAT("SENDDATA",Value);
-            ADD_TO_STAT("SENDDATA:"+NodeName(Node),Value);
+            ADD_TO_STAT("SENDDATA(KB)",Value);
+            ADD_TO_STAT("SENDDATA(KB):"+NodeName(Node),Value,1);
         }
 
+
+        if(!CountNodeSend)
+            this.DoCalcPow();
     }
 
 
+    DoCalcPow()
+    {
+        if(!this.MiningBlock)
+            return;
+
+        if(!global.USE_MINING)
+            return;
+
+        if(this.LoadBuf.size)
+            return;
+        if(this.HardPacketForSend.size)
+            return;
+
+        if(this.PrevWasMining)
+        {
+            this.PrevWasMining=0;
+            return;
+        }
+
+        this.PrevWasMining=1;
+        this.CreatePOWNext(this.MiningBlock,(1<<MIN_POWER_POW_BL));
+
+        ADD_TO_STAT("MINING-COUNT",1);
+    }
 
 
     CheckPOWTicketConnect(Socket,data)

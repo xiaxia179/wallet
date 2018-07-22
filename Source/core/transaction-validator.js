@@ -221,7 +221,8 @@ module.exports = class CSmartContract extends require("./block-exchange")
         if(BlockNum<1500000)
             return;
 
-        if(BlockNum%100 !== 0)
+
+        if(BlockNum%100 !== 0)//TODO
             return;
 
         var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
