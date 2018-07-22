@@ -1,6 +1,6 @@
 ﻿# TERA Smart money
 
-[Документация на русском](https://github.com/terafoundation/wallet/tree/master/Doc/Rus)
+[<Документация на русском>](https://github.com/terafoundation/wallet/tree/master/Doc/Rus)
 
 WARNING: To connect to the network and start sync, you must have a static IP address and an open port
 
@@ -29,62 +29,54 @@ Notes:
 
 ### CentOS 7:
 
+
+```
 sudo yum install -y git
-
 curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
-
 sudo yum  install -y nodejs
-
 sudo npm install pm2 -g
-
 sudo git clone https://github.com/terafoundation/wallet.git
-
 cd wallet/Source
-
 sudo npm install
-
 sudo pm2 start run-node.js
+```
 
-#### open ports (all):
-
+open ports (all):
+```
 systemctl stop firewalld 
-
 systemctl disable firewalld
+```
 
 
 
 ### UBUNTU 18.4:
 
+```
 sudo apt-get install -y git
-
 sudo apt-get install -y nodejs
-
 sudo apt-get install -y npm
-
 sudo npm install pm2 -g
-
 sudo git clone https://github.com/terafoundation/wallet.git
-
 cd wallet/Source
-
 sudo npm install
-
 sudo pm2 start run-node.js
+```
 
-#### open ports:
+open ports:
 
+```
 sudo ufw allow 30000/tcp
-
 sudo ufw allow 80/tcp
+```
 
 
 ### Updates
 
+```
 cd wallet
-
 sudo git reset --hard 
-
 sudo git pull 
+```
 
 
 

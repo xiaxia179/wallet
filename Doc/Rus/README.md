@@ -31,30 +31,25 @@
 
 Просто введите подряд в ssh-терминал команды указанные ниже (в зависимости от версии дистрибутива)
 
+
 ### Дистрибутив CentOS 7:
 
+```
 sudo yum install -y git
-
 curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
-
 sudo yum  install -y nodejs
-
 sudo npm install pm2 -g
-
 sudo git clone https://github.com/terafoundation/wallet.git
-
 cd wallet/Source
-
 sudo npm install
-
 sudo pm2 start run-node.js
+```
 
-#### open ports (all):
-
+открытие всех портов:
+```
 systemctl stop firewalld 
-
 systemctl disable firewalld
-
+```
 
 
 ### Дистрибутив UBUNTU 18.4:
@@ -63,32 +58,26 @@ systemctl disable firewalld
 sudo apt-get install -y git
 sudo apt-get install -y nodejs
 sudo apt-get install -y npm
-
 sudo npm install pm2 -g
-
 sudo git clone https://github.com/terafoundation/wallet.git
-
 cd wallet/Source
-
 sudo npm install
-
 sudo pm2 start run-node.js
+```
 
-#### open ports:
-
+открытие портов:
+```
 sudo ufw allow 30000/tcp
-
 sudo ufw allow 80/tcp
 ```
 
-### Updates
+### Обновления
 
+```
 cd wallet
-
 sudo git reset --hard 
-
 sudo git pull 
-
+```
 
 
 ## Спецификация
