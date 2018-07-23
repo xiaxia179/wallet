@@ -758,6 +758,20 @@ class AccountApp extends require("./dapp")
             WALLET.OnDoAct(TR,Data,BlockNum);
 
     }
+    RewriteWalletHistory(DBAct)
+    {
+        var end=DBAct.GetMaxNum();
+        for(var num=0;num<=end;num++)
+        {
+            var Act=DBAct.Read(num);
+            if(Act)
+            {
+                if(WALLET.AccountMap[Act.ID]!==undefined)
+                    WALLET.OnDoAct(TR,Data,BlockNum);
+            }
+
+        }
+    }
 
     ReadValue(Num)
     {

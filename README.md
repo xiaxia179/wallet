@@ -2,7 +2,7 @@
 
 [<Документация на русском>](https://github.com/terafoundation/wallet/tree/master/Doc/Rus)
 
-WARNING: To connect to the network and start sync, you must have a static IP address and an open port
+WARNING: To connect to the network and start sync, you must have a static IP address and an open port. 
 
 
 Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe
@@ -10,6 +10,8 @@ Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Wi
 * Select the FOLDER where you want to install the program (by default, the program is installed to the CURRENT folder).
 * If you have already installed the assembly data, you can download only the updates and install them in the same directory:
  https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
+Note: in this repository the files setup.exe and updater.exe always contain the same versions.
+
 
 ## Custom run whith Sorce code (win and other)
 * Download nodejs (recommended ver v8.11):  https://nodejs.org/en
@@ -98,6 +100,13 @@ sudo git pull
 * Protection against DDoS: PoW (hash calculation)
 * Platform: Node.JS
 
+
+# FAQs
+
+## Solving connection problems (when no start sync)
+* Check the presence of a direct ip-address (order from the provider)
+* Check if the port is routed from the router to your computer
+* Check the firewall (port must open on the computer)
 
 
 
