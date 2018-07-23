@@ -435,11 +435,9 @@ module.exports = class CConsensus extends require("./block-loader")
                     for(var L=Block.StartLevel;L>Block.MLevelSend;L--)
                     {
                         var Transfer2=Block.LevelsTransfer[L];
-                        if(Transfer2)// && !Transfer2.WasSend2)
+                        if(Transfer2)
                         {
                             this.SendControlData(Transfer2,BufData,Block.BlockNum,TreeHash,1);
-                            //Transfer2.WasSend2=true;
-                            //break;
                         }
                     }
                 }

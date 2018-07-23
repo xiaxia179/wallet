@@ -49,7 +49,7 @@ module.exports = class CDBState extends require("./db")
 
     //Write
 
-    Write(Data)
+    Write(Data,RetBuf)
     {
         this.LastHash=undefined;
         this.WasUpdate=1;
@@ -70,6 +70,10 @@ module.exports = class CDBState extends require("./db")
             return false;
         }
 
+        if(RetBuf)
+        {
+            RetBuf.Buf=BufWrite;
+        }
 
         if(Position>=FI.size)
         {

@@ -69,7 +69,31 @@ global.FORMAT_ACCOUNT_HASH=
     }";
 
 
+class MerkleDBRow extends DBRow
+{
+    constructor(FileName,DataSize,Format)
+    {
+        super(FileName,DataSize,Format);
 
+        this.MerkleArr=[];
+    }
+    Write(Data)
+    {
+        var RetBuf={};
+        var bRes=DBRow.prototype.Write.call(this, Data, RetBuf);
+        if(bRes)
+        {
+            var Hash=shaarr(RetBuf.Buf);
+            this.MerkleArr[Data.Num]=Hash;
+        }
+        return bRes;
+    }
+    Truncate(LastNum)
+    {
+        DBRow.prototype.Truncate.call(this, LastNum);
+        this.MerkleArr.length=LastNum;
+    }
+};
 
 
 //codes updater
@@ -92,7 +116,7 @@ class AccountApp extends require("./dapp")
             }";
 
         this.ACCOUNT_ROW_SIZE=6+33 + 40+(6+4 +6+84) + 6+6+9;
-        this.DBState=new DBRow("accounts-state",this.ACCOUNT_ROW_SIZE,this.FORMAT_ACCOUNT_ROW);
+        this.DBState=new MerkleDBRow("accounts-state",this.ACCOUNT_ROW_SIZE,this.FORMAT_ACCOUNT_ROW);
 
         //DB-act (база движений)
         this.DBAct=new DBRow("accounts-act",6+6 + (6+4+6+6+84) + 1 + 11,"{ID:uint, BlockNum:uint,PrevValue:{SumTER:uint,SumCENT:uint32, BlockNum:uint, OperationID:uint,Reserve:arr84}, Mode:byte, Reserve: arr11}");
@@ -755,22 +779,8 @@ class AccountApp extends require("./dapp")
 
 
         if(WALLET.AccountMap[Act.ID]!==undefined)
-            WALLET.OnDoAct(TR,Data,BlockNum);
+            WALLET.OnDoHistoryAct(TR,Data,BlockNum);
 
-    }
-    RewriteWalletHistory(DBAct)
-    {
-        var end=DBAct.GetMaxNum();
-        for(var num=0;num<=end;num++)
-        {
-            var Act=DBAct.Read(num);
-            if(Act)
-            {
-                if(WALLET.AccountMap[Act.ID]!==undefined)
-                    WALLET.OnDoAct(TR,Data,BlockNum);
-            }
-
-        }
     }
 
     ReadValue(Num)
@@ -980,7 +990,7 @@ class AccountApp extends require("./dapp")
         if(this.DBState.WasUpdate)
         {
             //this.DBState.MerkleHash=this.DBState.GetHash();
-            this.DBState.MerkleHash=this.CalcMerkleTree().Root;
+            this.DBState.MerkleHash=this.CalcMerkleTree();
             this.DBState.WasUpdate=0;
         }
         var Hash=this.DBState.MerkleHash;
@@ -1005,22 +1015,23 @@ class AccountApp extends require("./dapp")
             return {Root:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
         }
 
-        //var Buf=Buffer.alloc(this.ACCOUNT_ROW_SIZE);
-        //var WorkStruct={};
+        var MerkleArr=this.DBState.MerkleArr;
         var arr=[];
         for(var num=0;num<Count;num++)
         {
-            var Buf=this.DBState.Read(num,1);
-            var Hash=shaarr(Buf);
+            var Hash=MerkleArr[num];
+            if(!Hash)
+            {
+                var Buf=this.DBState.Read(num,1);
+                Hash=shaarr(Buf);
+                MerkleArr[num]=Hash;
+            }
             arr.push(Hash);
-            // var Data=this.ReadState(num);
-            // Buf.len=0;
-            // BufLib.Write(Buf,Data,this.FORMAT_ACCOUNT_ROW,undefined,WorkStruct);
-            // var Hash=shaarr(Buf);
-            // arr.push(Hash);
         }
 
-        return CalcMerklFromArray(arr);
+        //var Hash1=CalcMerklFromArray(arr,{Levels:[],Full:true}).Root;
+        var Hash1=CalcMerklFromArray(arr).Root;
+        return Hash1;
 
         //return shaarr(Buf);
     }

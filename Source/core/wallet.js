@@ -213,7 +213,7 @@ class CApp
         SaveParams(CONFIG_NAME,Params);
     }
 
-    OnDoAct(TR,Data,BlockNum)
+    OnDoHistoryAct(TR,Data,BlockNum)
     {
         //{BlockNum:uint, FromID:uint, FromOperationID:uint, ToID:uint, Description:str100, SumTER:uint,SumCENT:uint32, Currency:uint};
 

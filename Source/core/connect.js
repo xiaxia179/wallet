@@ -147,28 +147,9 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(global.CAN_START)
             this.PerioadAfterCanStart++;
 
+
         //Time correct
-        if(CHECK_DELTA_TIME.bUse)
-        {
-            var BlockNum=GetCurrentBlockNumByTime();
-            if(CHECK_DELTA_TIME.StartBlockNum<=BlockNum && CHECK_DELTA_TIME.EndBlockNum>=BlockNum)
-            {
-                if(!global.DELTA_CURRENT_TIME)
-                    global.DELTA_CURRENT_TIME=0;
-                var CorrectTime=0;
-                if(CHECK_DELTA_TIME.bAddTime)
-                    CorrectTime = CHECK_DELTA_TIME.DeltaTime;
-                else
-                    CorrectTime = -CHECK_DELTA_TIME.DeltaTime;
-
-                ToLog("************************************************USE CORRECT TIME: "+CHECK_DELTA_TIME.Num+" Delta = "+CorrectTime);
-
-                global.DELTA_CURRENT_TIME += CorrectTime;
-                //reset times
-                this.ClearTimeStat();
-                SAVE_CONST(true);
-            }
-        }
+        this.TimeDevCorrect();
 
 
         var arr=SERVER.GetActualNodes();
@@ -183,8 +164,8 @@ module.exports = class CConnect extends require("./transfer-msg")
 
                 if(Node.AddrList)
                     continue;
-                // if(Node.LoadHistoryMode && Node.PingNumber%10!==0)
-                //     continue;
+                if(!Node.Hot && Node.PingNumber%10!==0)
+                     continue;
 
 
                 var Context={"StartTime":GetCurrentTime(0),PingNumber:Node.PingNumber};
@@ -1402,6 +1383,31 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
     }
 
+
+    TimeDevCorrect()
+    {
+        if(CHECK_DELTA_TIME.bUse)
+        {
+            var BlockNum=GetCurrentBlockNumByTime();
+            if(CHECK_DELTA_TIME.StartBlockNum<=BlockNum && CHECK_DELTA_TIME.EndBlockNum>=BlockNum)
+            {
+                if(!global.DELTA_CURRENT_TIME)
+                    global.DELTA_CURRENT_TIME=0;
+                var CorrectTime=0;
+                if(CHECK_DELTA_TIME.bAddTime)
+                    CorrectTime = CHECK_DELTA_TIME.DeltaTime;
+                else
+                    CorrectTime = -CHECK_DELTA_TIME.DeltaTime;
+
+                ToLog("************************************************USE CORRECT TIME: "+CHECK_DELTA_TIME.Num+" Delta = "+CorrectTime);
+
+                global.DELTA_CURRENT_TIME += CorrectTime;
+                //reset times
+                this.ClearTimeStat();
+                SAVE_CONST(true);
+            }
+        }
+    }
 
     //ACTIVE LIST
 

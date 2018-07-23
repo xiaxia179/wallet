@@ -223,12 +223,13 @@ global.GET_STATDIAGRAMS=function(Keys)
 
         var StepTime=1;
 
-        //if(ItemServer.name.substr(0,4)==="MAX:")
-        if(ItemServer.name.indexOf("ERR")>=0)
+        if(ItemServer.name.substr(0,4)==="MAX:")
+        //if(ItemServer.name.indexOf("ERR")>=0)
         {
             while(arr.length>=MaxSizeArr)
             {
                 arr=ResizeArrMax(arr);
+                //arr=ResizeArr(arr);
                 StepTime=StepTime*2;
             }
         }
@@ -262,6 +263,16 @@ global.ClearCommonStat=function()
     CONTEXT_ERRORS={Total:{},Interval:[]};
 }
 
+
+function ResizeArr(arr)
+{
+    var arr2=[];
+    for(var i=0;i<arr.length/2;i++)
+    {
+        arr2[i]=arr[i*2];
+    }
+    return arr2;
+}
 
 
 function ResizeArrMax(arr)

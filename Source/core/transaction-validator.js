@@ -256,7 +256,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
 // setTimeout(function ()
 // {
 //     console.time("*****************************************************************************ReWriteDAppTransactions")
-//     SERVER.ReWriteDAppTransactions(1,1000);
+//     SERVER.ReWriteDAppTransactions(900,1000);
 //     console.timeEnd("*****************************************************************************ReWriteDAppTransactions")
 //     process.exit()
 // },1000)

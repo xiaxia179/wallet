@@ -515,13 +515,15 @@ function CalcHashFromArray(ArrHashes,bOriginalSeq)
 }
 function CalcMerklFromArray(Arr,Tree0)
 {
-    var Tree;
+    var Tree,bSort;
     if(Tree0)
     {
+        bSort=0;
         Tree = Tree0
     }
     else
     {
+        bSort=1;
         Tree={Levels:[],Full:true};
     }
     Tree.Levels.push(Arr);
@@ -530,7 +532,7 @@ function CalcMerklFromArray(Arr,Tree0)
     {
         if(Arr.length===0)
             Tree.Root=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-        else
+        else//length===1
         {
             if(Arr[0].length===32)
                 Tree.Root=Arr[0];
@@ -541,10 +543,12 @@ function CalcMerklFromArray(Arr,Tree0)
         return Tree;
     }
 
-    if(!Tree0)
+    if(bSort)
+    {
         Arr.sort(CompareArr);
+    }
 
-    //var Buf=[];
+
     var Arr2=[];
     var len=Math.floor(Arr.length/2);
     for(var i=0;i<len;i++)
