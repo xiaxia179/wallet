@@ -19,7 +19,7 @@ const TYPE_TRANSACTION_CREATE=100;
 //const TYPE_TRANSACTION_CHANGE=102;
 const TYPE_TRANSACTION_TRANSFER=105;
 const TYPE_TRANSACTION_TRANSFER2=110;
-global.TYPE_TRANSACTION_ACC_HASH=116;
+global.TYPE_TRANSACTION_ACC_HASH=117;
 
 global.FORMAT_CREATE=
     "{\
@@ -75,8 +75,45 @@ class MerkleDBRow extends DBRow
     {
         super(FileName,DataSize,Format);
 
+        this.MerkleTree;
         this.MerkleArr=[];
+        this.MerkleCalc=[];
     }
+    CalcMerkleTree()
+    {
+        if(!this.MerkleTree)
+        {
+            this.MerkleTree={LevelsArr:[this.MerkleArr],LevelsCalc:[this.MerkleCalc],RecalcCount:0};
+            for(var num=0;num<=this.GetMaxNum();num++)
+            {
+                var Buf=this.Read(num,1);
+                this.MerkleArr[num]=shaarr(Buf);
+                this.MerkleCalc[num]=0;
+            }
+        }
+
+        this.MerkleTree.RecalcCount=0;
+        //this.MerkleCalc.length=0;
+        UpdateMerklTree(this.MerkleTree,0);
+
+
+        // ToLog("RecalcCount="+this.MerkleTree.RecalcCount)
+        // var HashTest=CalcMerklFromArray(this.MerkleArr,{Levels:[]}).Root;
+        // if(CompareArr(HashTest,this.MerkleTree.Root)!==0)
+        // {
+        //     var TreeTest=CalcMerklFromArray(this.MerkleArr,{Levels:[]});
+        //     this.MerkleTree.RecalcCount=0;
+        //     this.MerkleCalc=[];
+        //     UpdateMerklTree(this.MerkleTree,0);
+        //     throw "ERROR HASHTEST";
+        //
+        //     ToLog("====================================ERROR HASHTEST=========================================");
+        // }
+
+        return this.MerkleTree.Root;
+
+    }
+
     Write(Data)
     {
         var RetBuf={};
@@ -85,13 +122,15 @@ class MerkleDBRow extends DBRow
         {
             var Hash=shaarr(RetBuf.Buf);
             this.MerkleArr[Data.Num]=Hash;
+            this.MerkleCalc[Data.Num]=0;
         }
         return bRes;
     }
     Truncate(LastNum)
     {
         DBRow.prototype.Truncate.call(this, LastNum);
-        this.MerkleArr.length=LastNum;
+        this.MerkleArr.length=LastNum+1;
+        this.MerkleCalc.length=LastNum+1;
     }
 };
 
@@ -117,6 +156,7 @@ class AccountApp extends require("./dapp")
 
         this.ACCOUNT_ROW_SIZE=6+33 + 40+(6+4 +6+84) + 6+6+9;
         this.DBState=new MerkleDBRow("accounts-state",this.ACCOUNT_ROW_SIZE,this.FORMAT_ACCOUNT_ROW);
+        //this.DBState=new DBRow("accounts-state",this.ACCOUNT_ROW_SIZE,this.FORMAT_ACCOUNT_ROW);
 
         //DB-act (база движений)
         this.DBAct=new DBRow("accounts-act",6+6 + (6+4+6+6+84) + 1 + 11,"{ID:uint, BlockNum:uint,PrevValue:{SumTER:uint,SumCENT:uint32, BlockNum:uint, OperationID:uint,Reserve:arr84}, Mode:byte, Reserve: arr11}");
@@ -187,6 +227,12 @@ class AccountApp extends require("./dapp")
 
     SendMoney(FromID,ToID,CoinSum,BlockNum,Description)
     {
+        if(CoinSum.SumCENT>=1e9)
+        {
+            throw "ERROR SumCENT>=1e9"
+        }
+
+
         var FromData=this.ReadValue(FromID);
 
         var OperationID=FromData.Value.OperationID;
@@ -228,16 +274,14 @@ class AccountApp extends require("./dapp")
         this.OnDeleteBlock(Block);
 
 
-        //do coin base
-        this.DoCoinBaseTR(Block);
-
-
     }
 
     OnWriteBlockFinish(Block)
     {
-        this.CalcHash(Block.BlockNum);
+        //do coin base
+        this.DoCoinBaseTR(Block);
 
+        this.CalcHash(Block.BlockNum);
     }
 
 
@@ -307,11 +351,11 @@ class AccountApp extends require("./dapp")
         if(Block.BlockNum<global.START_MINING)
             return;
 
+
         var SysData=this.ReadValue(0);
         var SysBalance=SysData.Value.SumTER;
         const REF_PERIOD_START=global.START_MINING;
         const REF_PERIOD_END=30*1000*1000;
-        //Block.AddrHash.len=0;
         var AccountID=ReadUintFromArr(Block.AddrHash,0);
         if(AccountID<8)
             return;
@@ -320,7 +364,8 @@ class AccountApp extends require("./dapp")
         var Data=this.ReadValue(AccountID);
         if(Data && Data.Currency===0 && Data.BlockNumCreate<Block.BlockNum)
         {
-            var Sum=Block.Power*Block.Power*SysBalance/TOTAL_TER_MONEY/100;
+            var Power=GetPowPower(Block.Hash);
+            var Sum=Power*Power*SysBalance/TOTAL_TER_MONEY/100;
 
 
             var CoinTotal={SumTER:0,SumCENT:0};
@@ -352,10 +397,6 @@ class AccountApp extends require("./dapp")
                 this.DIV(CoinDevelop,100);
                 if(!this.ISZERO(CoinDevelop))
                     this.SendMoney(0,9,CoinDevelop,Block.BlockNum,"Developers support");
-                // var CoinMarket=CopyObjValue(CoinTotal);
-                // this.DIV(CoinMarket,100);
-                // if(!this.ISZERO(CoinMarket))
-                //     this.SendMoney(0,10,CoinMarket,Block.BlockNum,"Merketing support");
             }
         }
     }
@@ -733,16 +774,25 @@ class AccountApp extends require("./dapp")
         return true;
     }
 
+    FLOAT_FROM_COIN(Coin)
+    {
+        var Sum=Coin.SumTER+Coin.SumCENT/1e9;
+        return Sum;
+    }
     COIN_FROM_FLOAT(Sum)
     {
-        if(Sum>8*1e6)
-        {
-            throw "VERY BIG SUM IN COIN_FROM_FLOAT";
-        }
-
         var SumTER=Math.trunc(Sum);
         var SumCENT=Math.trunc((Sum-SumTER)*MAX_SUM_CENT);
-        return {SumTER:SumTER,SumCENT:SumCENT};
+        var Coin={SumTER:SumTER,SumCENT:SumCENT};
+
+        //check
+        var Sum2=this.FLOAT_FROM_COIN(Coin);
+        if(Sum2!==Sum2)
+        {
+            throw "ERR CHECK COIN_FROM_FLOAT";
+        }
+
+        return Coin;
     }
 
     ISZERO(Coin)
@@ -989,8 +1039,7 @@ class AccountApp extends require("./dapp")
         //calc Merkle Tree
         if(this.DBState.WasUpdate)
         {
-            //this.DBState.MerkleHash=this.DBState.GetHash();
-            this.DBState.MerkleHash=this.CalcMerkleTree();
+            this.DBState.MerkleHash=this.DBState.CalcMerkleTree();
             this.DBState.WasUpdate=0;
         }
         var Hash=this.DBState.MerkleHash;
@@ -998,42 +1047,6 @@ class AccountApp extends require("./dapp")
         var Data={Num:BlockNum,BlockNum:BlockNum,Hash:Hash};
         this.DBAccountsHash.Write(Data);
         this.DBAccountsHash.Truncate(BlockNum);
-
-    }
-    CalcMerkleTree()
-    {
-        // if(global.LOCAL_RUN)
-        // {
-        //     return {Root:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
-        // }
-
-        //TODO (do recalc only changes)
-
-        var Count=1+this.GetMaxAccount();
-        if(!Count)
-        {
-            return {Root:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
-        }
-
-        var MerkleArr=this.DBState.MerkleArr;
-        var arr=[];
-        for(var num=0;num<Count;num++)
-        {
-            var Hash=MerkleArr[num];
-            if(!Hash)
-            {
-                var Buf=this.DBState.Read(num,1);
-                Hash=shaarr(Buf);
-                MerkleArr[num]=Hash;
-            }
-            arr.push(Hash);
-        }
-
-        //var Hash1=CalcMerklFromArray(arr,{Levels:[],Full:true}).Root;
-        var Hash1=CalcMerklFromArray(arr).Root;
-        return Hash1;
-
-        //return shaarr(Buf);
     }
 
     /////////////////////////////

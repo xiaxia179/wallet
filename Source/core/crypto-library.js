@@ -563,6 +563,122 @@ function CalcMerklFromArray(Arr,Tree0)
 
     return CalcMerklFromArray(Arr2,Tree);
 }
+///
+function TestMerklTree()
+{
+
+    var h1=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    var h2=shaarr("2");
+    var h3=shaarr("3");
+
+    //Tree.LevelsArr[0]=[h1,h2,h3];
+    var Tree={LevelsArr:[],LevelsCalc:[],RecalcCount:0};
+    Tree.LevelsArr[0]=[h1,h2,h3,h1];
+    Tree.LevelsCalc[0]=[];
+
+    Tree.RecalcCount=0;
+    UpdateMerklTree(Tree,0);
+
+    Tree.RecalcCount=0;
+    Tree.LevelsArr[0]=[h1,h2];
+    Tree.LevelsCalc[0]=[];
+
+    UpdateMerklTree(Tree,0);
+
+    //ToLog("MaxLevel="+Tree.MaxLevel);
+    ToLog("Root="+GetHexFromArr(Tree.Root));
+    ToLog("RecalcCount="+Tree.RecalcCount);
+
+
+
+    var TreeTest=CalcMerklFromArray(Tree.LevelsArr[0],{Levels:[]});
+    ToLog("HashTest="+GetHexFromArr(TreeTest.Root));
+    if(CompareArr(TreeTest.Root,Tree.Root)!==0)
+        ToLog("=========ERROR HASHTEST==============");
+}
+
+
+function UpdateMerklTree(Tree,NumLevel)
+{
+
+    var HashArr=Tree.LevelsArr[NumLevel];
+
+    if(!HashArr || !HashArr.length)
+    {
+        Tree.LevelsArr.length=NumLevel+1;
+        Tree.MaxLevel=NumLevel;
+        Tree.Root=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    }
+    else
+    if(HashArr.length===1)
+    {
+        Tree.LevelsArr.length=NumLevel+1;
+        Tree.MaxLevel=NumLevel;
+        Tree.Root=HashArr[0];
+    }
+    else
+    {
+        var CalcArr=Tree.LevelsCalc[NumLevel];
+
+        var HashArr2=Tree.LevelsArr[NumLevel+1];
+        if(!HashArr2)
+        {
+            HashArr2=[];
+            Tree.LevelsArr[NumLevel+1]=HashArr2;
+        }
+        var CalcArr2=Tree.LevelsCalc[NumLevel+1];
+        if(!CalcArr2)
+        {
+            CalcArr2=[];
+            Tree.LevelsCalc[NumLevel+1]=CalcArr2;
+        }
+
+        var len2=Math.trunc(HashArr.length/2);
+        //ToLog("NumLevel="+NumLevel+"  len="+len+"  HashArr.length="+HashArr.length)
+
+        var Count=0;
+        for(var i=0;i<len2;i++)
+        {
+            if(!CalcArr[i*2] || !CalcArr[i*2+1])
+            {
+                CalcArr[i*2]=1;
+                CalcArr[i*2+1]=1;
+
+                Count++;
+                CalcArr2[i]=0;
+                // if(!HashArr[i*2+1])
+                //     var aa=1;
+                HashArr2[i]=shaarr2(HashArr[i*2],HashArr[i*2+1]);
+            }
+        }
+
+        var LastIndex=HashArr.length-1;
+        if(len2*2!==HashArr.length || !CalcArr[LastIndex])
+        {
+            i=len2;
+            len2++;
+            Count++;
+            CalcArr[LastIndex]=1;
+            CalcArr2[i]=0;
+            HashArr2[i]=HashArr[LastIndex];
+        }
+
+        if(HashArr2.length!==len2)
+        {
+            Count++;
+            HashArr2.length=len2;
+            CalcArr2.length=len2;
+            CalcArr2[len2-1]=0;
+        }
+
+        if(Count)
+        {
+            Tree.RecalcCount+=Count;
+            UpdateMerklTree(Tree,NumLevel+1);
+        }
+    }
+}
+
 
 function arr2(Value1,Value2)
 {
@@ -985,6 +1101,8 @@ global.CreateHashBodyPOWInnerMinPower=CreateHashBodyPOWInnerMinPower;
 
 global.CalcHashFromArray=CalcHashFromArray;
 global.CalcMerklFromArray=CalcMerklFromArray;
+global.UpdateMerklTree=UpdateMerklTree;
+
 global.IsZeroArr=IsZeroArr;
 global.shaarr2=shaarr2;
 global.arr2=arr2;
@@ -1025,3 +1143,8 @@ if(LOCAL_RUN)
         global.ARR_PUB_KEY[i]=GetHexFromArr(global.DEVELOP_PUB_KEY);
 
 }
+
+
+// TestMerklTree();
+// process.exit();
+//

@@ -59,8 +59,6 @@ module.exports = class CSmartContract extends require("./block-exchange")
     //EVENTS
     OnWriteBlock(Block)
     {
-        // if(Block.BlockNum<BLOCK_PROCESSING_LENGTH2)
-        //     return;
         if(Block.BlockNum<1)
             return;
 
@@ -180,8 +178,6 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
 
         //1. Минимальный PoW
-        // if(Tr.power*128/Tr.body.length<MIN_POWER_POW_TR)
-        //     return -2;
         if(Tr.power-Math.log2(Tr.body.length/128)<MIN_POWER_POW_TR)
             return -2;
 
@@ -218,12 +214,8 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
     AddDAppTransactions(BlockNum,Arr)
     {
-        if(BlockNum<1500000)
-            return;
-
-
-        if(BlockNum%100 !== 0)//TODO
-            return;
+        // if(BlockNum%10 !== 0)//TODO
+        //return;
 
         var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
         if(BlockNumHash<0)

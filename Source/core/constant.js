@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=82;
-global.MIN_CODE_VERSION_NUM=80;
+global.UPDATE_CODE_VERSION_NUM=83;
+global.MIN_CODE_VERSION_NUM=83;
 
 
 
@@ -104,12 +104,12 @@ global.DEF_MAJOR_VERSION="0001";//4
 
 InitParams();
 
-//global.LOCAL_RUN=1;
+
 if(global.LOCAL_RUN)
 {
-    global.START_MINING=100;
+    global.START_MINING=1500;
     global.REF_PERIOD_MINING=50;
-    global.START_NETWORK_DATE=1532353424886//((new Date)-0)-50*1000;
+    global.START_NETWORK_DATE= 1532434771979//((new Date)-0)-50*1000;
     global.DELTA_BLOCK_ACCOUNT_HASH=16;
     global.TEST_TRANSACTION_GENERATE=10;
     global.MIN_POWER_POW_TR=0;

@@ -424,13 +424,13 @@ function RunOnUpdate()
             //DO UPDATE
             //----------------------------------------------------------------------------------------------------------
 
-            if(SERVER.BlockNumDB>=BLOCK_PROCESSING_LENGTH2 && SERVER.BlockNumDB<1500000)
+            if(SERVER.BlockNumDB>=BLOCK_PROCESSING_LENGTH2 && SERVER.BlockNumDB<2000000)
             {
                 // var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
                 // var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
                 // if(AccountsHash && IsZeroArr(AccountsHash))
                 {
-                    if(CurNum<=43)
+                    if(CurNum<=82)
                         SERVER.ReWriteDAppTransactions(0);
                 }
             }

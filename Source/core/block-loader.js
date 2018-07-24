@@ -22,7 +22,6 @@ global.COUNT_BLOCKS_FOR_LOAD=600;
 
 global.COUNT_HISTORY_BLOCKS_FOR_LOAD=3000;
 global.COUNT_BLOCKS_FOR_CHECK_POW=100;
-global.PERCENT_SUM_BLOCKS_FOR_STOP_CHECK_POW=90;
 
 global.MAX_COUNT_CHAIN_LOAD=120;
 
@@ -398,7 +397,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
         var BlockDB=this.ReadBlockHeaderDB(Context.BlockNum);
 
-        if(!BlockDB || this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH)//-2
+        if(!BlockDB || this.BlockNumDB>=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH-2)
         {
             this.LoadHistoryMode=false;
             ToLogClient("Finish synchronization")
@@ -462,10 +461,8 @@ module.exports = class CBlock extends require("./db/block-db")
             this.LoopHistoryLoad()
             return;
         }
-        if(this.BlockNumDB<this.CurrentBlockNum-BLOCK_PROCESSING_LENGTH*2)
+        if(this.BlockNumDB<this.CurrentBlockNum-BLOCK_PROCESSING_LENGTH2)
         {
-
-
             this.StartLoadHistory();
             return;
         }
@@ -1179,6 +1176,7 @@ module.exports = class CBlock extends require("./db/block-db")
                     var BlockDB=this.ReadBlockHeaderDB(Block.BlockNum);
                     if(BlockDB)
                     {
+                        Block.Power=GetPowPower(Block.Hash);
                         chain.LoadCountDB++;
                         chain.LoadSumDB+=BlockDB.Power;
                         chain.LoadSum+=Block.Power;
@@ -1216,9 +1214,9 @@ module.exports = class CBlock extends require("./db/block-db")
 
                 if(chain.LoadCountDB>=COUNT_BLOCKS_FOR_CHECK_POW)
                 {
-                    if(chain.LoadSumDB*PERCENT_SUM_BLOCKS_FOR_STOP_CHECK_POW/100 > chain.LoadSum)
+                    if(chain.LoadSumDB-chain.LoadSum > COUNT_BLOCKS_FOR_CHECK_POW)//<50% of Hash rate db chain
                     {
-                        var Str="Err sum Pow chains: SumDB > Sum loaded from: "+NodeInfo(Info.Node);
+                        var Str="ERR LOADED SUM POW chains: SumDB > Sum loaded from: "+NodeInfo(Info.Node);
                         chain.StopSend=true;
                         chain.AddInfo(Str);
                         ToLog("======================================================"+Str);
@@ -1350,6 +1348,7 @@ module.exports = class CBlock extends require("./db/block-db")
         for(var i=1;i<arr.length;i++)
         {
             var Block=arr[i];
+            Block.Power=GetPowPower(Block.Hash);
             Block.SumPow=PrevBlock.SumPow+Block.Power;
             PrevBlock=Block;
         }
