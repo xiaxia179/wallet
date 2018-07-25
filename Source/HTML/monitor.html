@@ -176,9 +176,8 @@
             }
         }
 
-        if(arr.length<2)
+        if(arr.length<=1)
             return;
-//        arr=arr.slice(1);
 
         var MaxValue=1;//GreenValue;
         var AvgValue=0;
@@ -190,7 +189,9 @@
                 AvgValue+=arr[i];
         }
         //среднее значение
-        AvgValue=Math.floor(AvgValue/arr.length+0.5);
+        AvgValue=Math.floor(Item.AvgValue+0.5);
+        //AvgValue=Math.floor(AvgValue/arr.length+0.5);
+
         if(Item.MaxValue!==undefined)
             MaxValue=Item.MaxValue;
 
@@ -436,6 +437,7 @@
             {name:"MAX:POWER",text:"MAX:POWER",value:0,red:"#95d6b9"},
             {name:"MAX:WIN:POWER_MY",text:"WIN:POWER_MY",value:0,red:"#088a4a"},
             {name:"MAX:POWER_BLOCKCHAIN",text:"BLOCKCHAIN POWER",value:0,red:"#7f448a"},
+
 
 
             {isLine:true,text:"Пакеты отправленные"},
@@ -703,6 +705,7 @@
                 var ItemServer=arr[i];
                 var ItemClient=DiagramMap[ItemServer.name];
                 ItemClient.arr=ItemServer.arr;
+                ItemClient.AvgValue=ItemServer.AvgValue;
                 ItemClient.steptime=ItemServer.steptime;
                 //ItemClient.starttime=ItemServer.starttime;
 

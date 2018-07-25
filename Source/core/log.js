@@ -200,11 +200,11 @@ global.GET_STATDIAGRAMS=function(Keys)
     }
 
 
-    var MinLength=9999999999;
+    var MinLength=undefined;
     for(var i=0;i<Data.length;i++)
     {
         var arr=Data[i].arr;
-        if(arr.length>0 && arr.length<MinLength)
+        if(arr.length>0 && (MinLength===undefined || arr.length<MinLength))
             MinLength=arr.length;
     }
 
@@ -215,14 +215,29 @@ global.GET_STATDIAGRAMS=function(Keys)
         var ItemServer=Data[i];
 
         var arr=ItemServer.arr;
-        if(arr.length>MinLength)
+        if(MinLength && arr.length>MinLength)
         {
             arr=arr.slice(arr.length-MinLength);
         }
 
+        if(MinLength)
+        if(",MAX:WIN:POWER_MY,MAX:POWER_BLOCKCHAIN,".indexOf(","+ItemServer.name+",")>=0)
+        {
+            //calc from blockhain stat
+            arr=SERVER.GetStatBlockchain(ItemServer.name,MinLength);
+        }
+
+        //calc avg
+        var AvgValue=0;
+        for(var j=0;j<arr.length;j++)
+        {
+            AvgValue+=arr[j];
+        }
+        if(arr.length>0)
+            AvgValue=AvgValue/arr.length;
+
 
         var StepTime=1;
-
         if(ItemServer.name.substr(0,4)==="MAX:")
         //if(ItemServer.name.indexOf("ERR")>=0)
         {
@@ -241,6 +256,7 @@ global.GET_STATDIAGRAMS=function(Keys)
                 StepTime=StepTime*2;
             }
         }
+        ItemServer.AvgValue=AvgValue;
         ItemServer.steptime=StepTime;
         ItemServer.arr=arr.slice(1);
     }

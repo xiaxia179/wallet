@@ -1,7 +1,7 @@
 ﻿# TERA Smart money
 
 
-Внимание: Вам нужно иметь статический IP-адрес и открытый порт.
+Внимание: Вам нужно иметь статический (публичный) IP-адрес и открытый порт.
 
 
 Бинарный файл (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe

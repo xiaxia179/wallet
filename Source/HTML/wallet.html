@@ -1570,7 +1570,13 @@
 <script>
     function CreateCheckPoint()
     {
-        GetData("/SetCheckPoint/",function (Data)
+        if(!ServerBlockNumDB || ServerBlockNumDB<16)
+        {
+            SetError("Not set ServerBlockNumDB");
+        }
+        var BlockNum=ServerBlockNumDB-20;
+
+        GetData("/SetCheckPoint/",BlockNum,function (Data)
         {
             if(Data && Data.result===1)
             {
@@ -2201,6 +2207,7 @@
                 <th id="Item.Description" class="name">Account name</th>
                 <th id="Item.PubKeyStr" class="pubkey">PubKey</th>
                 <th id="Item.Value.OperationID" class="num">Operation</th>
+                <th id="Item.RefID" class="num">Adviser</th>
                 <th id="(RetOpenBlock(Item.BlockNumCreate,1))" class="num">Block Num</th>
             </tr>
         </table>

@@ -28,6 +28,7 @@ module.exports = class CDB extends require("../code")
 
         this.BlockNumDB=0;
 
+        //this.StatMap={};
 
     }
 
@@ -649,6 +650,7 @@ module.exports = class CDB extends require("../code")
             FItem1.size=size;
             fs.ftruncateSync(FItem1.fd,FItem1.size);
         }
+        this.TruncateStat(LastBlock.BlockNum);
     }
     TruncateBlockBodyDBInner()
     {
@@ -814,6 +816,119 @@ module.exports = class CDB extends require("../code")
         }
         return arr;
     }
+
+
+    //Stat
+    TruncateStat(LastBlockNum)
+    {
+        if(this.StatMap)
+        {
+            var LastNumStat=this.StatMap.StartBlockNum+this.StatMap.Length;
+            var Delta=LastNumStat-LastBlockNum;
+            if(Delta>0)
+            {
+                this.StatMap.Length-=Delta;
+                if(this.StatMap.Length<0)
+                    this.StatMap.Length=0;
+            }
+            this.StatMap.CaclBlockNum=0;
+        }
+    }
+
+    GetStatBlockchain(name,MinLength)
+    {
+        var arr=[];
+        if(!MinLength)
+            return arr;
+
+        const MAX_ARR_PERIOD=MAX_STAT_PERIOD*2;
+
+        if(!this.StatMap)//init
+        {
+            this.StatMap=
+                {
+                    StartPos:0,
+                    StartBlockNum:0,
+                    Length:0,
+                    "ArrPower":new Uint8Array(MAX_ARR_PERIOD),
+                    "ArrPowerMy":new Uint8Array(MAX_ARR_PERIOD),
+                };
+        }
+
+        //ToLog("this.StatMap.CaclBlockNum="+this.StatMap.CaclBlockNum)
+        if(this.StatMap.CaclBlockNum!==this.BlockNumDB || this.StatMap.CalcMinLength!==MinLength)
+        {
+            //calc
+            this.StatMap.CaclBlockNum=this.BlockNumDB;
+            this.StatMap.CalcMinLength=MinLength;
+
+
+            var start=this.BlockNumDB-MinLength+1;
+            var finish=this.BlockNumDB+1;
+
+
+            var StartPos=this.StatMap.StartPos;
+            var ArrPower=this.StatMap.ArrPower;
+            var ArrPowerMy=this.StatMap.ArrPowerMy;
+            var StartNumStat=this.StatMap.StartBlockNum;
+            var FinishNumStat=this.StatMap.StartBlockNum+this.StatMap.Length-1;
+
+
+            var CountReadDB=0;
+            var arr=new Array(MinLength);
+            var arrmy=new Array(MinLength);
+            for(var num=start;num<finish;num++)
+            {
+                var i=num-start;
+                var i2=(StartPos+i)%MAX_ARR_PERIOD;
+                if(num>=StartNumStat && num<=FinishNumStat && (num<finish-10))
+                {
+                    arr[i]=ArrPower[i2];
+                    arrmy[i]=ArrPowerMy[i2];
+                }
+                else
+                {
+                    CountReadDB++;
+                    var Power=0,PowerMy=0;
+                    var Block=this.ReadBlockHeaderDB(num);
+                    if(Block)
+                    {
+                        Power=GetPowPower(Block.Hash);
+                        var Miner=ReadUintFromArr(Block.AddrHash,0);
+                        if(Miner===GENERATE_BLOCK_ACCOUNT)
+                        {
+                            PowerMy=Power;
+                        }
+                    }
+                    arr[i]=Power;
+                    arrmy[i]=PowerMy;
+
+                    ArrPower[i2]=Power;
+                    ArrPowerMy[i2]=PowerMy;
+                    this.StatMap.StartBlockNum=num-this.StatMap.Length;
+                    this.StatMap.Length++;
+                    if(this.StatMap.Length>MAX_ARR_PERIOD)
+                    {
+                        this.StatMap.Length=MAX_ARR_PERIOD;
+                        this.StatMap.StartBlockNum++;
+                        this.StatMap.StartPos++;
+                    }
+                }
+            }
+
+            //ToLog("CountReadDB="+CountReadDB)
+
+            this.StatMap["MAX:POWER_BLOCKCHAIN"]=arr;
+            this.StatMap["MAX:WIN:POWER_MY"]=arrmy;
+        }
+
+
+        var arr=this.StatMap[name];
+        if(!arr)
+            arr=[];
+        return arr;
+    }
+
 
 }
 

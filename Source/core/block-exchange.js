@@ -1541,10 +1541,10 @@ module.exports = class CConsensus extends require("./block-loader")
 
                     if(this.WriteBlockDB(Block))
                     {
-                        var Num=ReadUintFromArr(Block.AddrHash,0);
-                        if(Num===GENERATE_BLOCK_ACCOUNT)
-                            ADD_TO_STAT("MAX:WIN:POWER_MY",GetPowPower(Block.Hash));
-                        ADD_TO_STAT("MAX:POWER_BLOCKCHAIN",GetPowPower(Block.Hash));
+                        // var Miner=ReadUintFromArr(Block.AddrHash,0);
+                        // if(Miner===GENERATE_BLOCK_ACCOUNT)
+                        //     ADD_TO_STAT("MAX:WIN:POWER_MY",GetPowPower(Block.Hash));
+                        // ADD_TO_STAT("MAX:POWER_BLOCKCHAIN",GetPowPower(Block.Hash));
 
 
                         if(Block.arrContent && Block.arrContent.length)
