@@ -22,7 +22,7 @@ Note: in this repository the files setup.exe and updater.exe always contain the 
 
 
 Notes: 
-* When the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js
+* When the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js (see it in run-node.bat of this repository)
 * Nodejs uses the default http port for node 80, but you can change it in wallet in tab CONFIG - press button HTTP ACESS
 * ATTENTION: set password for http acess (press button HTTP ACESS)
 
