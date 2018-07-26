@@ -5,7 +5,7 @@
 Attention:
 * After the installation shown below, enter the address in the browser: 127.0.0.1
 * To connect to the network and start sync, you must have a static (public) IP address and an open port.
-* Do not forget to set a password to restrict access to http (click the HTTP ACCESS button on your wallet)
+* Do not forget to set a password to restrict access to http (click the HTTP ACCESS button on your wallet). We also recommend changing port 80 to another and not storing private keys on remote servers.
 * We recommend putting an additional password on the private key ("Set password" button) - in this case the private key will be stored in file in encrypted form.
 
 
@@ -33,7 +33,6 @@ pm2 start run-node.js
 ### Opening ports:
 ```
 netsh advfirewall firewall add rule name="Open 30000 port" protocol=TCP localport=30000 action=allow dir=IN
-netsh advfirewall firewall add rule name="Open 80 port" protocol=TCP localport=8000 action=allow dir=IN
 ```
 
 
