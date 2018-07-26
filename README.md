@@ -59,6 +59,14 @@ systemctl stop firewalld
 systemctl disable firewalld
 ```
 
+### Updates
+
+```
+cd wallet
+git reset --hard 
+git pull 
+```
+
 
 
 ### UBUNTU 18.4:

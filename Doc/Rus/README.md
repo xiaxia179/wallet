@@ -33,6 +33,14 @@ pm2 start run-node.js
 netsh advfirewall firewall add rule name="Open 30000 port" protocol=TCP localport=30000 action=allow dir=IN
 ```
 
+### Обновления
+
+```
+cd wallet
+git reset --hard 
+git pull 
+```
+
 
 
 
