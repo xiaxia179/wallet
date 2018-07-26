@@ -2154,7 +2154,7 @@ module.exports = class CTransport extends require("./connect")
                 Node.NextConnectDelta=1000;
                 Node.WaitConnectFromServer=0;
                 //Node.DirectIP=1;
-                ToLog("3. ******************** SERVER OK CONNECT  for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
+                ToLogNet("3. ******************** SERVER OK CONNECT  for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
                 this.AddNodeToActive(Node);
                 Node.Socket=Socket;
                 SetSocketStatus(Socket,3);
@@ -2193,7 +2193,7 @@ module.exports = class CTransport extends require("./connect")
 
         if(power<MIN_POWER_POW_HANDSHAKE)
         {
-            ToLog("END: MIN_POWER_POW_HANDSHAKE")
+            ToLogNet("END: MIN_POWER_POW_HANDSHAKE")
             Socket.end(this.GetBufFromData("POW_CONNECT2","MIN_POWER_POW_HANDSHAKE",2));
             CloseSocket(Socket,"MIN_POWER_POW_HANDSHAKE");
         }
@@ -2214,7 +2214,7 @@ module.exports = class CTransport extends require("./connect")
                     Node.NextConnectDelta=1000;
                     Node.WaitConnectFromServer=0;
                     //Node.DirectIP=1;
-                    ToLog("3. ******************** SERVER OK CONNECT  for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
+                    ToLogNet("3. ******************** SERVER OK CONNECT  for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
                     this.AddNodeToActive(Node);
                     Node.Socket=Socket;
                     SetSocketStatus(Socket,3);
@@ -2229,7 +2229,7 @@ module.exports = class CTransport extends require("./connect")
             }
 
 
-            ToLog("1. -------------------- SERVER OK POW for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
+            ToLogNet("1. -------------------- SERVER OK POW for client node: "+NodeInfo(Node)+" "+SocketInfo(Socket));
 
             // if(Node.DoubleConnectCount>5 && Node.Socket && !Node.Socket.WasClose)
             // {
@@ -2347,7 +2347,7 @@ module.exports = class CTransport extends require("./connect")
 
 
             // 'connection' listener
-            ToLog("Client *"+SOCKET.ConnectID+" connected from "+SOCKET.remoteAddress+":"+SOCKET.remotePort);
+            ToLogNet("Client *"+SOCKET.ConnectID+" connected from "+SOCKET.remoteAddress+":"+SOCKET.remotePort);
 
 
             SOCKET.HashRND=crypto.randomBytes(32);
@@ -2394,7 +2394,7 @@ module.exports = class CTransport extends require("./connect")
             {
                 var Status=GetSocketStatus(SOCKET);
                 if(Status)
-                    ToLog("Get socket end *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
+                    ToLogNet("Get socket end *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
 
                 var Node=SOCKET.Node;
                 if(Node && Status===200)
@@ -2407,7 +2407,7 @@ module.exports = class CTransport extends require("./connect")
             SOCKET.on('close', (err) =>
             {
                 if(SOCKET.ConnectID && GetSocketStatus(SOCKET))
-                     ToLog("Get socket close *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
+                    ToLogNet("Get socket close *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
 
                 if(!SOCKET.WasClose && SOCKET.Node)
                 {
@@ -2540,14 +2540,14 @@ module.exports = class CTransport extends require("./connect")
 
     CLOSE_SOCKET(Context,CurTime)
     {
-        ToLog("GET CLOSE_SOCKET *"+Context.Socket.ConnectID+": "+Context.Data.toString())
+        ToLogNet("GET CLOSE_SOCKET *"+Context.Socket.ConnectID+": "+Context.Data.toString())
         CloseSocket(Context.Socket,"CLOSE_SOCKET");
     }
 
     SendCloseSocket(Socket,Str)
     {
         //var address=Socket.address();
-        ToLog("CLOSE_SOCKET "+SocketInfo(Socket)+" - "+Str);
+        ToLogNet("CLOSE_SOCKET "+SocketInfo(Socket)+" - "+Str);
         if(Socket.WasClose)
         {
             return;
@@ -2560,7 +2560,7 @@ module.exports = class CTransport extends require("./connect")
         }
         else
         {
-            ToLog("END *"+Socket.ConnectID+": "+Str)
+            ToLogNet("END *"+Socket.ConnectID+": "+Str)
             Socket.end(this.GetBufFromData("CLOSE_SOCKET",Str,2));
         }
         CloseSocket(Socket,Str);

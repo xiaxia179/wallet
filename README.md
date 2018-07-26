@@ -2,26 +2,40 @@
 
 [<Документация на русском>](https://github.com/terafoundation/wallet/tree/master/Doc/Rus)
 
-WARNING: To connect to the network and start sync, you must have a static (public) IP address and an open port. 
+Attention:
+* After the installation shown below, enter the address in the browser: 127.0.0.1
+* To connect to the network and start sync, you must have a static (public) IP address and an open port.
+* Do not forget to set a password to restrict access to http (click the HTTP ACCESS button on your wallet)
+* We recommend putting an additional password on the private key ("Set password" button) - in this case the private key will be stored in file in encrypted form.
 
 
-<del>Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe</del>
 
+## Installing on Windows by steps:
 
+1. Download and install Nodejs https://nodejs.org (v8.11 is recommended)
+2. Download and install git https://desktop.github.com/
+3. Then run the commands (to do this, run the program cmd or PowerShell):
 
-## Custom run whith Sorce code (win and other)
-* Download nodejs (recommended ver v8.11):  https://nodejs.org/en
-* Download Source dir
-* Goto dir Source and run command: npm install
-* Run command: node run-node.js
-* Start the browser with the address: 127.0.0.1
+```
+cd ..\..\..\
+git clone https://github.com/terafoundation/wallet.git
+cd wallet/Source
+npm install
+run-node.bat
 
+```
+If you want to run the wallet as a background process, then instead of the last command (run-node.bat), do the following:
+```
+npm install pm2 -g
+pm2 start run-node.js
+```
 
-Notes: 
-* When the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js (see it in run-node.bat of this repository)
-* Nodejs uses the default http port for node 80, but you can change it in wallet in tab CONFIG - press button HTTP ACESS
-* ATTENTION 1: Set the password to restrict access by HTTP (click the HTTP ACCESS button on your wallet)
-* ATTENTION 2: Button "Set password" is another password used only for hashing a private key in file.
+### Opening ports:
+```
+netsh advfirewall firewall add rule name="Open 30000 port" protocol=TCP localport=30000 action=allow dir=IN
+netsh advfirewall firewall add rule name="Open 80 port" protocol=TCP localport=8000 action=allow dir=IN
+```
+
 
 
 ## Installation on Linux 
@@ -40,7 +54,7 @@ sudo npm install
 sudo pm2 start run-node.js
 ```
 
-open ports (all):
+### open ports (all):
 ```
 systemctl stop firewalld 
 systemctl disable firewalld
@@ -61,7 +75,7 @@ sudo npm install
 sudo pm2 start run-node.js
 ```
 
-open ports:
+### open ports:
 
 ```
 sudo ufw allow 30000/tcp

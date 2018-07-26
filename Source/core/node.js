@@ -139,7 +139,7 @@ module.exports = class CNode
             return;
         }
 
-        ToLog("===CreateConnect=== to server: "+NODE.ip+":"+NODE.port);
+        ToLogNet("===CreateConnect=== to server: "+NODE.ip+":"+NODE.port);
 
 
         CloseSocket(NODE.Socket,"CreateConnect");
@@ -150,7 +150,7 @@ module.exports = class CNode
             if(NODE.Socket)
             {
                 socketInit(NODE.Socket,"s");
-                ToLog("Connected *"+NODE.Socket.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
+                ToLogNet("Connected *"+NODE.Socket.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
                 NODE.Socket.ConnectToServer=true;
                 SetSocketStatus(NODE.Socket,2);
             }
@@ -165,7 +165,7 @@ module.exports = class CNode
     CreateReconnection()
     {
         let NODE=this;
-        ToLog("===CreateReconnection=== to server: "+NODE.ip+":"+NODE.port);
+        ToLogNet("===CreateReconnection=== to server: "+NODE.ip+":"+NODE.port);
 
         CloseSocket(NODE.Socket2,"CreateReconnection");
 
@@ -175,7 +175,7 @@ module.exports = class CNode
             if(NODE.Socket2)
             {
                 socketInit(NODE.Socket2,"s");
-                ToLog("Reconnected *"+NODE.Socket2.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
+                ToLogNet("Reconnected *"+NODE.Socket2.ConnectID+" to server: "+NODE.ip+":"+NODE.port);
                 NODE.Socket2.ConnectToServer=true;
                 SetSocketStatus(NODE.Socket2,2);
             }
@@ -258,7 +258,7 @@ module.exports = class CNode
                     var Str=Buf.Data;
                     if(Str==="WAIT_CONNECT_FROM_SERVER")
                     {
-                        ToLog("2. -------------------- CLIENT OK POW to server: "+NodeInfo(NODE));
+                        ToLogNet("2. -------------------- CLIENT OK POW to server: "+NodeInfo(NODE));
                         //SetSocketStatus(SOCKET,0);
                         CloseSocket(SOCKET,"WAIT_CONNECT_FROM_SERVER");
                         NODE.WaitConnectFromServer=1;
@@ -268,7 +268,7 @@ module.exports = class CNode
                     {
                         NODE.NextConnectDelta=1000;
                         SetSocketStatus(SOCKET,100);
-                        ToLog("4. ******************** CLIENT OK CONNECT to server: "+NodeInfo(NODE))
+                        ToLogNet("4. ******************** CLIENT OK CONNECT to server: "+NodeInfo(NODE))
 
                         if(RECONNECTION)
                         {
@@ -294,7 +294,7 @@ module.exports = class CNode
                     }
                     else
                     {
-                        ToLog("ERROR:"+Str);
+                        ToLogNet("ERROR:"+Str);
                     }
                 }
 
@@ -309,7 +309,7 @@ module.exports = class CNode
         SOCKET.on('end', () =>
         {
             if(GetSocketStatus(SOCKET))
-                ToLog("Get socket end *"+SOCKET.ConnectID+" from server "+NodeInfo(NODE)+" Stat: "+SocketStatistic(SOCKET));
+                ToLogNet("Get socket end *"+SOCKET.ConnectID+" from server "+NodeInfo(NODE)+" Stat: "+SocketStatistic(SOCKET));
             if(GetSocketStatus(SOCKET)===200)
             {
                 NODE.SwapSockets();
@@ -320,7 +320,7 @@ module.exports = class CNode
         SOCKET.on('close', (err) =>
         {
             if(SOCKET.ConnectID && GetSocketStatus(SOCKET))
-                ToLog("Get socket close *"+SOCKET.ConnectID+" from server "+NodeInfo(NODE)+" Stat: "+SocketStatistic(SOCKET));
+                ToLogNet("Get socket close *"+SOCKET.ConnectID+" from server "+NodeInfo(NODE)+" Stat: "+SocketStatistic(SOCKET));
             if(!SOCKET.WasClose)
             {
                 if(GetSocketStatus(SOCKET)>=2)
@@ -389,7 +389,7 @@ module.exports = class CNode
         var addrStr=GetHexFromAddres(Buf.addrArr);
         if(Node.addrStrTemp)
         {
-            ToLog("Set Addr = "+addrStr+"  for: "+NodeInfo(Node));
+            ToLogNet("Set Addr = "+addrStr+"  for: "+NodeInfo(Node));
             Node.addrStr=addrStr;
             SERVER.CheckNodeMap(Node);
         }
@@ -397,7 +397,7 @@ module.exports = class CNode
 
         if(Buf.MIN_POWER_POW>1+MIN_POWER_POW_HANDSHAKE)
         {
-            ToLog("BIG MIN_POWER_POW - NOT CONNECTING")
+            ToLogNet("BIG MIN_POWER_POW - NOT CONNECTING")
             return 0;
         }
 
@@ -407,13 +407,13 @@ module.exports = class CNode
 
             if(GetSocketStatus(TestNode.Socket))
             {
-                ToLog("DoubleConnection find for: "+NodeInfo(Node));
+                ToLogNet("DoubleConnection find for: "+NodeInfo(Node));
                 Node.DoubleConnection=true;
                 return 0;
             }
             else
             {
-                ToLog("DoubleConnection find for: "+NodeInfo(TestNode));
+                ToLogNet("DoubleConnection find for: "+NodeInfo(TestNode));
                 TestNode.DoubleConnection=true;
             }
         }
@@ -534,7 +534,7 @@ global.CloseSocket=function(Socket,StrError,bHide)
     //Socket.unref();
 
     if(!bHide)
-        ToLog("CLOSE "+StrNode+"  *"+Socket.ConnectID+" - "+StrError);
+        ToLogNet("CLOSE "+StrNode+"  *"+Socket.ConnectID+" - "+StrError);
     //ToLogTrace("CLOSE *"+Socket.ConnectID+" - "+StrError);
 }
 
@@ -620,6 +620,14 @@ function NodeName(Node)
     else
         return ""+Node.ip;
 }
+
+
+function ToLogNet(Str)
+{
+    if(global.DO_NET_LOG)
+        ToLog(Str);
+}
+
 global.SocketStatistic=SocketStatistic;
 global.GetSocketStatus=GetSocketStatus;
 global.SetSocketStatus=SetSocketStatus;
@@ -627,3 +635,4 @@ global.NodeInfo=NodeInfo;
 global.NodeName=NodeName;
 global.SocketInfo=SocketInfo;
 
+global.ToLogNet=ToLogNet;

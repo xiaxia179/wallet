@@ -483,14 +483,14 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     DISCONNECT(Info,CurTime)
     {
-        ToLog("FROM "+NodeInfo(Info.Node)+" DISCONNECT: "+Info.Data);
+        ToLogNet("FROM "+NodeInfo(Info.Node)+" DISCONNECT: "+Info.Data);
         this.DeleteNodeFromActive(Info.Node);
         this.DeleteNodeFromHot(Info.Node);
     }
     DISCONNECTHOT(Info,CurTime)
     {
         this.DeleteNodeFromHot(Info.Node);
-        ToLog("FROM "+NodeInfo(Info.Node)+" DISCONNECTHOT: "+Info.Data);
+        ToLogNet("FROM "+NodeInfo(Info.Node)+" DISCONNECTHOT: "+Info.Data);
     }
 
     DeleteNodeFromHot(Node)
