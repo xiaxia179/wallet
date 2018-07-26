@@ -1,13 +1,13 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=87;
-global.MIN_CODE_VERSION_NUM=83;
+global.UPDATE_CODE_VERSION_NUM=103;
+global.MIN_CODE_VERSION_NUM=102;
 
 
 
 
 global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
-    "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD","WALLET_NAME","ADDRLIST_MODE",
-    "USE_MINING","POW_MAX_PERCENT","DO_NET_LOG"];
+    "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD","WALLET_NAME","COUNT_VIEW_ROWS","ADDRLIST_MODE",
+    "USE_MINING","POW_MAX_PERCENT","DO_NET_LOG","LIMIT_SEND_TRAFIC"];
 global.DELTA_CURRENT_TIME=0;
 global.SERVER_PRIVATE_KEY_HEX=undefined;
 global.NET_WORK_MODE=undefined;
@@ -21,6 +21,8 @@ global.DO_NET_LOG=1;
 global.POWRunCount=5000;
 global.POWRunPeriod=2;
 
+global.LIMIT_SEND_TRAFIC=0;
+global.COUNT_VIEW_ROWS=20;
 
 require("./startlib.js");
 
@@ -34,9 +36,9 @@ global.MEM_POOL_MSG_COUNT=1000;
 
 //СЕТЬ
 //СЕТЬ
-//Константы иерархия
+//Константы иерархии обмена
 global.MAX_LEVEL_SPECIALIZATION=24;//максимальный уровень специализации в битах
-global.MIN_CONNECT_CHILD=2;
+global.MIN_CONNECT_CHILD=1;
 global.MAX_CONNECT_CHILD=8;
 
 //Сетевое взаимодействие
@@ -63,7 +65,7 @@ global.AVG_TRANSACTION_COUNT=Math.floor(MAX_TRANSACTION_COUNT/2);
 
 global.MIN_POWER_POW_TR=15;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(global.MIN_POWER_POW_BL===undefined)
-    global.MIN_POWER_POW_BL=7;
+    global.MIN_POWER_POW_BL=5;
 global.GENERATE_BLOCK_ACCOUNT=0;
 global.TOTAL_TER_MONEY=1e9;
 

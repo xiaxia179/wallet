@@ -226,7 +226,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
             var Hash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
             if(Hash)
             {
-                var Body=[115];
+                var Body=[TYPE_TRANSACTION_ACC_HASH];
                 WriteUintToArr(Body,BlockNumHash);
                 WriteArrToArr(Body,Hash,32);
                 var Tr={body:Body};

@@ -122,11 +122,13 @@
 
 
 
+    function SetError(Str)
+    {
+        SetStatus("<DIV  align='left' style='color:red'><B>"+Str+"</B></DIV>");
+    }
     function SetStatus(Str)
     {
-        var id = document.getElementById("status");
-
-        //id.innerText+=Str+"\n";
+        var id = document.getElementById("idStatus");
         id.innerHTML=Str;
     }
 
@@ -142,6 +144,7 @@
     var AllDrawMapXY={};
     var MaxZ=0;
     var nWork=0;
+    var IsDevelopAccount;
 
     function InitNodes()
     {
@@ -302,6 +305,12 @@
             return;
         if(!Data.BlockChain)
             return;
+
+        if(IsDevelopAccount!==Data.IsDevelopAccount)
+            if(Data.IsDevelopAccount)
+                SetStatus("DEV MODE")
+
+        IsDevelopAccount=Data.IsDevelopAccount;
 
         var NodeParam=domenlist[NodeNum];
         if(NodeParam.sessionid!=Data.sessionid)
@@ -558,9 +567,6 @@
         ctx.lineWidth=2;
 
         ctx.strokeStyle="#000";
-//        if(Block.Type==="C")
-//            ctx.strokeStyle="rgb(200,200,0)";
-//        else
         if(Block.bSave)
             ctx.strokeStyle="rgb(10,200,10)";
         else
@@ -573,23 +579,21 @@
             else
                 ctx.strokeStyle="#ca00ca";
         }
-        //Block.Comment2=" "+(1*Block.bSave)+" "+(1*Block.Prepared)+" "+(1*Block.Active)
 
         if(Block.Type==="B" && (Block.TreeLoaded || Block.FindBlockDB))
             ctx.strokeStyle="green";
         else
         if(Block.Type==="B" && Block.AddToLoad && !Block.TreeLoaded)
             ctx.strokeStyle="red";
-//        if(Block.Type==="C" && Block.CountWasLoad===Block.CountForLoad && Block.CountForLoad!=0)
-//            ctx.strokeStyle="green";
-//        else
-//        if(Block.Type==="C" && Block.CountWasLoad!=Block.CountForLoad && Block.CountForLoad!=0)
-//            ctx.strokeStyle="red";
 
 
         ctx.beginPath();
 
-        ctx.fillStyle = Block.colorFill;
+        if(Block.CheckPoint)
+            ctx.fillStyle="#f0ffb9";
+        else
+            ctx.fillStyle = Block.colorFill;
+
         if((Block.Type==="B" || Block.Type==="C") && !Block.Main)
             ctx.fillStyle = "#FFF";
 
@@ -966,8 +970,14 @@
         header.innerText=Str0;
 
 
-        var Str = ""+RetOpenBlock(Block.BlockNum,Block.TrDataLen);
-        Str+="\nSave:"+Block.bSave;
+        var Str="";
+        if(IsDevelopAccount && Block.Type==="H")
+        {
+            Str+='<INPUT type="button" onclick="SetCheckPoint('+Block.BlockNum+')" class="" value="=Set CheckPoint="><BR>';
+        }
+
+        Str += RetOpenBlock(Block.BlockNum,Block.TrDataLen);
+        Str +="\nSave:"+Block.bSave;
 
 
 
@@ -1180,7 +1190,9 @@
 
                 }
             }
-            SetStatus(StrInfo);
+            //SetStatus(StrInfo);
+            document.getElementById("idTitle").innerHTML=StrInfo;
+
 //            var mem=Math.floor(window.performance.memory.usedJSHeapSize/1000)/1000;
 //            var memfree=Math.floor(window.performance.memory.totalJSHeapSize/1000)/1000;
             //SetStatus("MaxNum:"+MaxNum+" memory="+mem+" Mb   free="+memfree+" Mb")
@@ -1222,7 +1234,7 @@
         width:1200px;
     }
 
-    #status
+    #idTitle,idStatus
     {
         width:1700px;
         height:20px;
@@ -1265,7 +1277,7 @@
         position: relative;
         cursor:auto;
         padding: 5px;
-        top:20;
+        top: 0px;
         width:190px;
         border: 1px solid #000;
         background2: #DEE1AE;
@@ -1289,7 +1301,9 @@
     <INPUT type="button" style="float:left" onclick="SetPause()" id="idRun">
 
 
-    <DIV id="status">  </DIV>
+
+    <DIV id="idTitle">  </DIV>
+    <DIV id="idStatus">  </DIV>
 </DIV>
 <DIV id="viewer">
 </DIV>

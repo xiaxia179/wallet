@@ -308,11 +308,11 @@ function ConnectToNodes()
     if(!SERVER || SERVER.CanSend<2)
         return;
 
-    if(!SERVER.NodesArr || !SERVER.NodesArr.length)
+    if(!SERVER.NodesArrUnSort || !SERVER.NodesArrUnSort.length)
         return;
 
-    var Num=glCurNumFindArr%SERVER.NodesArr.length;
-    var Node=SERVER.NodesArr[Num];
+    var Num=glCurNumFindArr%SERVER.NodesArrUnSort.length;
+    var Node=SERVER.NodesArrUnSort[Num];
     if(Num===0)
         glCurNumFindArr=0;
     glCurNumFindArr++;
@@ -325,11 +325,6 @@ function ConnectToNodes()
     }
 
 
-    if(global.TEST_DEVELOP_MODE && !Node.StartFindList)
-    {
-        //
-    }
-    else
     if(GetSocketStatus(Node.Socket)===100)
     {
         if(global.NET_WORK_MODE && !NET_WORK_MODE.UseDirectIP)
@@ -414,8 +409,8 @@ function RunOnUpdate()
         var CurNum=UPDATE_NUM_COMPLETE;
         if(CurNum!==UPDATE_CODE_VERSION_NUM)
         {
-            global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
-            SAVE_CONST(true);
+            //global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
+            // SAVE_CONST(true);
 
             global.SendLogToClient=1;
             ToLog("UPDATER Start");
@@ -424,16 +419,18 @@ function RunOnUpdate()
             //DO UPDATE
             //----------------------------------------------------------------------------------------------------------
 
-            if(SERVER.BlockNumDB>=BLOCK_PROCESSING_LENGTH2 && SERVER.BlockNumDB<2000000)
+            if(SERVER.BlockNumDB>2000000)
             {
-                // var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
-                // var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
-                // if(AccountsHash && IsZeroArr(AccountsHash))
+                var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
+                var AccountsHash=DApps.Accounts.GetHashOrUndefined(2193500);
+                if(!AccountsHash || GetHexFromArr(AccountsHash) !== "1A25A313929A85B183F04F188353D9C4EFB3C5D8225DC285763124DF806481CE")
                 {
-                    if(CurNum<=82)
-                        SERVER.ReWriteDAppTransactions(0);
+                    ToLog("START REWRITE ERR ACTS TRANSACTIONS")
+                    SERVER.ReWriteDAppTransactions(0);
                 }
             }
+            global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
+            SAVE_CONST(true);
 
             //----------------------------------------------------------------------------------------------------------
             ToLog("UPDATER Finish");

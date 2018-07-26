@@ -27,7 +27,9 @@ module.exports = class CNode
         this.GrayConnect=0;
 
         this.LastTime=0;
-        this.DeltaTime=0;
+        this.DeltaTime=1000;
+        this.SumDeltaTime=0;
+        this.CountDeltaTime=0;
 
         //this.TryConnectCount=0;
         //this.DirectIP=0;
@@ -55,6 +57,10 @@ module.exports = class CNode
         this.NextConnectDelta=1000;
         this.GetNodesStart=0
         this.NextGetNodesDelta=1000;
+
+        this.PingStart=0;
+        this.NextPing=1000;
+
 
         this.SendBlockArr=[];
         this.LoadBlockArr=[];
@@ -109,8 +115,11 @@ module.exports = class CNode
         this.SkipFragmentHardSend=0;
 
 
+        if(this.addrArr && !IsZeroArr(this.addrArr))
+            this.addrStr=GetHexFromArr(this.addrArr),
 
-        this.Flood=
+
+            this.Flood=
             {
                 Count:1,
                 MaxCount:MAX_CONNECTION_ACTIVE,

@@ -421,10 +421,33 @@
             {name:"ERRORS",text:"ERRORS",value:0,red:"#A00"},
             {name:"MAX:LOADEDCHAINLIST",text:"Loaded chains, count",value:0,red:"#95d6b9"},
 
-        ];
+            {isLine:true,text:"NODES"},
+        {name:"MAX:ACTUAL_NODES",text:"MAX:ACTUAL_NODES",value:0,red:"#83a3d6"},
+        {name:"MAX:ACTUAL_OK",text:"MAX:ACTUAL_OK",value:0,red:"#063c8a"},
+        {name:"MAX:DELTA_TIME_ACTUAL",text:"MAX:DELTA_TIME_ACTUAL",value:0,red:"#658a61"},
+
+        {name:"MAX:HOT_NODES",text:"MAX:HOT_NODES",value:0,red:"#2b6311"},
+        {name:"MAX:HOT_OK",text:"MAX:HOT_OK",value:0,red:"#063c8a"},
+        {name:"MAX:DELTA_TIME_HOT",text:"MAX:DELTA_TIME_HOT",value:0,red:"#658a61"},
+            //{name:"GET:TRANSFER",text:"GET:TRANSFER",value:0,red:"#063c8a"},
+
+    ];
 
     var DiagramArrD=
         [
+            {isLine:true,text:"Ноды"},
+            {name:"MAX:ACTUAL_NODES",text:"MAX:ACTUAL_NODES",value:0,red:"#83a3d6"},
+            {name:"MAX:ACTUAL_OK",text:"MAX:ACTUAL_OK",value:0,red:"#063c8a"},
+            {name:"MAX:DELTA_TIME_ACTUAL",text:"MAX:DELTA_TIME_ACTUAL",value:0,red:"#658a61"},
+
+            {name:"MAX:HOT_NODES",text:"MAX:HOT_NODES",value:0,red:"#2b6311"},
+            {name:"MAX:HOT_OK",text:"MAX:HOT_OK",value:0,red:"#063c8a"},
+            {name:"MAX:DELTA_TIME_HOT",text:"MAX:DELTA_TIME_HOT",value:0,red:"#658a61"},
+
+
+            //{name:"GET:TRANSFER",text:"GET:TRANSFER",value:0,red:"#3b5d8a"},
+
+
             {isLine:true,text:"SYSTEM"},
             {name:"MAX:MEMORY_USAGE",text:"Используемая память, Mb",value:300},
             {name:"MAX:CPU",text:"CPU WORK, мс",value:0,red:"#06A"},
@@ -440,8 +463,11 @@
 
 
 
+
+
             {isLine:true,text:"Пакеты отправленные"},
             {name:"SENDDATA(KB)",text:"Отправлено, кбайт",value:0,red:"#2b1e8a"},
+  //          {name:"SEND_TRAFFIC_FREE",text:"SEND_TRAFFIC_FREE",value:0,red:"#2b1e8a"},
 //            {name:"SEND_DATA_HARD",text:"Отправлено Hard, кбайт",value:0,red:"#2b1e8a"},
 //            {name:"SEND_DATA_LIGHT",text:"Отправлено Light, кбайт",value:0,red:"#2b1e8a"},
 
@@ -467,7 +493,6 @@
 //        {name:"MAX:NODE_BUF_WRITE:30006",text:"MAX:NODE_BUF_WRITE:30006, кбайт",value:0,red:"#2b1e8a"},
 
 
-//        {name:"SEND_TRAFFIC_FREE",text:"SEND_TRAFFIC_FREE",value:0,red:"#2b1e8a"},
 
 //            {name:"SENDFRAGMENT_H",text:"Отправлено H-фрагментов, кбайт",value:0,red:"#20728a"},
 //            {name:"SENDFRAGMENT_L",text:"Отправлено L-фрагментов, кбайт",value:0,red:"#20728a"},
@@ -525,19 +550,19 @@
 //        {name:"NODE_CAN_GET:30001",text:"NODE_CAN_GET: 30001",value:0,red:"#2b1e8a"},
 //        {name:"NODE_CAN_GET:30006",text:"NODE_CAN_GET: 30006",value:0,red:"#2b1e8a"},
 
-            {name:"BLOCK_SEND",text:"Отдано блоков (план)",value:0,red:"#bea96d"},
+            //{name:"BLOCK_SEND",text:"Отдано блоков (план)",value:0,red:"#bea96d"},
             {name:"SEND:RETGETBLOCK",text:"Отдано блоков (факт)",value:0,red:"#bea96d"},
-            {name:"DELETE_OLD_PACKET",text:"Удалено устаревших пакетов",value:0,red:"#bea96d"},
+            //{name:"DELETE_OLD_PACKET",text:"Удалено устаревших пакетов",value:0,red:"#bea96d"},
 
 
-            {name:"BLOCK_SEND_MEM",text:"Отдано блоков из памяти",value:0,red:"#e6e349"},
+//            {name:"BLOCK_SEND_MEM",text:"Отдано блоков из памяти",value:0,red:"#e6e349"},
 
 //            {name:"DO_GETNEXTNODE-1",text:"DO_GETNEXTNODE-1",value:0,red:"#bea96d"},
 //            {name:"DO_GETNEXTNODE-2",text:"DO_GETNEXTNODE-2",value:0,red:"#bea96d"},
             {name:"SEND:GETBLOCK",text:"Запрошено блоков",value:0,red:"#bea96d"},
 
             {name:"BLOCK_LOADED",text:"Получено блоков",value:0,red:"#95d6b9"},
-            {name:"DOUBLE_RETGETBLOCK",text:"Получено блоков повторно",value:0,red:"#e6e349"},
+//            {name:"DOUBLE_RETGETBLOCK",text:"Получено блоков повторно",value:0,red:"#e6e349"},
 
             {name:"WRITECHAIN_TO_DB_COUNT",text:"Загруженные цепочки блоков",value:0},
 //

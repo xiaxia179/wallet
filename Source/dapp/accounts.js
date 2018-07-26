@@ -971,8 +971,6 @@ class AccountApp extends require("./dapp")
     }
     GetAccountsAll(start,count)
     {
-        if(count>1000)
-            count=1000;
 
         var arr=[];
         for(var num=start;num<start+count;num++)
@@ -994,8 +992,6 @@ class AccountApp extends require("./dapp")
     }
     GetActsAll(start,count)
     {
-        if(count>1000)
-            count=1000;
 
         var arr=[];
         var num;

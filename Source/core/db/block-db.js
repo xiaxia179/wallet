@@ -841,7 +841,7 @@ module.exports = class CDB extends require("../code")
         if(!MinLength)
             return arr;
 
-        const MAX_ARR_PERIOD=MAX_STAT_PERIOD*2;
+        const MAX_ARR_PERIOD=MAX_STAT_PERIOD*2+10;
 
         if(!this.StatMap)//init
         {

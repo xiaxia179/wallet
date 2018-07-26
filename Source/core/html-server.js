@@ -307,6 +307,7 @@ HTTPCaller.GetWalletInfo=function ()
 
             CONSTANTS:Constants,
             CPU_COUNT:os.cpus().length,
+            CheckPointBlockNum:CHECK_POINT.BlockNum,
 
         };
 
@@ -450,20 +451,29 @@ HTTPCaller.TruncateBlockChain=function (BlockNum,Param2,Param3)
     return {result:1,text:"Truncate after BlockNum="+BlockNum};
 }
 
-
-HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
+function CheckCorrectDevKey()
 {
     if(WALLET.WalletOpen===false)
     {
-        ToLogClient("Not open wallet")
-        return {result:0};
+        var StrErr="Not open wallet";
+        ToLogClient(StrErr)
+        return {result:0,text:StrErr};
     }
 
     if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
     {
-        ToLogClient("Not developer key")
-        return {result:0};
+        var StrErr="Not developer key";
+        ToLogClient(StrErr)
+        return {result:0,text:StrErr};
     }
+    return true;
+}
+
+HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
+{
+    var Ret=CheckCorrectDevKey();
+    if(Ret!==true)
+        return Ret;
 
 
 
@@ -474,27 +484,87 @@ HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
 
 
 
+    // var Block=SERVER.ReadBlockHeaderDB(BlockNum);
+    // var SignArr=arr2(Block.Hash,GetArrFromValue(Block.BlockNum));
+    // var Sign = secp256k1.sign(shabuf(SignArr), WALLET.KeyPair.getPrivateKey('')).signature;
+    // global.CHECK_POINT={BlockNum:BlockNum,Hash:Block.Hash,Sign:Sign};
+    SetCheckPointOnBlock(BlockNum);
+
+    return {result:1,text:"Set check point on BlockNum="+BlockNum};
+}
+function SetCheckPointOnBlock(BlockNum)
+{
     var Block=SERVER.ReadBlockHeaderDB(BlockNum);
     var SignArr=arr2(Block.Hash,GetArrFromValue(Block.BlockNum));
     var Sign = secp256k1.sign(shabuf(SignArr), WALLET.KeyPair.getPrivateKey('')).signature;
     global.CHECK_POINT={BlockNum:BlockNum,Hash:Block.Hash,Sign:Sign};
 
-    return {result:1,text:"Set check point on BlockNum="+BlockNum};
 }
+
+var idSetTimeSetCheckPoint;
+HTTPCaller.SetAutoCheckPoint=function (bSet)
+{
+    var Ret=CheckCorrectDevKey();
+    if(Ret!==true)
+        return Ret;
+
+
+    if(idSetTimeSetCheckPoint)
+        clearInterval(idSetTimeSetCheckPoint);
+    idSetTimeSetCheckPoint=undefined;
+    if(bSet)
+        idSetTimeSetCheckPoint=setInterval(RunSetCheckPoint,2000);
+
+
+    return {result:1,text:"AutoCheck: "+bSet};
+}
+
+var SumCheckPow=0;
+var CountCheckPow=0;
+function  RunSetCheckPoint()
+{
+    if(!SERVER.BlockNumDB)
+        return;
+    if(SERVER.BlockNumDB<2100000)
+        return;
+    var Delta=GetCurrentBlockNumByTime()-SERVER.BlockNumDB;
+    if(Delta>16)
+        return;
+
+    var BlockNum=SERVER.BlockNumDB-16;
+    var Block=SERVER.ReadBlockHeaderDB(BlockNum);
+    if(Block)
+    {
+        var Power=GetPowPower(Block.Hash);
+        if(Power<16)
+        {
+            ToLog("CANNOT SET CHECK POINT Power="+Power+"  BlockNum="+BlockNum);
+            return;
+        }
+
+        CountCheckPow++;
+        SumCheckPow+=Power;
+        var AvgPow=SumCheckPow/CountCheckPow;
+        if(CountCheckPow>10)
+        {
+            if(Power<AvgPow-1)
+            {
+                ToLog("**************** CANNOT SET CHECK POINT Power="+Power+"/"+AvgPow+"  BlockNum="+BlockNum);
+                return;
+            }
+        }
+
+        SetCheckPointOnBlock(BlockNum);
+        ToLog("SET CHECK POINT Power="+Power+"/"+AvgPow+"  BlockNum="+BlockNum);
+    }
+}
+
 
 HTTPCaller.SetNewCodeVersion=function (Data)
 {
-    if(WALLET.WalletOpen===false)
-    {
-        ToLogClient("Not open wallet")
-        return {result:0};
-    }
-
-    if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
-    {
-        ToLogClient("Not developer key")
-        return {result:0};
-    }
+    var Ret=CheckCorrectDevKey();
+    if(Ret!==true)
+        return Ret;
 
 
     var Ret=SERVER.SetNewCodeVersion(Data,WALLET.KeyPair.getPrivateKey(''));
@@ -505,17 +575,9 @@ HTTPCaller.SetNewCodeVersion=function (Data)
 
 HTTPCaller.SetCheckDeltaTime=function (Data)
 {
-    if(WALLET.WalletOpen===false)
-    {
-        ToLogClient("Not open wallet")
-        return {result:0};
-    }
-
-    if(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)!==0)
-    {
-        ToLogClient("Not developer key")
-        return {result:0};
-    }
+    var Ret=CheckCorrectDevKey();
+    if(Ret!==true)
+        return Ret;
 
     if(!Data || !Data.Num)
     {
@@ -734,6 +796,7 @@ HTTPCaller.GetBlockChain=function (type)
             port:SERVER.port,
             DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
             memoryUsage:process.memoryUsage(),
+            IsDevelopAccount:(CompareArr(WALLET.PubKeyArr,global.DEVELOP_PUB_KEY)===0),
             sessionid:sessionid,
             result:1
         };
@@ -1037,6 +1100,11 @@ function CopyBlockDraw(Block,MainChains)
 
     }
 
+    var CheckPoint=0;
+    if(Block.BlockNum===CHECK_POINT.BlockNum)
+        CheckPoint=1;
+
+
     GetGUID(Block);
     var Item=
         {
@@ -1063,6 +1131,8 @@ function CopyBlockDraw(Block,MainChains)
             ArrLength:0,
             TrDataLen:Block.TrDataLen,
             Power:GetPowPower(Block.Hash),
+            CheckPoint:CheckPoint,
+
         };
     if(Block.chain)
         Item.chainid=Block.chain.id;

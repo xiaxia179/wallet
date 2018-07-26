@@ -290,7 +290,7 @@ module.exports = class CBlock extends require("./db/block-db")
         this.LoadHistoryMode=true;
         this.LoadHistoryContext={Node:Node,BlockNum:this.BlockNumDB,MapSend:{},Foward:1,Pause:0,DeltaBlockNum:10};
 
-        this.DeleteAllNodesFromHot("LOAD_HISTORY_MODE");
+        //this.DeleteAllNodesFromHot("LOAD_HISTORY_MODE");
 
         ToLog("LOADHISTORYMODE ON")
         ToLogClient("Start synchronization")
@@ -2340,6 +2340,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 if(Count>MAX_COUNT_CHAIN_LOAD)
                 {
                     TO_ERROR_LOG("BLOCK",10,"Error COUNT GetRootChain");
+                    SERVER.FREE_ALL_MEM_CHAINS();
                     break;
                 }
             }

@@ -217,7 +217,8 @@ global.AddrLevel=function (Addr1,Addr2)
 
     return Level;
 }
-global.AddrLevelArr=function (arr1,arr2)
+
+global.AddrLevelArrFromStart=function (arr1,arr2)
 {
     var Level=0;
     for(var i=0;i<arr1.length;i++)
@@ -231,6 +232,27 @@ global.AddrLevelArr=function (arr1,arr2)
 
             a1=a1<<1;
             a2=a2<<1;
+            Level++;
+        }
+    }
+
+    return Level;
+}
+
+global.AddrLevelArr=function (arr1,arr2)
+{
+    var Level=0;
+    for(var i=arr1.length-1;i>=0;i--)
+    {
+        var a1=arr1[i];
+        var a2=arr2[i];
+        for(var b=0;b<8;b++)
+        {
+            if((a1&1) !== (a2&1))
+                return Level;
+
+            a1=a1>>1;
+            a2=a2>>1;
             Level++;
         }
     }
@@ -282,7 +304,7 @@ global.GetTimeOnlyStr=function (now)
 
 //Params
 
-global.LoadParams=function(filename,EmptyValue)
+global.LoadParams=function(filename,DefaultValue)
 {
     try
     {
@@ -298,7 +320,7 @@ global.LoadParams=function(filename,EmptyValue)
     {
         TO_ERROR_LOG("MAINLIB",100,"Error in file:"+filename+"\n"+err);
     }
-    return EmptyValue;
+    return DefaultValue;
 }
 
 global.SaveParams=function(filename,data)

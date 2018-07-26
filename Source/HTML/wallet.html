@@ -967,6 +967,9 @@
             Name=CONFIG_DATA.CONSTANTS.WALLET_NAME;
         document.title=Name+" v"+ServerVersionNum+"";
 
+        if(CONFIG_DATA.CONSTANTS.COUNT_VIEW_ROWS)
+            CountViewRows=CONFIG_DATA.CONSTANTS.COUNT_VIEW_ROWS;
+
         SetBlockChainConstant(Data);
         MaxBlockNum=GetCurrentBlockNumByTime();
 
@@ -1293,8 +1296,11 @@
         StrMainStatus=Str;
         ViewStatus();
     }
-    function SetStatus(Str)
+    function SetStatus(Str,bError)
     {
+        if(bError)
+            return SetError(Str);
+
         StrNormalStatus=Str;
         if(bMainCanClear)
         {
@@ -1573,14 +1579,19 @@
         if(!ServerBlockNumDB || ServerBlockNumDB<16)
         {
             SetError("Not set ServerBlockNumDB");
+            return;
         }
-        var BlockNum=ServerBlockNumDB-20;
+        var BlockNum=ServerBlockNumDB-10;
+        SetCheckPoint(BlockNum);
+    }
 
-        GetData("/SetCheckPoint/",BlockNum,function (Data)
+    function UseAutoCheckPoint()
+    {
+        GetData("/SetAutoCheckPoint/",document.getElementById("idUseAutoCheckPoint").checked,function (Data)
         {
-            if(Data && Data.result===1)
+            if(Data)
             {
-                SetStatus(Data.text);
+                SetStatus(Data.text,!Data.result);
             }
         });
     }
@@ -1593,6 +1604,8 @@
         Data.addrArr=GetHexFromArr(Data.addrArr);
         Data.Hash=GetHexFromArr(Data.Hash);
         Data.Sign=GetHexFromArr(Data.Sign);
+        Data.Hash=Data.Hash.substr(0,8)+"...";
+        Data.Sign=Data.Sign.substr(0,16)+"...";
 
         var Str=JSON.stringify(Data,"",2);
         document.getElementById("idDevService").value=Str;
@@ -1614,9 +1627,9 @@
 
         GetData("/SetNewCodeVersion",Data,function (Data)
         {
-            if(Data && Data.result===1)
+            if(Data)
             {
-                SetStatus(Data.text);
+                SetStatus(Data.text,!Data.result);
             }
         });
     }
@@ -1654,9 +1667,9 @@
 
         GetData("/SetCheckDeltaTime",Data,function (Data)
         {
-            if(Data && Data.result===1)
+            if(Data)
             {
-                SetStatus(Data.text);
+                SetStatus(Data.text,!Data.result);
             }
         });
     }
@@ -1728,6 +1741,7 @@
     function OpenWallet()
     {
         var Passwd1=itemPassword1.value;
+        itemPassword1.value="";
         GetData("/OpenWallet/",Passwd1, function (Data)
         {
             if(Data && Data.result===1)
@@ -1785,6 +1799,8 @@
             SetError("Passwords are not equal");
             return;
         }
+        itemPassword1.value="";
+        itemPassword2.value="";
 
         GetData("/SetWalletPasswordNew/",Passwd1, function (Data)
         {
@@ -1903,6 +1919,7 @@
     <BR>
 
 
+
     <input type="checkbox" class="checkbox" id="idUseMining" onchange = "UseMining()"/>
     <label for="idUseMining">MINING</label> <DIV id="idPrecentBlock" style="color: blue;display: none"> CPU use:<input type="number" min=0 max=100 id="idPercentMining" onchange="SetPercentMining()"/>%</DIV><BR>
     <DIV id="idDevelopService" style="display: none">
@@ -1929,6 +1946,10 @@
             <INPUT type="button" onclick="CreateCheckPoint()" class="btdoit  bt" value="CHECK POINT">
             <INPUT type="button" onclick="SetNewCodeVersion()" class="btdoit  bt" value=">>NEW VERSION">
             <INPUT type="button" onclick="StartTimeCorrect()" class="btdoit  bt" value=">>TIME CORR.">
+
+            <input type="checkbox" class="checkbox" id="idUseAutoCheckPoint" onchange = "UseAutoCheckPoint()"/>
+            <label for="idUseAutoCheckPoint">Auto CheckPoint</label><BR>
+
             <HR>
         </DIV>
     </DIV>
@@ -2204,7 +2225,7 @@
                 <th id="Item.Num" class="num">ID</th>
                 <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
                 <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
-                <th id="Item.Description" class="name">Account name</th>
+                <th id="Item.Description" class="accname">Account name</th>
                 <th id="Item.PubKeyStr" class="pubkey">PubKey</th>
                 <th id="Item.Value.OperationID" class="num">Operation</th>
                 <th id="Item.RefID" class="num">Adviser</th>

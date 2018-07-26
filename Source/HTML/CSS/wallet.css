@@ -144,7 +144,14 @@ table.form_input
     word-break: break-all;
 }
 
-
+.accname
+{
+    width: 180px;
+    font-family: "courier new", "times new roman", monospace;
+    align-content: left;
+    text-align: left;
+    word-break: break-all;
+}
 
 
 

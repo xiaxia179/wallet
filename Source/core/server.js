@@ -322,6 +322,9 @@ module.exports = class CTransport extends require("./connect")
 
         this.CurrentTimeStart=0;
         this.CurrentTimeValues={};
+
+
+        this.LoadNodesFromFile();
     }
 
     GetF(Method,bSend)
@@ -2052,18 +2055,21 @@ module.exports = class CTransport extends require("./connect")
             var CountSend=Math.min(BUF_PACKET_SIZE,Node.BufWrite.length);
             var Value=CountSend/1024;
 
-            var CanCountSend=Node.SendTrafficLimit-Node.SendTrafficCurrent;
-            if(CanCountSend<CountSend)
+            if(global.LIMIT_SEND_TRAFIC)
             {
-                //ADD_TO_STAT("DO_LIMIT_SENDDATA:"+NodeName(Node),Value);
-
-                if(this.SendTrafficFree<CountSend)
+                var CanCountSend=Node.SendTrafficLimit-Node.SendTrafficCurrent;
+                if(CanCountSend<CountSend)
                 {
-                    ADD_TO_STAT("LIMIT_SENDDATA:"+NodeName(Node),Value,1);
-                    continue NEXT_NODE;
-                }
+                    //ADD_TO_STAT("DO_LIMIT_SENDDATA:"+NodeName(Node),Value);
 
-                this.SendTrafficFree-=CountSend;
+                    if(this.SendTrafficFree<CountSend)
+                    {
+                        ADD_TO_STAT("LIMIT_SENDDATA:"+NodeName(Node),Value,1);
+                        continue NEXT_NODE;
+                    }
+
+                    this.SendTrafficFree-=CountSend;
+                }
             }
 
 

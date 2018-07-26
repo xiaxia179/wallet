@@ -148,9 +148,9 @@ function SUM_TO_STRING(Value,bTerion)
     if(bTerion)
     {
         if(Str==="")
-            Str="0 TER";
+            Str="0 TERA";
         else
-            Str+=" TER";
+            Str+=" TERA";
     }
     return Str;
 }
@@ -650,8 +650,10 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
         row.Work=glWorkNum;
         for(var n=0;n<colcount;n++)
         {
-            var cell0=row0.cells[n];
+            //TODO оптимизировать!!!!
+
             var cell=row.cells[n];
+            var cell0=row0.cells[n];
             var formula=cell0.id;
             if(formula.substr(0,1)==="(")
             {
@@ -670,6 +672,7 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
         if(btotal)
             ADD(ValueTotal,Item.Value);
     }
+
 
     //delete old
     for(var key in map)
@@ -736,4 +739,21 @@ function DateFromBlock(BlockNum)
     else
         Str="";
     return Str;
+}
+
+
+function SetCheckPoint(BlockNum)
+{
+    if(!BlockNum)
+    {
+        SetError("Not set BlockNum");
+        return;
+    }
+    GetData("/SetCheckPoint/",BlockNum,function (Data)
+    {
+        if(Data)
+        {
+            SetStatus(Data.text,!Data.result);
+        }
+    });
 }

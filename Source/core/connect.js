@@ -41,7 +41,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         super(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
 
 
-
+        this.StartTime=(new Date())-0;
         this.WasNodesSort=false;
         //this.ReadyConsensus=false;
 
@@ -49,6 +49,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         this.LevelNodesCount=0;
 
         this.NodesArr=[];
+        this.NodesArrUnSort=[];
         this.NodesMap={};//addr->node (1:1) //by addr string
         this.NodesIPMap={};
         this.WasNodesSort=true;
@@ -70,8 +71,10 @@ module.exports = class CConnect extends require("./transfer-msg")
 
             setInterval(this.StartReconnect.bind(this),60*1000);
             //setInterval(this.StartReconnect.bind(this),1*1000);
-
          }
+
+        setInterval(this.NodesArrSort.bind(this),TIME_AUTOSORT_GRAY_LIST);
+
 
     }
 
@@ -156,27 +159,35 @@ module.exports = class CConnect extends require("./transfer-msg")
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
-            if(this.IsCanConnect(Node))
+            if(this.IsCanConnect(Node) && !Node.AddrList)
             {
-                if(!Node.PingNumber)
-                    Node.PingNumber=0;
-                Node.PingNumber++;
+                if(Node.Hot)
+                    Node.NextPing=1;
 
-                if(Node.AddrList)
-                    continue;
-                if(!Node.Hot && Node.PingNumber%10!==0)
-                     continue;
+                var Delta=(new Date)-Node.PingStart;
+                if(Delta>=Node.NextPing)
+                {
 
 
-                var Context={"StartTime":GetCurrentTime(0),PingNumber:Node.PingNumber};
-                this.SendF(Node,
-                    {
-                        "Method":"PING",
-                        "Context":Context,
-                        "Data":this.GetPingData()
-                    }
-                );
-                Node.DeltaTime=undefined;
+                    Node.PingStart=(new Date)-0;
+                    Node.NextPing=Node.NextPing*1.5;
+
+
+                    if(!Node.PingNumber)
+                        Node.PingNumber=0;
+                    Node.PingNumber++;
+
+
+                    var Context={"StartTime":GetCurrentTime(0),PingNumber:Node.PingNumber};
+                    this.SendF(Node,
+                        {
+                            "Method":"PING",
+                            "Context":Context,
+                            "Data":this.GetPingData()
+                        }
+                    );
+                    //Node.DeltaTime=undefined;
+                }
             }
         }
     }
@@ -278,7 +289,11 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
         var DeltaTime=GetCurrentTime(0)-Info.Context.StartTime;
-        Node.DeltaTime=DeltaTime;
+
+        Node.SumDeltaTime+=DeltaTime;
+        Node.CountDeltaTime++;
+
+        Node.DeltaTime=Math.trunc(Node.SumDeltaTime/Node.CountDeltaTime);
         Node.INFO=Data;
         Node.LoadHistoryMode=Data.LoadHistoryMode;
         if(Data.LoadHistoryMode || !Data.CanStart)
@@ -335,7 +350,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 || CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
         {
 
-            var Level=AddrLevelArr(this.addrArr,CodeVersion.addrArr);
+            var Level=AddrLevelArrFromStart(this.addrArr,CodeVersion.addrArr);
             if(CodeVersion.BlockPeriod)
             {
                 var Delta=GetCurrentBlockNumByTime()-CodeVersion.BlockNum;
@@ -656,6 +671,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
         var mapWasAdd={};
 
+        var CurTime=GetCurrentTime();
         for(var i=0;i<len;i++)
         {
             var Item;
@@ -680,7 +696,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 continue;
 
             if(Item.LastTime || Item.NextConnectDelta>10*1000)
-            if(Item.LastTime-0<(new Date)-3600*1000)
+            if(Item.LastTime-0<CurTime-3600*1000)
                 continue;
 
             var Value=
@@ -727,12 +743,12 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
             this.NodesMap[Node.addrStr]=Node;
-            this.NodesArr.push(Node)
+            this.NodesArr.push(Node);
+            this.NodesArrUnSort.push(Node);
 
             //ToLog("NEW: "+Node.ip+":"+Node.port)
 
             ADD_TO_STAT("AddToNodes");
-            this.NodesArrSortStart();
         }
         if(bFromGetNodes)
         {
@@ -752,30 +768,28 @@ module.exports = class CConnect extends require("./transfer-msg")
         return Node;
     }
 
-    NodesArrSortStart()
-    {
-        if(this.WasNodesSort)
-            setTimeout(this.NodesArrSort.bind(this),TIME_AUTOSORT_GRAY_LIST);
-        this.WasNodesSort=false;
-    }
-
     NodesArrSort()
     {
-        if(!this.WasNodesSort)
+        this.NodesArr.sort(function (a,b)
         {
-            this.WasNodesSort=true;
+            if(a.Active!==b.Active)
+                return b.Active-a.Active;
 
-            this.NodesArr.sort(function (a,b)
-            {
-                if(a.Active!==b.Active)
-                    return b.Active-a.Active;
+            return a.DeltaTime-b.DeltaTime;
+            //return a.LastTime-b.LastTime;
+        });
 
-                return a.LastTime-b.LastTime;
-            });
+        if((new Date())-this.StartTime > 120*1000)
+            SaveParams(GetDataPath("nodes.lst"),this.GetDirectNodesArray(true));
+    }
 
 
-
-            SaveParams(GetDataPath("nodes.lst"),this.GetDirectNodesArray(true))
+    LoadNodesFromFile()
+    {
+        var arr=LoadParams(GetDataPath("nodes.lst"),[]);
+        for(var i=0;i<arr.length;i++)
+        {
+            this.AddToArrNodes(arr[i],true);
         }
     }
 
@@ -1026,7 +1040,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 {
                     //ToLog("Node.Hot="+Node.Hot+" DeltaTime="+DeltaTime);
                     this.DeleteNodeFromHot(Node);
-                    this.StartDisconnectHot(Node,"StartCheckConnect");
+                    this.StartDisconnectHot(Node,"StartCheckConnect:D="+DeltaTime);
                     break;
                 }
             }
@@ -1098,7 +1112,13 @@ module.exports = class CConnect extends require("./transfer-msg")
         var Levels=[];
         for(let n=0;n<this.NodesArr.length;n++)
         {
-            let Child=this.NodesArr[n];
+            var Child=this.NodesArr[n];
+
+            if(Child.CountDeltaTime<=2)
+                continue;
+            if(Child.DeltaTime<=MAX_PING_FOR_CONNECT)
+                continue;
+
             if(!this.IsCanConnect(Child) || Child.Hot)
                 continue;
 
@@ -1202,14 +1222,19 @@ module.exports = class CConnect extends require("./transfer-msg")
 
     FindPair(L)
     {
+        //пока не исп-ся
         for(let n=0;n<this.NodesArr.length;n++)
         {
             let Node=this.NodesArr[n];
             if(Node.addrStr===this.addrStr)
                 continue;
 
-            var Level=this.AddrLevelNode(Node);
+            if(Node.CountDeltaTime<=2)
+                continue;
+            if(Node.DeltaTime<=MAX_PING_FOR_CONNECT)
+                continue;
 
+            var Level=this.AddrLevelNode(Node);
             if(Level!==L)
                 continue;
 

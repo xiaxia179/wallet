@@ -54,7 +54,47 @@ module.exports = class CCommon
     }
     AddStatOnTimer()
     {
+        //NET
 
+        var arr=SERVER.GetActualNodes();
+        var Count=arr.length,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0;
+        for(var i=0;i<arr.length;i++)
+        {
+            var Node=arr[i];
+            var StrChk=GetCheckAccHash(Node.INFO.AccountBlockNum,Node.INFO.AccountsHash);
+            var Chck=0;
+            if(StrChk.indexOf("=OK=")>=0)
+            {
+                Chck=1;
+            }
+            var DeltaTime=Node.DeltaTime;
+            if(!DeltaTime)
+                DeltaTime=0;
+
+            CountActualOK+=Chck;
+            SumDeltaActual+=DeltaTime;
+
+            if(Node.Hot)
+            {
+                CountHot++;
+                CountHotOK+=Chck;
+                SumDeltaHot+=DeltaTime;
+            }
+        }
+
+        ADD_TO_STAT("MAX:ACTUAL_NODES",arr.length);
+        ADD_TO_STAT("MAX:HOT_NODES",CountHot);
+        ADD_TO_STAT("MAX:HOT_OK",CountHotOK);
+        ADD_TO_STAT("MAX:ACTUAL_OK",CountActualOK);
+
+        if(!CountHot)
+            CountHot=0;
+        if(!Count)
+            Count=0;
+        ADD_TO_STAT("MAX:DELTA_TIME_HOT",SumDeltaHot/CountHot);
+        ADD_TO_STAT("MAX:DELTA_TIME_ACTUAL",SumDeltaActual/Count);
+
+        //CPU and MEM
         ADD_TO_STAT("MAX:MEMORY_USAGE",process.memoryUsage().heapTotal/1024/1024);
 
         var SumUser=0;
@@ -281,3 +321,28 @@ class STreeBuffer
 
 }
 
+
+function GetCheckAccHash(BlockNum,Hash)
+{
+    var MyHash=DApps.Accounts.GetHashOrUndefined(BlockNum);
+    if(MyHash)
+    {
+        if(!Hash)
+            return "=ERR:NO="
+
+
+        if(CompareArr(Hash,MyHash)!==0)
+            return "=ERR:BAD="
+        else
+            return "=OK="
+
+    }
+    else
+    {
+        if(!Hash)
+            return "=OK=:NO"
+        else
+            return "=MY:NO=";
+    }
+
+}

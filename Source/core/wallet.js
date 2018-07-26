@@ -321,8 +321,6 @@ class CApp
     }
     GetHistoryAct(start,count,Direct)
     {
-        if(count>1000)
-            count=1000;
 
         var arr=[];
         //for(var num=this.GetHistoryMaxNum();num>=0;num--)
