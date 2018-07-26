@@ -5,13 +5,7 @@
 WARNING: To connect to the network and start sync, you must have a static (public) IP address and an open port. 
 
 
-<del>Binary</del>
-~~Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe
-* This  assembly file is an SFX rar-file that contains the source code + node-webkit
-* Select the FOLDER where you want to install the program (by default, the program is installed to the CURRENT folder).
-* If you have already installed the assembly data, you can download only the updates and install them in the same directory:
- https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
-Note: in this repository the files setup.exe and updater.exe always contain the same versions.~~
+<del>Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe</del>
 
 
 
