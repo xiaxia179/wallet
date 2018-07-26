@@ -5,12 +5,14 @@
 WARNING: To connect to the network and start sync, you must have a static (public) IP address and an open port. 
 
 
-Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe
+<del>Binary</del>
+~~Binary file (win64): https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-setup.exe
 * This  assembly file is an SFX rar-file that contains the source code + node-webkit
 * Select the FOLDER where you want to install the program (by default, the program is installed to the CURRENT folder).
 * If you have already installed the assembly data, you can download only the updates and install them in the same directory:
  https://github.com/terafoundation/wallet/blob/master/Run/Win64/Tera-updater.exe
-Note: in this repository the files setup.exe and updater.exe always contain the same versions.
+Note: in this repository the files setup.exe and updater.exe always contain the same versions.~~
+
 
 
 ## Custom run whith Sorce code (win and other)
@@ -24,7 +26,8 @@ Note: in this repository the files setup.exe and updater.exe always contain the 
 Notes: 
 * When the purse receives updates to the new version of the code from the network, the code is rewritten and the purse is output. For correct operation it is necessary to loop start the command: node run-node.js (see it in run-node.bat of this repository)
 * Nodejs uses the default http port for node 80, but you can change it in wallet in tab CONFIG - press button HTTP ACESS
-* ATTENTION: set password for http acess (press button HTTP ACESS)
+* ATTENTION 1: Set the password to restrict access by HTTP (click the HTTP ACCESS button on your wallet)
+* ATTENTION 2: Button "Set password" is another password used only for hashing a private key in file.
 
 
 ## Installation on Linux 
@@ -70,6 +73,8 @@ open ports:
 sudo ufw allow 30000/tcp
 sudo ufw allow 80/tcp
 ```
+
+
 
 
 ### Updates
