@@ -60,7 +60,6 @@ module.exports = class CConsensus extends require("./block-loader")
         this.TreeSendPacket=new RBTree(CompareItemHash);
 
 
-        //this.StartMode=true;
 
         if(!global.ADDRLIST_MODE && !this.VirtualMode)
         {
@@ -73,11 +72,6 @@ module.exports = class CConsensus extends require("./block-loader")
 
     StartBlockChain()
     {
-        if(glStopNode)
-            return;
-        if(!CAN_START)
-            return;
-
         this.DoBlockChain();
 
         var CurTimeNum=GetCurrentTime()-CONSENSUS_PERIOD_TIME/2;
@@ -193,9 +187,7 @@ module.exports = class CConsensus extends require("./block-loader")
 
     StartConsensus()
     {
-        if(this.StartMode)
-            return;
-        if(!CAN_START)
+         if(!CAN_START)
             return;
 
 
@@ -354,6 +346,12 @@ module.exports = class CConsensus extends require("./block-loader")
         this.ToMaxSumList(Data.MaxSum);
 
         ADD_TO_STAT_TIME("TRANSFER", startTime);
+
+        var Delta=(new Date())-this.StartLoadBlockTime;
+        if(Delta>30*1000)
+        {
+            Info.Node.BlockProcessCount++;
+        }
     }
 
     TrToInfo(Block,Array,StrInfo)
@@ -388,8 +386,6 @@ module.exports = class CConsensus extends require("./block-loader")
         if(!CAN_START)
             return;
 
-        if(this.StartMode)
-            return;
 
 
         if(USE_CHECK_SEND)
@@ -1357,11 +1353,16 @@ module.exports = class CConsensus extends require("./block-loader")
 
     DoBlockChain()
     {
+        this.AddStatOnTimer();
+
+        if(glStopNode)
+            return;
+        if(!CAN_START)
+            return;
+
         this.MiningBlock=undefined;
 
-        if(this.StartMode)
-            return;
-        if(this.LoadHistoryMode)
+         if(this.LoadHistoryMode)
             return;
 
         this.StartConsensus();

@@ -59,6 +59,7 @@ module.exports = class CBlock extends require("./db/block-db")
         this.TaskNodeIndex=0;
         this.LoadedChainList=[];
         this.LastChainLoad=undefined;
+        this.StartLoadBlockTime=0;
 
         this.LoadHistoryMode=false;
 
@@ -302,9 +303,10 @@ module.exports = class CBlock extends require("./db/block-db")
         if(this.LoadHistoryMode)
             return;
 
+        this.StartLoadBlockTime=(new Date())-0;
+
         if(Num > this.CurrentBlockNum+TIME_START_SAVE)
         {
-            //ToLog("!!!!!!!!!!!!!!!!    Num>TIME_START_SAVE  Num="+Num)
             return;
         }
 
@@ -724,6 +726,17 @@ module.exports = class CBlock extends require("./db/block-db")
 
     GETBLOCKHEADER(Info,CurTime)
     {
+        if(this.StopDoSendPacket(Info.Node,"GETBLOCKHEADER"))
+        {
+            return this.Send(Info.Node,
+                {
+                    "Method":"RETBLOCKHEADER",
+                    "Context":Info.Context,
+                    "Data":BufLib.GetNewBuffer(10)
+                },1);
+        }
+
+
         var Data=this.DataFromF(Info);
 
 
@@ -873,8 +886,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 "Method":"RETBLOCKHEADER",
                 "Context":Info.Context,
                 "Data":BufWrite
-            },1
-        );
+            },1);
     }
 
     GetBlockArrFromBuffer(BufRead,Info)
@@ -1081,10 +1093,8 @@ module.exports = class CBlock extends require("./db/block-db")
             if(arr.length<=1)
             {
                 var keysend=""+Info.Node.addrStr+":"+chain.BlockNum;
-                chain.MapSend[keysend]=1;
-
+                chain.MapSend[keysend]=1;//следующая отправка другой ноде через 100 мс
                 chain.AddInfo("NO:"+GetNodeStrPort(Info.Node));
-                //следующая отправка другой ноде через 100 мс
                 return;
             }
             chain.AddInfo("L="+arr.length+" from:"+GetNodeStrPort(Info.Node));
@@ -1859,6 +1869,16 @@ module.exports = class CBlock extends require("./db/block-db")
 
     GETBLOCK(Info,CurTime)
     {
+        if(this.StopDoSendPacket(Info.Node,"GETBLOCK"))
+        {
+            return this.Send(Info.Node,
+                {
+                    "Method":"RETGETBLOCK",
+                    "Context":Info.Context,
+                    "Data":BufLib.GetNewBuffer(100)
+                },1);
+        }
+
         var Data=this.DataFromF(Info);
         var BlockNum=Data.BlockNum;
         var TreeHash=Data.TreeHash;
@@ -2051,14 +2071,22 @@ module.exports = class CBlock extends require("./db/block-db")
 
     CANBLOCK(Info,CurTime)
     {
+        if(this.StopDoSendPacket(Info.Node,"CANBLOCK"))
+        {
+            return this.SendF(Info.Node,
+                {
+                    "Method":"RETCANBLOCK",
+                    "Data":{Result:0}
+                });
+        }
+
         var Data=this.DataFromF(Info);
 
         this.SendF(Info.Node,
             {
                 "Method":"RETCANBLOCK",
                 "Data":{Result:1}
-            }
-        );
+            });
     }
     static RETCANBLOCK_F()
     {

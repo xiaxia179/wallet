@@ -44,16 +44,18 @@ module.exports = class CCommon
         this.ContextPackets=new STreeBuffer(10*1000,CompareItemHash32,"object");
 
 
-        if(!global.ADDRLIST_MODE && !this.VirtualMode)
-        {
-            setInterval(this.AddStatOnTimer.bind(this),1000);
-        }
+        // if(!global.ADDRLIST_MODE && !this.VirtualMode)
+        // {
+        //     setInterval(this.AddStatOnTimer.bind(this),1000);
+        // }
 
 
 
     }
     AddStatOnTimer()
     {
+        //ToLog("AddStatOnTimer");
+
         //NET NODES
         var bHasCP=0;
         if(CHECK_POINT.BlockNum)
@@ -63,12 +65,13 @@ module.exports = class CCommon
                 bHasCP=1;
         }
 
+        var BufMap={};
         var arr=SERVER.GetActualNodes();
         var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0,CountLowLevels=0;
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
-            if(Node.AddrList)
+            if(!Node || Node.AddrList)
                 continue;
             if(!Node.INFO)
                 Node.INFO={};
@@ -81,13 +84,13 @@ module.exports = class CCommon
                 CountLH++;
             if(Node.Hot && Node.INFO.NodesLevelCount)
                 CountLevels+=Node.INFO.NodesLevelCount;
-            if(Node.INFO.NodesLevelCount && Node.INFO.NodesLevelCount<=global.LEV_COUNT)
-                CountLowLevels++;
+            // if(Node.INFO.NodesLevelCount && Node.INFO.NodesLevelCount<=global.LEV_COUNT)
+            //     CountLowLevels++;
 
 
 
             Count++;
-            var StrChk=GetCheckAccHash(Node.INFO.AccountBlockNum,Node.INFO.AccountsHash);
+            var StrChk=GetCheckAccHash(BufMap,Node.INFO.AccountBlockNum,Node.INFO.AccountsHash);
             var Chck=0;
             if(StrChk.indexOf("=OK=")>=0)
             {
@@ -115,7 +118,7 @@ module.exports = class CCommon
         ADD_TO_STAT("MAX:CHECK_POINT_OK",CountCP);
         ADD_TO_STAT("MAX:COUNTLH",CountLH);
         ADD_TO_STAT("MAX:HOT_COUNT_LEVELS",CountLevels);
-        ADD_TO_STAT("MAX:COUNTLOWLEVELS",CountLowLevels);
+        // ADD_TO_STAT("MAX:COUNTLOWLEVELS",CountLowLevels);
 
 
 
@@ -359,9 +362,15 @@ class STreeBuffer
 }
 
 
-function GetCheckAccHash(BlockNum,Hash)
+function GetCheckAccHash(Map,BlockNum,Hash)
 {
-    var MyHash=DApps.Accounts.GetHashOrUndefined(BlockNum);
+    var MyHash=Map[BlockNum];
+    if(!MyHash)
+    {
+        MyHash=DApps.Accounts.GetHashOrUndefined(BlockNum);
+        Map[BlockNum]=MyHash;
+    }
+
     if(MyHash)
     {
         if(!Hash)

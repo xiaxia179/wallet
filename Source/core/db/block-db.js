@@ -530,7 +530,8 @@ module.exports = class CDB extends require("../code")
 
         if(Block.TrDataLen>MAX_BLOCK_SIZE*2)
         {
-            TO_ERROR_LOG("DB",270,"Error value TrDataLen, BlockNum="+Block.BlockNum);
+            //TO_ERROR_LOG("DB",270,"Error value TrDataLen, BlockNum="+Block.BlockNum);
+            ToLogTrace("Error value TrDataLen, BlockNum="+Block.BlockNum);
             return false;
         }
         var Position=Block.TrDataPos;

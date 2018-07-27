@@ -39,7 +39,7 @@ global.ToErrorTrace=function (Str)
 }
 global.ToLog=function (Str)
 {
-    if(global.SendLogToClient)
+    if(global.SendLogToClient || global.ALL_LOG_TO_CLIENT)
         ToLogClient(Str,undefined,undefined,1);
     ToLogFile(file_name_log,Str);
 }
@@ -79,12 +79,12 @@ function ToLogClient(Str,StrKey,bFinal,bNoLog)
         StrKey="";
     ArrLogClient.push(
         {
-            text:GetStrTime()+" "+Str,
+            text:GetStrOnlyTime()+" "+Str,
             key:StrKey,
             final:bFinal,
         });
 
-    if(ArrLogClient.length>10)
+    if(ArrLogClient.length>13)
         ArrLogClient.shift();
 }
 global.ToLogClient=ToLogClient;
@@ -562,7 +562,7 @@ global.GetStrOnlyTime=function (now)
     var Str=""+now.getHours().toStringZ(2);
     Str=Str+":"+now.getMinutes().toStringZ(2);
     Str=Str+":"+now.getSeconds().toStringZ(2);
-    Str=Str+"."+now.getMilliseconds().toStringZ(3);
+    //Str=Str+"."+now.getMilliseconds().toStringZ(3);
     return Str;
 }
 

@@ -239,7 +239,8 @@ module.exports = class CSmartContract extends require("./block-exchange")
             this.LastNumAccountHashOK=this.BlockNumDB;
             this.NexdDeltaAccountNum=100;
         }
-        this.StartNumRewriteTransactions=this.LastNumAccountHashOK-this.NexdDeltaAccountNum;
+        this.StartNumRewriteTransactions=Math.trunc(this.LastNumAccountHashOK-this.NexdDeltaAccountNum);
+
         this.NexdDeltaAccountNum=this.NexdDeltaAccountNum*1.5;
         if(this.StartNumRewriteTransactions<=0)
         {

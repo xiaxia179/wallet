@@ -473,7 +473,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 var SignArr=this.GetSignCheckDeltaTime(Data.CheckDeltaTime);
                 if(CheckDevelopSign(SignArr,Data.CheckDeltaTime.Sign))
                 {
-                    ToLog("Get new CheckDeltaTime: "+JSON.stringify(Data.CheckDeltaTime));
+                    //ToLog("Get new CheckDeltaTime: "+JSON.stringify(Data.CheckDeltaTime));
                     global.CHECK_DELTA_TIME=Data.CheckDeltaTime;
                 }
                 else
@@ -637,7 +637,9 @@ module.exports = class CConnect extends require("./transfer-msg")
                 ip:this.ip,
                 port:this.port,
                 LastTime:0,
-                DeltaTime:0
+                DeltaTime:0,
+                Hot:true,
+                BlockProcessCount:0
             };
         ret.push(Value);
         if(global.NET_WORK_MODE && (!NET_WORK_MODE.UseDirectIP))
@@ -688,7 +690,9 @@ module.exports = class CConnect extends require("./transfer-msg")
                 ip:Item.ip,
                 port:Item.port,
                 LastTime:Item.LastTime,
-                DeltaTime:Item.DeltaTime
+                DeltaTime:Item.DeltaTime,
+                Hot:Item.Hot,
+                BlockProcessCount:Item.BlockProcessCount,
             };
 
             ret.push(Value);
@@ -746,6 +750,8 @@ module.exports = class CConnect extends require("./transfer-msg")
             Node.Self=true;
         }
 
+        if(Item.BlockProcessCount)
+            Node.BlockProcessCount=Item.BlockProcessCount;
 
 
         return Node;
@@ -755,6 +761,9 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         this.NodesArr.sort(function (a,b)
         {
+            if(a.Hot!==b.Hot)
+                return b.Hot-a.Hot;
+
             if(a.Active!==b.Active)
                 return b.Active-a.Active;
 

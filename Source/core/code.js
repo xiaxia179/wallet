@@ -78,6 +78,12 @@ module.exports = class CCode extends require("./base")
 
     GETCODE(Info)
     {
+        if(this.StopDoSendPacket(Info.Node,"GETCODE"))
+        {
+            return;
+        }
+
+
         //отправка файла из спец. каталога
         var VersionNum=this.DataFromF(Info);
         var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");

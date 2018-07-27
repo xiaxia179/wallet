@@ -309,6 +309,13 @@ table.keys
     height: 200px;
     padding: 1px;
     margin: 0px;
+
+
+    font-family: "courier new", "times new roman", monospace;
+    font-size: 80%;
+    align-content: left;
+    word-break: break-all;
+
 }
 
 #idTransaction

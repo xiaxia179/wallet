@@ -41,6 +41,9 @@ module.exports = class CNode
         this.Stage=0;
         this.CanHot=false;
 
+        //статистика
+        this.BlockProcessCount=0;
+
         this.ResetNode();
     }
 
@@ -633,7 +636,7 @@ function NodeName(Node)
 
 function ToLogNet(Str)
 {
-    if(global.DO_NET_LOG)
+    if(global.USE_LOG_NETWORK)
         ToLog(Str);
 }
 

@@ -43,7 +43,7 @@ if(!FindList)
 {
     FindList=[
         {"ip":"194.1.237.94","port":30000},//3
-        {"ip":"91.235.136.81","port":30002},//5
+        {"ip":"91.235.136.81","port":30000},//5
         {"ip":"103.102.45.224","port":30000},//12
         {"ip":"185.17.122.144","port":30000},//14
         {"ip":"185.17.122.149","port":30000},//20
@@ -65,7 +65,7 @@ if(global.LOCAL_RUN)
 
 
 global.SERVER=undefined;
-var idRunOnUpdate;
+var idRunOnce;
 var Worker;
 
 
@@ -96,11 +96,11 @@ process.on('uncaughtException', function (err)
         process.exit();
     }
 });
-process.on('error', function (err)
-{
-    ToError(err.stack);
-    ToLog(err.stack);
-});
+// process.on('error', function (err)
+// {
+//     ToError(err.stack);
+//     ToLog(err.stack);
+// });
 
 
 
@@ -129,7 +129,8 @@ if(global.ADDRLIST_MODE)
 //ToLog("global.USE_MINING="+global.USE_MINING);
 var ArrWrk=[];
 var BlockMining;
-global.RunStopPOWProcess=function()
+
+function RunStopPOWProcess()
 {
     const os = require('os');
     var cpus = os.cpus();
@@ -158,7 +159,7 @@ global.RunStopPOWProcess=function()
     }
 
     const child_process = require('child_process');
-    ToLog("START POW PROCESS COUNT="+CountRun);
+    ToLog("START MINER PROCESS COUNT="+CountRun);
     for(var R=0;R<CountRun;R++)
     {
         let Worker = child_process.fork("./core/pow-process.js");
@@ -177,7 +178,7 @@ global.RunStopPOWProcess=function()
                 if(msg.cmd==="online")
                 {
                     Worker.bOnline=true;
-                    ToLog("ONLINE:"+Worker.Num+":"+msg.message);
+                    ToLog("RUNING PROCESS:"+Worker.Num+":"+msg.message);
                 }
                 else
                 if(msg.cmd==="POW")
@@ -219,19 +220,19 @@ global.RunStopPOWProcess=function()
         {
             if(!ArrWrk.length)
                 return;
-            ToError('***********************Error in POW worker: '+err);
+            ToError('ERROR IN PROCESS: '+err);
         });
 
         Worker.on('close', (code) =>
         {
+            ToLog("STOP PROCESS: "+Worker.Num);
             if(!ArrWrk.length)
                 return;
-            ToError("*****************************POW Child process exited.");
             //process.exit();
         });
     }
 }
-global.SetCalcPOW=function(Block)
+function SetCalcPOW(Block)
 {
     if(!global.USE_MINING)
         return;
@@ -263,8 +264,10 @@ global.SetCalcPOW=function(Block)
 
 }
 
+global.SetCalcPOW=SetCalcPOW;
+global.RunStopPOWProcess=RunStopPOWProcess;
 
-RunStopPOWProcess();
+
 
 
 
@@ -344,7 +347,7 @@ function ConnectToNodes()
 
 function RunServer(bVirtual)
 {
-    idRunOnUpdate=setInterval(RunOnUpdate,1000);
+    idRunOnce=setInterval(RunOnce,1000);
     ToLog("NETWORK: "+GetNetworkName());
     ToLog("VERSION: "+DEF_VERSION);
 
@@ -398,38 +401,46 @@ function DoStartFindList()
     }
 }
 
-function RunOnUpdate()
+
+function RunOnce()
 {
     if(global.SERVER)
     {
-        clearInterval(idRunOnUpdate);
+        clearInterval(idRunOnce);
 
-        if(!UPDATE_NUM_COMPLETE)
-            UPDATE_NUM_COMPLETE=0;
-        var CurNum=UPDATE_NUM_COMPLETE;
-        if(CurNum!==UPDATE_CODE_VERSION_NUM)
-        {
-            global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
-            SAVE_CONST(true);
-
-            global.SendLogToClient=1;
-            ToLog("UPDATER Start");
-            //DO UPDATE
-            //DO UPDATE
-            //DO UPDATE
-            //----------------------------------------------------------------------------------------------------------
-
-            CheckRewriteTr(2231780,"D8F4119B89CA0CFC56973B5F5D993D96C251243B0640EBF555AC0ED557ECD8E0",2000000);
-            // global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
-            // SAVE_CONST(true);
-
-            //----------------------------------------------------------------------------------------------------------
-            ToLog("UPDATER Finish");
-            global.SendLogToClient=0;
-        }
-
+        RunOnUpdate();
+        RunStopPOWProcess();
     }
 }
+
+function RunOnUpdate()
+{
+
+    if(!UPDATE_NUM_COMPLETE)
+        UPDATE_NUM_COMPLETE=0;
+    var CurNum=UPDATE_NUM_COMPLETE;
+    if(CurNum!==UPDATE_CODE_VERSION_NUM)
+    {
+        global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
+        SAVE_CONST(true);
+
+        global.SendLogToClient=1;
+        ToLog("UPDATER Start");
+        //DO UPDATE
+        //DO UPDATE
+        //DO UPDATE
+        //----------------------------------------------------------------------------------------------------------
+
+        CheckRewriteTr(2231780,"D8F4119B89CA0CFC56973B5F5D993D96C251243B0640EBF555AC0ED557ECD8E0",2000000);
+        // global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
+        // SAVE_CONST(true);
+
+        //----------------------------------------------------------------------------------------------------------
+        ToLog("UPDATER Finish");
+        global.SendLogToClient=0;
+    }
+}
+
 function CheckRewriteTr(Num,StrHash,StartRewrite)
 {
     if(SERVER.BlockNumDB<Num)
