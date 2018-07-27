@@ -318,14 +318,19 @@ class AccountApp extends require("./dapp")
             }
             case TYPE_TRANSACTION_ACC_HASH:
             {
+                var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
                 Result=this.TRCheckAccountHash(Body,BlockNum);
                 if(!Result)
                 {
-                    var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
                     ToLog("****FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash+ " DO BLOCK="+BlockNum);
-                    //SERVER.SetTruncateBlockDB(BlockNum-1);
-                    SERVER.SetTruncateBlockDB(BlockNumHash-1);
-
+                    SERVER.SetTruncateBlockDB(BlockNum-1);
+                    //SERVER.SetTruncateBlockDB(BlockNumHash-1);
+                    SERVER.SetRewriteBlockDB();
+                }
+                else
+                {
+                    this.NexdDeltaAccountNum=10;
+                    SERVER.LastNumAccountHashOK=BlockNumHash;
                 }
 
                 break;

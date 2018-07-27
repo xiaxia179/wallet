@@ -657,6 +657,12 @@ module.exports = class CBlock extends require("./db/block-db")
             }
             if(Node.Active && Node.CanHot)
             {
+                if(Node.INFO && Node.INFO.CheckPointHashDB && CHECK_POINT.BlockNum && CompareArr(CHECK_POINT.Hash,Node.INFO.CheckPointHashDB)!==0)
+                {
+                    timewait=true;
+                    continue;
+                }
+
                 if(BlockNum!==undefined && Node.INFO && BlockNum>Node.INFO.BlockNumDB)
                 {
                     timewait=true;

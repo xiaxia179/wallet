@@ -516,7 +516,7 @@ module.exports = class CDB extends require("../code")
             if(Block && !IsZeroArr(Block.TreeHash))
             {
                 ToLogTrace("ERROR arrContent on BlockNum="+Num)
-                throw "ERROR"
+                //throw "ERROR"
                 return undefined;
             }
         }
@@ -528,6 +528,11 @@ module.exports = class CDB extends require("../code")
         var FileItem=BlockDB.OpenDBFile(FILE_NAME_BODY);
         var FD=FileItem.fd;
 
+        if(Block.TrDataLen>MAX_BLOCK_SIZE*2)
+        {
+            TO_ERROR_LOG("DB",270,"Error value TrDataLen, BlockNum="+Block.BlockNum);
+            return false;
+        }
         var Position=Block.TrDataPos;
         var BufRead=BufLib.GetNewBuffer(Block.TrDataLen);
         var bytesRead=fs.readSync(FD, BufRead,0,BufRead.length, Position);
@@ -535,7 +540,7 @@ module.exports = class CDB extends require("../code")
         {
             //this.AddBlockToLoadBody(Block);
 
-            TO_ERROR_LOG("DB",270,"Error read block-body file: "+FileItem.name+"  from POS:"+Position+"  bytesRead="+bytesRead+" of "+BufRead.length+"  BlockNum="+Block.BlockNum);
+            TO_ERROR_LOG("DB",272,"Error read block-body file: "+FileItem.name+"  from POS:"+Position+"  bytesRead="+bytesRead+" of "+BufRead.length+"  BlockNum="+Block.BlockNum);
             return false;
         }
 

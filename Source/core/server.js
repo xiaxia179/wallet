@@ -2209,7 +2209,7 @@ module.exports = class CTransport extends require("./connect")
             Node=this.FindRunNodeContext(Pow.addrArr,Pow.FromIP,Pow.FromPort,true);
 
 
-            if(global.NET_WORK_MODE && NET_WORK_MODE.NodeWhiteList)//WhiteConnect by filter
+            if(0 && global.NET_WORK_MODE && NET_WORK_MODE.NodeWhiteList)//WhiteConnect by filter
             {
                 var Index=NET_WORK_MODE.NodeWhiteList.indexOf(Node.addrStr);
 

@@ -36,7 +36,7 @@ function DoCommand(response,Path,params)
         }
         catch (e)
         {
-            //ToLog("Ret="+Ret)
+            ToLog("Path:"+Path)
             ToLog(e);
             response.end();
         }

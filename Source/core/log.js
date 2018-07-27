@@ -283,7 +283,8 @@ global.ClearCommonStat=function()
 function ResizeArr(arr)
 {
     var arr2=[];
-    for(var i=0;i<arr.length/2;i++)
+    var Count2=Math.trunc(arr.length/2);
+    for(var i=0;i<Count2;i++)
     {
         arr2[i]=arr[i*2];
     }
@@ -294,7 +295,8 @@ function ResizeArr(arr)
 function ResizeArrMax(arr)
 {
     var arr2=[];
-    for(var i=0;i<arr.length/2;i++)
+    var Count2=Math.trunc(arr.length/2);
+    for(var i=0;i<Count2;i++)
     {
         arr2[i]=Math.max(arr[i*2],arr[i*2+1]);
     }
@@ -304,7 +306,8 @@ function ResizeArrMax(arr)
 function ResizeArrAvg(arr)
 {
     var arr2=[];
-    for(var i=0;i<arr.length/2;i++)
+    var Count2=Math.trunc(arr.length/2);
+    for(var i=0;i<Count2;i++)
     {
         arr2[i]=(arr[i*2]+arr[i*2+1])/2;
     }

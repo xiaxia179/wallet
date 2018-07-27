@@ -64,7 +64,7 @@ module.exports = class CCommon
         }
 
         var arr=SERVER.GetActualNodes();
-        var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0;
+        var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0,CountLowLevels=0;
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
@@ -79,8 +79,10 @@ module.exports = class CCommon
             }
             if(Node.INFO.LoadHistoryMode)
                 CountLH++;
-            if(Node.INFO.NodesLevelCount)
+            if(Node.Hot && Node.INFO.NodesLevelCount)
                 CountLevels+=Node.INFO.NodesLevelCount;
+            if(Node.INFO.NodesLevelCount && Node.INFO.NodesLevelCount<=global.LEV_COUNT)
+                CountLowLevels++;
 
 
 
@@ -113,6 +115,8 @@ module.exports = class CCommon
         ADD_TO_STAT("MAX:CHECK_POINT_OK",CountCP);
         ADD_TO_STAT("MAX:COUNTLH",CountLH);
         ADD_TO_STAT("MAX:HOT_COUNT_LEVELS",CountLevels);
+        ADD_TO_STAT("MAX:COUNTLOWLEVELS",CountLowLevels);
+
 
 
 

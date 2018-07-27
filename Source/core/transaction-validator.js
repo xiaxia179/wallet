@@ -24,6 +24,15 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
         this.BufHashTree = new RBTree(CompareArr);
         this.BufHashTree.LastAddNum=0;
+
+
+
+        if(!global.ADDRLIST_MODE && !this.VirtualMode)
+        {
+            setInterval(this.StartRewriteTransaction.bind(this),500);
+        }
+
+
     }
     AddBlockToHashTree(Block)
     {
@@ -194,6 +203,8 @@ module.exports = class CSmartContract extends require("./block-exchange")
             return;
         if(!EndNum)
             EndNum=this.BlockNumDB;
+        if(StartNum<0)
+            StartNum=0;
 
         var startTime = process.hrtime();
         ToLog("Rewrite from: "+StartNum+" to "+EndNum);
@@ -210,6 +221,30 @@ module.exports = class CSmartContract extends require("./block-exchange")
         var deltaTime=(Time[0]*1000 + Time[1]/1e6)/1000;//s
 
         ToLog("Rewriting complete: "+deltaTime+" sec");
+    }
+
+    StartRewriteTransaction()
+    {
+        if(this.StartNumRewriteTransactions)
+        {
+            this.ReWriteDAppTransactions(this.StartNumRewriteTransactions,this.BlockNumDB);
+        }
+
+        this.StartNumRewriteTransactions=undefined;
+    }
+    SetRewriteBlockDB()
+    {
+        if(!this.LastNumAccountHashOK)//init
+        {
+            this.LastNumAccountHashOK=this.BlockNumDB;
+            this.NexdDeltaAccountNum=100;
+        }
+        this.StartNumRewriteTransactions=this.LastNumAccountHashOK-this.NexdDeltaAccountNum;
+        this.NexdDeltaAccountNum=this.NexdDeltaAccountNum*1.5;
+        if(this.StartNumRewriteTransactions<=0)
+        {
+            this.NexdDeltaAccountNum=100;
+        }
     }
 
     AddDAppTransactions(BlockNum,Arr)
