@@ -57,10 +57,14 @@ module.exports = class CCommon
         //NET
 
         var arr=SERVER.GetActualNodes();
-        var Count=arr.length,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0;
+        var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0;
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
+            if(Node.AddrList)
+                continue;
+
+            Count++;
             var StrChk=GetCheckAccHash(Node.INFO.AccountBlockNum,Node.INFO.AccountsHash);
             var Chck=0;
             if(StrChk.indexOf("=OK=")>=0)
@@ -82,7 +86,7 @@ module.exports = class CCommon
             }
         }
 
-        ADD_TO_STAT("MAX:ACTUAL_NODES",arr.length);
+        ADD_TO_STAT("MAX:ACTUAL_NODES",Count);
         ADD_TO_STAT("MAX:HOT_NODES",CountHot);
         ADD_TO_STAT("MAX:HOT_OK",CountHotOK);
         ADD_TO_STAT("MAX:ACTUAL_OK",CountActualOK);

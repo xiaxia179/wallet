@@ -409,8 +409,8 @@ function RunOnUpdate()
         var CurNum=UPDATE_NUM_COMPLETE;
         if(CurNum!==UPDATE_CODE_VERSION_NUM)
         {
-            //global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
-            // SAVE_CONST(true);
+            global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
+            SAVE_CONST(true);
 
             global.SendLogToClient=1;
             ToLog("UPDATER Start");
@@ -419,18 +419,9 @@ function RunOnUpdate()
             //DO UPDATE
             //----------------------------------------------------------------------------------------------------------
 
-            if(SERVER.BlockNumDB>2000000)
-            {
-                var BlockNumHash=SERVER.BlockNumDB-BLOCK_PROCESSING_LENGTH2;
-                var AccountsHash=DApps.Accounts.GetHashOrUndefined(2193500);
-                if(!AccountsHash || GetHexFromArr(AccountsHash) !== "1A25A313929A85B183F04F188353D9C4EFB3C5D8225DC285763124DF806481CE")
-                {
-                    ToLog("START REWRITE ERR ACTS TRANSACTIONS")
-                    SERVER.ReWriteDAppTransactions(0);
-                }
-            }
-            global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
-            SAVE_CONST(true);
+            CheckRewriteTr(2231780,"D8F4119B89CA0CFC56973B5F5D993D96C251243B0640EBF555AC0ED557ECD8E0",2000000);
+            // global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
+            // SAVE_CONST(true);
 
             //----------------------------------------------------------------------------------------------------------
             ToLog("UPDATER Finish");
@@ -439,4 +430,22 @@ function RunOnUpdate()
 
     }
 }
+function CheckRewriteTr(Num,StrHash,StartRewrite)
+{
+    if(SERVER.BlockNumDB<Num)
+        return "NO";
+
+    var AccountsHash=DApps.Accounts.GetHashOrUndefined(Num);
+    if(!AccountsHash || GetHexFromArr(AccountsHash) !== StrHash)
+    {
+        ToLog("START REWRITE ERR ACTS TRANSACTIONS")
+        SERVER.ReWriteDAppTransactions(StartRewrite);
+        return "Rewrite"
+    }
+    else
+    {
+        return "OK"
+    }
+}
+global.CheckRewriteTr=CheckRewriteTr;
 
