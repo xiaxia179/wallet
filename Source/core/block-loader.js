@@ -1060,6 +1060,8 @@ module.exports = class CBlock extends require("./db/block-db")
 
     RETBLOCKHEADER(Info,CurTime)
     {
+        Info.Node.NextPing=1000;
+
         if(Info.Context.Foward)
             return this.RETBLOCKHEADER_FOWARD(Info,CurTime);
 
@@ -1931,6 +1933,8 @@ module.exports = class CBlock extends require("./db/block-db")
 
     RETGETBLOCK(Info,CurTime)
     {
+        Info.Node.NextPing=1000;
+
         var Block=Info.Context.Block;
         // if(Block)
         //     ToLog("BLOCK:"+Block.BlockNum);

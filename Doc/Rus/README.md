@@ -12,7 +12,7 @@
 ## Установка на Windows по шагам:
 
 1. Скачайте и установите Nodejs https://nodejs.org  (рекомендуется версия v8.11)
-2. Скачайте и установите git https://desktop.github.com/
+2. Скачайте и установите git https://git-scm.com/download/win
 3. Далее выполните команды (для этого запустите программу cmd или PowerShell):
 ```
 cd ..\..\..\

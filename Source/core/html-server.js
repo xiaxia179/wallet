@@ -499,7 +499,10 @@ function SetCheckPointOnBlock(BlockNum)
     var Sign = secp256k1.sign(shabuf(SignArr), WALLET.KeyPair.getPrivateKey('')).signature;
     global.CHECK_POINT={BlockNum:BlockNum,Hash:Block.Hash,Sign:Sign};
 
+    //clear Node.NextPing
+    SERVER.ResetNextPingAllNode();
 }
+
 
 var idSetTimeSetCheckPoint;
 HTTPCaller.SetAutoCheckPoint=function (bSet)

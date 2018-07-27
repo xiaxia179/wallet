@@ -22,7 +22,8 @@ global.CODE_VERSION={BlockNum:0,addrArr:[],LevelUpdate:0,BlockPeriod:0, VersionN
 
 const MAX_PERIOD_GETNODES=120*1000;
 
-var MAX_PING_FOR_CONNECT=300;//ms
+var MAX_PING_FOR_CONNECT=200;//ms
+
 var TIME_AUTOSORT_GRAY_LIST=5000;//ms
 var MAX_TIME_CORRECT=3*3600*1000;//ms
 
@@ -46,7 +47,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         //this.ReadyConsensus=false;
 
         this.LevelNodes=[];
-        this.LevelNodesCount=0;
+        //this.LevelNodesCount=0;
 
         this.NodesArr=[];
         this.NodesArrUnSort=[];
@@ -162,7 +163,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(this.IsCanConnect(Node) && !Node.AddrList)
             {
                 if(Node.Hot)
-                    Node.NextPing=1;
+                    Node.NextPing=1000;
 
                 var Delta=(new Date)-Node.PingStart;
                 if(Delta>=Node.NextPing)
@@ -200,9 +201,13 @@ module.exports = class CConnect extends require("./transfer-msg")
         var BlockNumHash=GetCurrentBlockNumByTime()-BLOCK_PROCESSING_LENGTH2;
         var AccountsHash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
 
-        // var LoadHistoryMode=this.LoadHistoryMode;
-        // if(global.ADDRLIST_MODE)
-        //     LoadHistoryMode=1;
+        var CheckPointHashDB=[];
+        if(CHECK_POINT.BlockNum)
+        {
+            var Block=this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
+            if(Block)
+                CheckPointHashDB=Block.Hash;
+        }
 
         var Ret=
             {
@@ -224,6 +229,8 @@ module.exports = class CConnect extends require("./transfer-msg")
                 CheckDeltaTime:CHECK_DELTA_TIME,
                 CodeVersion2:CODE_VERSION,
                 AddrList:global.ADDRLIST_MODE,
+                CheckPointHashDB:CheckPointHashDB,
+                NodesLevelCount:this.GetNodesLevelCount(),
                 Reserve:[],
             };
 
@@ -250,6 +257,8 @@ module.exports = class CConnect extends require("./transfer-msg")
             CheckDeltaTime:{Num:uint,bUse:byte,StartBlockNum:uint,EndBlockNum:uint,bAddTime:byte,DeltaTime:uint,Sign:arr64},\
             CodeVersion2:{BlockNum:uint,addrArr:arr32,LevelUpdate:byte,BlockPeriod:uint,VersionNum:uint,Hash:hash,Sign:arr64},\
             AddrList:byte,\
+            CheckPointHashDB:hash,\
+            NodesLevelCount:uint16,\
             Reserve:arr40,\
             }";
     }
@@ -316,6 +325,10 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(CheckDevelopSign(SignArr,Data.CheckPoint.Sign))
             {
                 ToLog("Get new CheckPoint = "+Data.CheckPoint.BlockNum);
+
+                //clear Node.NextPing
+                this.ResetNextPingAllNode();
+
 
                 global.CHECK_POINT=Data.CheckPoint;
                 var Block=this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
@@ -479,6 +492,16 @@ module.exports = class CConnect extends require("./transfer-msg")
         return shaarr(Buf);
     }
 
+    ResetNextPingAllNode()
+    {
+        var arr=SERVER.GetActualNodes();
+        for(var i=0;i<arr.length;i++)
+        {
+            var Node2=arr[i];
+            if(Node2 && Node2.NextPing>5*1000)
+                Node2.NextPing=5*1000;
+        }
+    }
 
 
 
@@ -508,46 +531,6 @@ module.exports = class CConnect extends require("./transfer-msg")
         ToLogNet("FROM "+NodeInfo(Info.Node)+" DISCONNECTHOT: "+Info.Data);
     }
 
-    DeleteNodeFromHot(Node)
-    {
-        if(!Node.Stage)
-            Node.Stage=0;
-        if(Node.Hot)
-        {
-            Node.Stage++;
-            Node.Hot=false;
-        }
-
-        Node.CanHot=false;
-        for(var i=0;i<this.LevelNodes.length;i++)
-        {
-            var arr=this.LevelNodes[i];
-            for(var n=0;arr && n<arr.length;n++)
-            if(arr[n]===Node)
-            {
-                ADD_TO_STAT("DeleteLevelConnect");
-                arr.splice(n,1);
-                break;
-            }
-        }
-        this.LevelNodesCount=this.GetNodesLevelCount();
-    }
-    GetNodesLevelCount()
-    {
-
-        var Count=0;
-        for(var i=0;i<this.LevelNodes.length;i++)
-        {
-            var arr=this.LevelNodes[i];
-            for(var n=0;arr && n<arr.length;n++)
-            if(arr[n].Hot)
-            {
-                Count++;
-                break;
-            }
-        }
-        return Count;
-    }
 
 
     StartGetNodes(Node)
@@ -997,22 +980,6 @@ module.exports = class CConnect extends require("./transfer-msg")
     }
 
 
-    DeleteAllNodesFromHot(Str)
-    {
-        for(var i=0;i<this.LevelNodes.length;i++)
-        {
-            var arr=this.LevelNodes[i];
-            for(var n=0;arr && n<arr.length;n++)
-            {
-                var Node=arr[n];
-                if(Node.Hot)
-                {
-                    this.DeleteNodeFromHot(Node);
-                    this.StartDisconnectHot(Node,Str);
-                }
-            }
-        }
-    }
 
     StartCheckConnect()
     {
@@ -1116,7 +1083,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
             if(Child.CountDeltaTime<=2)
                 continue;
-            if(Child.DeltaTime<=MAX_PING_FOR_CONNECT)
+            if(Child.DeltaTime>=MAX_PING_FOR_CONNECT)
                 continue;
 
             if(!this.IsCanConnect(Child) || Child.Hot)
@@ -1181,7 +1148,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
         arr.push(Node);
 
-        this.LevelNodesCount=this.GetNodesLevelCount();
+        //this.LevelNodesCount=this.GetNodesLevelCount();
 
 
         this.SendGetMessage(Node);
@@ -1278,25 +1245,17 @@ module.exports = class CConnect extends require("./transfer-msg")
         return false;
     }
 
+
+
+    //TIME TIME TIME
     GetHotTimeNodes()
     {
         if(this.LoadHistoryMode || !global.CAN_START)
             return this.GetActualNodes();
-
-        var ArrNodes=[];
-        for(var L=0;L<this.LevelNodes.length;L++)
-        {
-            var arr=this.LevelNodes[L];
-            for(let j=0;arr && j<arr.length;j++)
-            {
-                ArrNodes.push(arr[j])
-            }
-        }
-
-        return ArrNodes;
+        else
+            return this.GetHotNodes();
     }
 
-    //TIME TIME TIME
     CorrectTime()
     {
         var ArrNodes=this.GetHotTimeNodes();
@@ -1579,6 +1538,84 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
         return Str.substr(0,Str.length-2);
     }
+
+
+
+
+    //Lvevels lib
+    GetNodesLevelCount()
+    {
+        var Count=0;
+        for(var i=0;i<this.LevelNodes.length;i++)
+        {
+            var arr=this.LevelNodes[i];
+            for(var n=0;arr && n<arr.length;n++)
+                if(arr[n].Hot)
+                {
+                    Count++;
+                    break;
+                }
+        }
+        return Count;
+    }
+
+    GetHotNodes()
+    {
+        var ArrNodes=[];
+        for(var L=0;L<this.LevelNodes.length;L++)
+        {
+            var arr=this.LevelNodes[L];
+            for(let j=0;arr && j<arr.length;j++)
+            {
+                ArrNodes.push(arr[j])
+            }
+        }
+        return ArrNodes;
+    }
+
+
+    DeleteNodeFromHot(Node)
+    {
+        if(!Node.Stage)
+            Node.Stage=0;
+        if(Node.Hot)
+        {
+            Node.Stage++;
+            Node.Hot=false;
+        }
+
+        Node.CanHot=false;
+        for(var i=0;i<this.LevelNodes.length;i++)
+        {
+            var arr=this.LevelNodes[i];
+            for(var n=0;arr && n<arr.length;n++)
+                if(arr[n]===Node)
+                {
+                    ADD_TO_STAT("DeleteLevelConnect");
+                    arr.splice(n,1);
+                    break;
+                }
+        }
+        //this.LevelNodesCount=this.GetNodesLevelCount();
+    }
+
+    DeleteAllNodesFromHot(Str)
+    {
+        for(var i=0;i<this.LevelNodes.length;i++)
+        {
+            var arr=this.LevelNodes[i];
+            for(var n=0;arr && n<arr.length;n++)
+            {
+                var Node=arr[n];
+                if(Node.Hot)
+                {
+                    this.DeleteNodeFromHot(Node);
+                    this.StartDisconnectHot(Node,Str);
+                }
+            }
+        }
+    }
+
 }
 
 

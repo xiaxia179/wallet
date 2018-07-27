@@ -13,8 +13,8 @@ Attention:
 ## Installing on Windows by steps:
 
 1. Download and install Nodejs https://nodejs.org (v8.11 is recommended)
-2. Download and install git https://desktop.github.com/
-3. Then run the commands (to do this, run the program cmd or PowerShell):
+2. Download and install git https://git-scm.com/download/win
+3. Then run the commands (in program: cmd or PowerShell):
 
 ```
 cd ..\..\..\

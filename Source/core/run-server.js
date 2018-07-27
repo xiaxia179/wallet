@@ -58,10 +58,10 @@ if(!FindList)
 
 if(global.LOCAL_RUN)
 {
-    FindList=[{"ip":"127.0.0.1","port":40000},{"ip":"127.0.0.1","port":40001}];
+    FindList=[{"ip":"127.0.0.1","port":40000},{"ip":"127.0.0.1","port":40002}];
 }
-if(global.TEST_DEVELOP_MODE)
-    FindList=[{"ip":"91.235.136.81","port":30002}];
+// if(global.TEST_DEVELOP_MODE)
+//     FindList=[{"ip":"91.235.136.81","port":30002}];
 
 
 global.SERVER=undefined;
