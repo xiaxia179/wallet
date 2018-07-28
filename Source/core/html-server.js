@@ -571,6 +571,9 @@ HTTPCaller.SetNewCodeVersion=function (Data)
 
 
     var Ret=SERVER.SetNewCodeVersion(Data,WALLET.KeyPair.getPrivateKey(''));
+
+    SERVER.ResetNextPingAllNode();
+
     return {result:1,text:Ret};
 }
 
@@ -591,6 +594,8 @@ HTTPCaller.SetCheckDeltaTime=function (Data)
     var SignArr=SERVER.GetSignCheckDeltaTime(Data);
     Data.Sign = secp256k1.sign(shabuf(SignArr), WALLET.KeyPair.getPrivateKey('')).signature;
     global.CHECK_DELTA_TIME=Data;
+
+    SERVER.ResetNextPingAllNode();
 
     return {result:1,text:"Set check time Num="+Data.Num};
 }

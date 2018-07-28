@@ -96,11 +96,11 @@ process.on('uncaughtException', function (err)
         process.exit();
     }
 });
-// process.on('error', function (err)
-// {
-//     ToError(err.stack);
-//     ToLog(err.stack);
-// });
+process.on('error', function (err)
+{
+    ToError(err.stack);
+    ToLog(err.stack);
+});
 
 
 
@@ -432,7 +432,11 @@ function RunOnUpdate()
         //----------------------------------------------------------------------------------------------------------
 
         //CheckRewriteTr(2231780,"D8F4119B89CA0CFC56973B5F5D993D96C251243B0640EBF555AC0ED557ECD8E0",2000000);
-        CheckRewriteTr(2326400,"5D173F58C213C15CF1CDE7A21C50BE979D9C451ACB8841C96852DD2BC85DF02A",2230000);
+        //CheckRewriteTr(2326400,"5D173F58C213C15CF1CDE7A21C50BE979D9C451ACB8841C96852DD2BC85DF02A",2230000);
+        //CheckRewriteTr(2334620,"C4F34B512FFD78B603B2C694CEDF7B1D6BF9BC19C421690EAE9599D744D7CE1F",2320000);
+        CheckRewriteTr(2344820,"3EAB02656957C39377C83345B211A4DD90B8B24A4281DC93EB28672F9AA99446",2334620);
+
+
         // global.UPDATE_NUM_COMPLETE=UPDATE_CODE_VERSION_NUM;
         // SAVE_CONST(true);
 

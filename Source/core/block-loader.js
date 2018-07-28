@@ -2008,7 +2008,8 @@ module.exports = class CBlock extends require("./db/block-db")
             //DApp check
 
 
-            if(!this.LoadHistoryMode)// arrContent.length>0)
+            //if(!this.LoadHistoryMode)// arrContent.length>0)
+            if(arrContent.length>0)
             {
                 var TR=arrContent[0];
                 if(TR[0]===TYPE_TRANSACTION_ACC_HASH)

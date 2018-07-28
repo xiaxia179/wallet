@@ -271,6 +271,10 @@ module.exports = class CConnect extends require("./transfer-msg")
     PING(Info,CurTime)
     {
         var Data=this.DataFromF(Info);
+        //Check point
+        this.CheckCheckPoint(Data,Info.Node);
+        this.CheckCodeVersion(Data,Info.Node);
+        this.CheckDeltaTime(Data,Info.Node);
 
         Info.Node.VERSIONMAX=Data.VERSIONMAX;
         this.SendF(Info.Node,
@@ -318,35 +322,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
 
         //Check point
-        if(!CREATE_ON_START)
-        if(Data.CheckPoint.BlockNum && Data.CheckPoint.BlockNum>CHECK_POINT.BlockNum)
-        {
-            var SignArr=arr2(Data.CheckPoint.Hash,GetArrFromValue(Data.CheckPoint.BlockNum));
-            if(CheckDevelopSign(SignArr,Data.CheckPoint.Sign))
-            {
-                ToLog("Get new CheckPoint = "+Data.CheckPoint.BlockNum);
-
-                //clear Node.NextPing
-                this.ResetNextPingAllNode();
-
-
-                global.CHECK_POINT=Data.CheckPoint;
-                var Block=this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
-                if(Block && CompareArr(Block.Hash,CHECK_POINT.Hash)!==0)
-                {
-                    //reload chains
-                    this.BlockNumDB=CHECK_POINT.BlockNum-1;
-                    this.TruncateBlockDB(this.BlockNumDB);
-                    this.StartLoadHistory(Node);
-                }
-            }
-            else
-            {
-                Node.NextConnectDelta=60*1000;
-                ToLog("Error Sign CheckPoint="+Data.CheckPoint.BlockNum+" from "+NodeInfo(Node));
-                this.AddCheckErrCount(Node,1,"Error Sign CheckPoint");
-            }
-        }
+        this.CheckCheckPoint(Data,Info.Node);
 
 
 
@@ -356,48 +332,9 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         //{BlockNum:0,addrArr:[],LevelUpdate:0,BlockPeriod:0, VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
 
+        this.CheckCodeVersion(Data,Info.Node);
+
         var CodeVersion=Data.CodeVersion2;
-        if(CodeVersion.BlockNum && CodeVersion.BlockNum<=GetCurrentBlockNumByTime() && CodeVersion.BlockNum > CODE_VERSION.BlockNum
-            && !IsZeroArr(CodeVersion.Hash)
-            && (CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum
-                || CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
-        {
-
-            var Level=AddrLevelArrFromStart(this.addrArr,CodeVersion.addrArr);
-            if(CodeVersion.BlockPeriod)
-            {
-                var Delta=GetCurrentBlockNumByTime()-CodeVersion.BlockNum;
-                Level+=Delta/CodeVersion.BlockPeriod;
-            }
-
-            if(Level>=CodeVersion.LevelUpdate)
-            {
-                var SignArr=arr2(CodeVersion.Hash,GetArrFromValue(CodeVersion.VersionNum));
-                if(CheckDevelopSign(SignArr,CodeVersion.Sign))
-                {
-                    ToLog("Get new CodeVersion = "+CodeVersion.VersionNum+" HASH:"+GetHexFromArr(CodeVersion.Hash));
-
-                    if(CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
-                    {
-                        this.StartLoadCode(Node,CodeVersion);
-                    }
-                    else
-                    //if(CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash))//was restart
-                    {
-                        CODE_VERSION=CodeVersion;
-                    }
-                }
-                else
-                {
-                    ToLog("Error Sign CodeVersion="+CodeVersion.VersionNum+" from "+NodeInfo(Node)+" HASH:"+GetHexFromArr(CodeVersion.Hash));
-                    ToLog(JSON.stringify(CodeVersion));
-                    this.AddCheckErrCount(Node,1,"Error Sign CodeVersion");
-                    Node.NextConnectDelta=60*1000;
-                }
-            }
-        }
-
-        //if(CodeVersion.VersionNum===CODE_VERSION.VersionNum && !Data.LoadHistoryMode)
         if(CodeVersion.VersionNum>=MIN_CODE_VERSION_NUM && !Data.LoadHistoryMode)
         {
             Node.CanHot=true;
@@ -465,7 +402,43 @@ module.exports = class CConnect extends require("./transfer-msg")
             global.CAN_START=true;
         }
 
+        this.CheckDeltaTime(Data,Info.Node);
+    }
 
+    CheckCheckPoint(Data,Node)
+    {
+        if(!CREATE_ON_START)
+            if(Data.CheckPoint.BlockNum && Data.CheckPoint.BlockNum>CHECK_POINT.BlockNum)
+            {
+                var SignArr=arr2(Data.CheckPoint.Hash,GetArrFromValue(Data.CheckPoint.BlockNum));
+                if(CheckDevelopSign(SignArr,Data.CheckPoint.Sign))
+                {
+                    ToLog("Get new CheckPoint = "+Data.CheckPoint.BlockNum);
+
+                    //clear Node.NextPing
+                    this.ResetNextPingAllNode();
+
+
+                    global.CHECK_POINT=Data.CheckPoint;
+                    var Block=this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
+                    if(Block && CompareArr(Block.Hash,CHECK_POINT.Hash)!==0)
+                    {
+                        //reload chains
+                        this.BlockNumDB=CHECK_POINT.BlockNum-1;
+                        this.TruncateBlockDB(this.BlockNumDB);
+                        this.StartLoadHistory(Node);
+                    }
+                }
+                else
+                {
+                    Node.NextConnectDelta=60*1000;
+                    ToLog("Error Sign CheckPoint="+Data.CheckPoint.BlockNum+" from "+NodeInfo(Node));
+                    this.AddCheckErrCount(Node,1,"Error Sign CheckPoint");
+                }
+            }
+    }
+    CheckDeltaTime(Data,Node)
+    {
         if(global.CAN_START && !CREATE_ON_START)
         {
             if(Data.CheckDeltaTime.Num>CHECK_DELTA_TIME.Num)
@@ -485,6 +458,51 @@ module.exports = class CConnect extends require("./transfer-msg")
             }
         }
     }
+
+    CheckCodeVersion(Data,Node)
+    {
+        var CodeVersion=Data.CodeVersion2;
+        if(CodeVersion.BlockNum && CodeVersion.BlockNum<=GetCurrentBlockNumByTime() && CodeVersion.BlockNum > CODE_VERSION.BlockNum
+            && !IsZeroArr(CodeVersion.Hash)
+            && (CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum
+                || CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
+        {
+
+            var Level=AddrLevelArrFromStart(this.addrArr,CodeVersion.addrArr);
+            if(CodeVersion.BlockPeriod)
+            {
+                var Delta=GetCurrentBlockNumByTime()-CodeVersion.BlockNum;
+                Level+=Delta/CodeVersion.BlockPeriod;
+            }
+
+            if(Level>=CodeVersion.LevelUpdate)
+            {
+                var SignArr=arr2(CodeVersion.Hash,GetArrFromValue(CodeVersion.VersionNum));
+                if(CheckDevelopSign(SignArr,CodeVersion.Sign))
+                {
+                    ToLog("Get new CodeVersion = "+CodeVersion.VersionNum+" HASH:"+GetHexFromArr(CodeVersion.Hash));
+
+                    if(CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+                    {
+                        this.StartLoadCode(Node,CodeVersion);
+                    }
+                    else
+                    //if(CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash))//was restart
+                    {
+                        CODE_VERSION=CodeVersion;
+                    }
+                }
+                else
+                {
+                    ToLog("Error Sign CodeVersion="+CodeVersion.VersionNum+" from "+NodeInfo(Node)+" HASH:"+GetHexFromArr(CodeVersion.Hash));
+                    ToLog(JSON.stringify(CodeVersion));
+                    this.AddCheckErrCount(Node,1,"Error Sign CodeVersion");
+                    Node.NextConnectDelta=60*1000;
+                }
+            }
+        }
+    }
+
 
     GetSignCheckDeltaTime(Data)
     {
