@@ -45,7 +45,7 @@ module.exports = class CDB extends require("../code")
         }
         catch (e)
         {
-            ToLog("********************************************* DETECT START ANOTHER PROCESS *********************************************")
+            ToLog("****************************************** DETECT START ANOTHER PROCESS ******************************************")
             ToLog("EXIT");
             process.exit();
         }

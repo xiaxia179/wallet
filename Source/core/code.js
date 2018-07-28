@@ -298,7 +298,7 @@ global.RestartNode=function RestartNode()
     SERVER.StopServer();
     SERVER.StopNode();
 
-    ToLog("***************************************** RESTART!!!");
+    ToLog("****************************************** RESTART!!!");
 
     if(global.nw)
     {

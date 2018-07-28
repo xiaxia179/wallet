@@ -322,7 +322,7 @@ class AccountApp extends require("./dapp")
                 Result=this.TRCheckAccountHash(Body,BlockNum);
                 if(!Result)
                 {
-                    ToLog("****FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash+ " DO BLOCK="+BlockNum);
+                    ToLog("2. ****FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash+ " DO BLOCK="+BlockNum);
                     SERVER.SetTruncateBlockDB(BlockNum-1);
                     //SERVER.SetTruncateBlockDB(BlockNumHash-1);
                     SERVER.SetRewriteBlockDB();

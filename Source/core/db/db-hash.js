@@ -219,7 +219,7 @@ module.exports = class CDB extends require("../code")
 
             if(FDItem.NumRowMoveKey>=CountRows)
             {
-                ToLog("****************************************************************************DELETE TABLE "+Name);
+                ToLog("******************************************DELETE TABLE "+Name);
                 CUR_BITS_COUNT=Info2.bits;
 
                 //очищаем буфер записи
@@ -250,7 +250,7 @@ module.exports = class CDB extends require("../code")
             this.MoveKeyNextFileAsync(FDItem,FCall);
             if(FDItem.NumRowMoveKey>=FDItem.CountRows)
             {
-                ToLog("****************************************************************************DELETE TABLE "+Name+" FD="+FD);
+                ToLog("****************************************** DELETE TABLE "+Name+" FD="+FD);
                 CUR_BITS_COUNT=Bits+1;
 
                 var startTime = process.hrtime();

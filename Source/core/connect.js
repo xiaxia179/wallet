@@ -461,7 +461,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(!global.CAN_START)
         if(Times && Times.Count>=1 && Times.AvgDelta<=200)
         {
-            ToLog("*************************************************************************** CAN_START")
+            ToLog("****************************************** CAN_START")
             global.CAN_START=true;
         }
 
@@ -1392,7 +1392,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 else
                     CorrectTime = -CHECK_DELTA_TIME.DeltaTime;
 
-                ToLog("************************************************USE CORRECT TIME: "+CHECK_DELTA_TIME.Num+" Delta = "+CorrectTime);
+                ToLog("***USE CORRECT TIME: "+CHECK_DELTA_TIME.Num+" Delta = "+CorrectTime+" ***");
 
                 global.DELTA_CURRENT_TIME += CorrectTime;
                 //reset times

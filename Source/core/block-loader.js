@@ -1355,7 +1355,7 @@ module.exports = class CBlock extends require("./db/block-db")
                     {
                         Block=BlockDB;
                         arr[i]=Block;
-                        ToLog("*******************************Set block from DB: "+Block.BlockNum)
+                        ToLog("******************Set block from DB: "+Block.BlockNum)
                     }
 
                 Block.SumPow=PrevBlock.SumPow+Block.Power;
@@ -1613,6 +1613,8 @@ module.exports = class CBlock extends require("./db/block-db")
         if(!arr.length)
             return;
 
+        var startTime = process.hrtime();
+
         ToLog("WRITE DATA Count:"+arr.length+"  "+arr[0].BlockNum+"-"+arr[arr.length-1].BlockNum);
         //if(arr[arr.length-1].BlockNum)
 
@@ -1696,6 +1698,7 @@ module.exports = class CBlock extends require("./db/block-db")
         }
 
         this.FREE_ALL_MEM_CHAINS();
+        ADD_TO_STAT_TIME("WRITECHAIN_TO_DB_TIME", startTime);
 
     }
 
@@ -2005,7 +2008,6 @@ module.exports = class CBlock extends require("./db/block-db")
             //DApp check
 
 
-            if(0)
             if(!this.LoadHistoryMode)// arrContent.length>0)
             {
                 var TR=arrContent[0];
@@ -2013,7 +2015,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 {
                     if(!DApps.Accounts.TRCheckAccountHash(TR,Data.BlockNum))
                     {
-                        ToLog("1 *************************************** BAD ACCOUNT Hash in block="+Block.BlockNum+" from:"+NodeName(Info.Node));
+                        ToLog("1. **** NO LOAD BAD ACCOUNT Hash in block="+Block.BlockNum+" from:"+NodeName(Info.Node)+" ****");
                         this.SetBlockNOSendToNode(Block,Info.Node,"BAD CMP ACC HASH");
                         //this.DeleteNodeFromActive(Info.Node);
                         //this.AddToBan(Info.Node);

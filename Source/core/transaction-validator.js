@@ -250,7 +250,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
     AddDAppTransactions(BlockNum,Arr)
     {
-        if(BlockNum%DELTA_BLOCK_ACCOUNT_HASH !== 0)
+        if(BlockNum%PERIOD_ACCOUNT_HASH !== 0)
             return;
 
         var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
