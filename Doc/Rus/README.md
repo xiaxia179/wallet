@@ -38,6 +38,7 @@ netsh advfirewall firewall add rule name="Open 30000 port" protocol=TCP localpor
 ```
 cd wallet
 git reset --hard 
+git clean -f
 git pull 
 ```
 

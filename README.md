@@ -35,6 +35,15 @@ pm2 start run-node.js
 netsh advfirewall firewall add rule name="Open 30000 port" protocol=TCP localport=30000 action=allow dir=IN
 ```
 
+### Updates
+
+```
+cd wallet
+git reset --hard 
+git clean -f
+git pull 
+```
+
 
 
 ## Installation on Linux 
@@ -63,8 +72,9 @@ systemctl disable firewalld
 
 ```
 cd wallet
-git reset --hard 
-git pull 
+sudo git reset --hard 
+sudo git clean -f
+sudo git pull 
 ```
 
 
