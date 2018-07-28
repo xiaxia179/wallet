@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=132;
-global.MIN_CODE_VERSION_NUM=132;
+global.UPDATE_CODE_VERSION_NUM=137;
+global.MIN_CODE_VERSION_NUM=137;
 
 
 global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
@@ -40,7 +40,7 @@ global.MEM_POOL_MSG_COUNT=1000;
 //СЕТЬ
 //Константы иерархии обмена
 global.MAX_LEVEL_SPECIALIZATION=24;//максимальный уровень специализации в битах
-global.MIN_CONNECT_CHILD=1;
+global.MIN_CONNECT_CHILD=2;
 global.MAX_CONNECT_CHILD=8;
 
 //Сетевое взаимодействие
@@ -74,7 +74,7 @@ global.TOTAL_TER_MONEY=1e9;
 //Настройки DApp.accounts
 global.TRANSACTION_PROOF_COUNT=1000*1000;
 global.MIN_POWER_POW_ACC_CREATE=16;
-global.DELTA_BLOCK_ACCOUNT_HASH=16;
+global.DELTA_BLOCK_ACCOUNT_HASH=10;
 global.START_MINING=2*1000*1000;
 global.REF_PERIOD_MINING=1*1000*1000;
 
@@ -113,9 +113,9 @@ if(global.LOCAL_RUN)
 {
     global.START_MINING=100;
     global.REF_PERIOD_MINING=100;
-    global.START_NETWORK_DATE=1532688749745// ((new Date)-0)-50*1000;
+    global.START_NETWORK_DATE=1532774144410-100*1000//((new Date)-0)-50*1000;
     global.DELTA_BLOCK_ACCOUNT_HASH=16;
-    global.TEST_TRANSACTION_GENERATE=10;
+    global.TEST_TRANSACTION_GENERATE=0;
     global.MIN_POWER_POW_TR=0;
     global.MIN_POWER_POW_ACC_CREATE=0;
 

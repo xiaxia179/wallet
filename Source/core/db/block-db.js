@@ -481,6 +481,8 @@ module.exports = class CDB extends require("../code")
 
     WriteBufHeaderDB(BufWrite,BlockNum)
     {
+        BlockNum=Math.trunc(BlockNum);
+
         var Position=BlockNum*BLOCK_HEADER_SIZE;
         var FD=BlockDB.OpenDBFile(FILE_NAME_HEADER).fd;
 
@@ -504,6 +506,8 @@ module.exports = class CDB extends require("../code")
     {
         if(!Num)
             Num=0;
+        Num=Math.trunc(Num);
+
         var Block=this.ReadBlockHeaderDB(Num);
         if(Block && Block.TrDataLen)
         {
@@ -585,6 +589,7 @@ module.exports = class CDB extends require("../code")
         {
             return undefined;
         }
+        Num=Math.trunc(Num);
 
         var BufRead=BufLib.GetNewBuffer(BLOCK_HEADER_SIZE);
         var Position=Num*BLOCK_HEADER_SIZE;
@@ -612,6 +617,7 @@ module.exports = class CDB extends require("../code")
 
     SetTruncateBlockDB(Num)
     {
+        Num=Math.trunc(Num);
         if(this.UseTruncateBlockDB)
         {
             if(Num<this.UseTruncateBlockDB)

@@ -348,7 +348,7 @@ module.exports = class CConsensus extends require("./block-loader")
         ADD_TO_STAT_TIME("TRANSFER", startTime);
 
         var Delta=(new Date())-this.StartLoadBlockTime;
-        if(Delta>30*1000)
+        if(Delta>10*1000)
         {
             Info.Node.BlockProcessCount++;
         }

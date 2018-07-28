@@ -117,7 +117,6 @@ module.exports = class CCommon
         ADD_TO_STAT("MAX:ACTUAL_OK",CountActualOK);
         ADD_TO_STAT("MAX:CHECK_POINT_OK",CountCP);
         ADD_TO_STAT("MAX:COUNTLH",CountLH);
-        ADD_TO_STAT("MAX:HOT_COUNT_LEVELS",CountLevels);
         // ADD_TO_STAT("MAX:COUNTLOWLEVELS",CountLowLevels);
 
 
@@ -129,6 +128,7 @@ module.exports = class CCommon
             Count=0;
         ADD_TO_STAT("MAX:DELTA_TIME_HOT",SumDeltaHot/CountHot);
         ADD_TO_STAT("MAX:DELTA_TIME_ACTUAL",SumDeltaActual/Count);
+        ADD_TO_STAT("MAX:HOT_COUNT_LEVELS",CountLevels/CountHot);
 
 
 

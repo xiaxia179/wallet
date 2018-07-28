@@ -25,6 +25,7 @@ global.COUNT_BLOCKS_FOR_CHECK_POW=100;
 
 global.MAX_COUNT_CHAIN_LOAD=120;
 
+global.PERIOD_SEND_TASK=200;//ms
 global.PACKET_ALIVE_PERIOD=4*CONSENSUS_PERIOD_TIME;//ms
 global.PACKET_ALIVE_PERIOD_NEXT_NODE=PACKET_ALIVE_PERIOD/2;//ms
 //global.MAX_BLOCK_LOAD=128;
@@ -675,11 +676,12 @@ module.exports = class CBlock extends require("./db/block-db")
                 {
                      var Delta=CurTime-Node.TaskLastSend;
                      //if(Delta<1000/MAX_CONNECTION_WHITE*2)
-                    if(Delta<1000/COUNT_TASK_FOR_NODE)
-                     {
-                         timewait=true;
-                         continue;//wait (not spaming)
-                     }
+                    //if(Delta<1000/COUNT_TASK_FOR_NODE)
+                    if(Delta<PERIOD_SEND_TASK)
+                    {
+                        timewait=true;
+                        continue;//wait (not spaming)
+                    }
                 }
 
 
@@ -728,6 +730,7 @@ module.exports = class CBlock extends require("./db/block-db")
     {
         if(this.StopDoSendPacket(Info.Node,"GETBLOCKHEADER"))
         {
+            return;
             return this.Send(Info.Node,
                 {
                     "Method":"RETBLOCKHEADER",
@@ -1871,6 +1874,7 @@ module.exports = class CBlock extends require("./db/block-db")
     {
         if(this.StopDoSendPacket(Info.Node,"GETBLOCK"))
         {
+            return;
             return this.Send(Info.Node,
                 {
                     "Method":"RETGETBLOCK",
@@ -2073,6 +2077,7 @@ module.exports = class CBlock extends require("./db/block-db")
     {
         if(this.StopDoSendPacket(Info.Node,"CANBLOCK"))
         {
+            return;
             return this.SendF(Info.Node,
                 {
                     "Method":"RETCANBLOCK",

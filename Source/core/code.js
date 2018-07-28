@@ -197,43 +197,6 @@ module.exports = class CCode extends require("./base")
 
 
 
-global.RestartNode=function RestartNode()
-{
-    global.NeedRestart=1;
-
-    var it=SERVER.ActualNodes.iterator(), Node;
-    while((Node = it.next()) !== null)
-    {
-        if(Node.Socket)
-            CloseSocket(Node.Socket,"Restart");
-    }
-    SERVER.StopServer();
-    SERVER.StopNode();
-
-    ToLog("***************************************** RESTART!!!");
-
-    if(global.nw)
-    {
-        //window only
-        var StrRun='"'+process.argv[0]+'" .\n';
-        StrRun+='"'+process.argv[0]+'" .\n';//A some of magic for reliable work
-        SaveToFile("run-next.bat",StrRun);
-
-
-        const child_process = require('child_process');
-        child_process.exec("run-next.bat",{shell :true});
-        // child_process.spawn("run-next.bat",[],{detached  :true});
-        // child_process.unref();
-    }
-    else
-    {
-        //Must loop start from cmd-file
-    }
-
-    process.exit();
-}
-
-
 
 function UpdateCodeFiles(StartNum)
 {
@@ -318,5 +281,43 @@ function UnpackCodeFile(fname)
         }
     });
     reader.close();
+}
+
+
+
+global.RestartNode=function RestartNode()
+{
+    global.NeedRestart=1;
+
+    var it=SERVER.ActualNodes.iterator(), Node;
+    while((Node = it.next()) !== null)
+    {
+        if(Node.Socket)
+            CloseSocket(Node.Socket,"Restart");
+    }
+    SERVER.StopServer();
+    SERVER.StopNode();
+
+    ToLog("***************************************** RESTART!!!");
+
+    if(global.nw)
+    {
+        //window only
+        var StrRun='"'+process.argv[0]+'" .\n';
+        StrRun+='"'+process.argv[0]+'" .\n';//A some of magic for reliable work
+        SaveToFile("run-next.bat",StrRun);
+
+
+        const child_process = require('child_process');
+        child_process.exec("run-next.bat",{shell :true});
+        // child_process.spawn("run-next.bat",[],{detached  :true});
+        // child_process.unref();
+    }
+    else
+    {
+        //Must loop start from cmd-file
+    }
+
+    process.exit(0);
 }
 

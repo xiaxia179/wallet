@@ -329,7 +329,7 @@ class AccountApp extends require("./dapp")
                 }
                 else
                 {
-                    this.NexdDeltaAccountNum=10;
+                    this.NexdDeltaAccountNum=DELTA_BLOCK_ACCOUNT_HASH;
                     SERVER.LastNumAccountHashOK=BlockNumHash;
                 }
 

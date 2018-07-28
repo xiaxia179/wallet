@@ -1924,19 +1924,12 @@ module.exports = class CTransport extends require("./connect")
         if(!Node.LastHardTime)
             Node.LastHardTime=0;
         var Delta=(new Date())-Node.LastHardTime;
-        if(Delta<1000)
+        if(Delta<PERIOD_SEND_TASK)
         {
             ADD_TO_STAT("STOP_HARD");
             return 1;
         }
-
-        // if(!Node.HardCount)
-        //     Node.HardCount=0;
-        // Node.HardCount++;
-        // if(Node.HardCount>10)
-        // {
-        //     return 1;
-        // }
+        Node.LastHardTime=new Date();
 
         return 0;
     }

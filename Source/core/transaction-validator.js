@@ -234,10 +234,10 @@ module.exports = class CSmartContract extends require("./block-exchange")
     }
     SetRewriteBlockDB()
     {
-        if(!this.LastNumAccountHashOK)//init
+        if(!this.NexdDeltaAccountNum)//init
         {
-            this.LastNumAccountHashOK=this.BlockNumDB;
             this.NexdDeltaAccountNum=100;
+            this.LastNumAccountHashOK=this.BlockNumDB;
         }
         this.StartNumRewriteTransactions=Math.trunc(this.LastNumAccountHashOK-this.NexdDeltaAccountNum);
 
@@ -250,14 +250,14 @@ module.exports = class CSmartContract extends require("./block-exchange")
 
     AddDAppTransactions(BlockNum,Arr)
     {
-        // if(BlockNum%10 !== 0)//TODO
-        //return;
+        if(BlockNum%DELTA_BLOCK_ACCOUNT_HASH !== 0)
+            return;
 
         var BlockNumHash=BlockNum-DELTA_BLOCK_ACCOUNT_HASH;
         if(BlockNumHash<0)
             BlockNumHash=0;
 
-        if(Arr.length)
+        //if(Arr.length)
         {
             var Hash=DApps.Accounts.GetHashOrUndefined(BlockNumHash);
             if(Hash)
