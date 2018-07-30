@@ -481,7 +481,8 @@ function SaveConst()
         if(global[key]!==undefined)
             constants[key]=global[key];
     }
-    //console.log(GetDataPath("const.lst"))
+    // console.log(GetDataPath("const.lst"))
+    // console.log(JSON.stringify(constants))
     SaveParams(GetDataPath("const.lst"),constants);
     WasStartSaveConst=false;
 };

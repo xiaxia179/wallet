@@ -130,6 +130,7 @@ if(global.ADDRLIST_MODE)
 var ArrWrk=[];
 var BlockMining;
 
+var StartCheckMining=0;
 function RunStopPOWProcess()
 {
     const os = require('os');
@@ -157,6 +158,14 @@ function RunStopPOWProcess()
         }
         return;
     }
+
+    if(!StartCheckMining)
+    {
+        StartCheckMining=1;
+        setInterval(RunStopPOWProcess,5000);
+    }
+    if(SERVER.LoadHistoryMode)
+        return;
 
     const child_process = require('child_process');
     ToLog("START MINER PROCESS COUNT="+CountRun);
@@ -226,15 +235,16 @@ function RunStopPOWProcess()
         Worker.on('close', (code) =>
         {
             ToLog("STOP PROCESS: "+Worker.Num);
-            if(!ArrWrk.length)
-                return;
-            //process.exit();
+            for(var i=0;i<ArrWrk.length;i++)
+            {
+                if(ArrWrk[i].Num===Worker.Num)
+                {
+                    //ToLog("Delete wrk from arr");
+                    ArrWrk.splice(i,1);
+                }
+            }
         });
     }
-}
-function StartWorker()
-{
-
 }
 
 
@@ -261,7 +271,7 @@ function SetCalcPOW(Block)
                 SeqHash:Block.SeqHash,
                 Hash:Block.Hash,
                 Time:new Date()-0,
-                Num:i,
+                Num:CurWorker.Num,
                 RunPeriod:global.POWRunPeriod,
                 RunCount:global.POWRunCount,
                 Percent:global.POW_MAX_PERCENT,
@@ -460,7 +470,7 @@ function RunOnUpdate()
 
 function CheckRewriteTr(Num,StrHash,StartRewrite)
 {
-    if(SERVER.BlockNumDB<Num)
+    if(SERVER.BlockNumDB<StartRewrite)
         return "NO";
 
     var AccountsHash=DApps.Accounts.GetHashOrUndefined(Num);

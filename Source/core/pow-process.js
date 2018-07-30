@@ -25,6 +25,8 @@ else
 }
 
 var LastAlive=new Date()-0;
+setInterval(CheckAlive, 1000);
+
 var idInterval=undefined;
 var Block={};
 
@@ -66,16 +68,19 @@ PROCESS.on('message', (msg) =>
     }
 });
 
-
-function CalcPOWHash()
+function CheckAlive()
 {
     var Delta=(new Date())-LastAlive;
-    if(Math.abs(Delta)>600*1000)
+    if(Math.abs(Delta)>5*1000)
     {
+        //ToLog("Stop and exit")
         PROCESS.exit(0);
         return;
     }
+}
 
+function CalcPOWHash()
+{
     if(!Block.SeqHash)
         return;
 

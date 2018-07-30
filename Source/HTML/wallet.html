@@ -33,7 +33,8 @@
 
 
 <script>
-    var CONFIG_DATA={};
+    var CONFIG_DATA={}; CONFIG_DATA.CONSTANTS={};
+
     var ServerBlockNumDB=0;
     var ServerVersionNum=0;
     var ServerCurBlockNum=0;
@@ -313,6 +314,21 @@
                 document.getElementById("idAutoSetMining").checked=false;
             }
 
+            SetViewWN();
+        }
+    }
+    function SetViewWN()
+    {
+        if(CONFIG_DATA.CONSTANTS.MAX_WNUM)
+        {
+            SetVisibleBlock("idRowWN","table-row");
+            SetVisibleBlock("Item.WN","table-cell;");
+            document.getElementById("Item.WN").innerText="WN";
+        }
+        else
+        {
+            SetVisibleBlock("Item.WN","none");
+            document.getElementById("Item.WN").innerText="";
         }
     }
     function CancelCreateAccount()
@@ -1183,6 +1199,7 @@
             SetVisibleBlock("idPercentBlock",0);
 
 
+        SetViewWN();
     }
 
     function SetArrLog(arr)
@@ -2142,12 +2159,22 @@
 
     <DIV id="edit_create_acc" style="display: none">
         <table class="form_input keys" id="grid_edit_newacc">
-            <tr>
-                <td><DIV>Short public name:</DIV></td><td><INPUT type="string" maxlength="40" id="idAccDescription" onkeyup="CheckLengthAccDesription('idAccDescription',40)" value=""></td>
+            <tr id="idRowWN" style="display: none">
+                <td>
+                    <DIV>WN:</DIV></td><td><INPUT type="number" id="idWN" min=0 max=100 value="0">
+                </td>
             </tr>
 
             <tr>
-                <td><DIV>Adviser:</DIV></td><td><INPUT type="number" id="idAdviser" min=0 max=1000000000000 value="0"></td>
+                <td><DIV>Short public name:</DIV></td>
+                <td>
+                    <INPUT type="string" maxlength="40" id="idAccDescription" onkeyup="CheckLengthAccDesription('idAccDescription',40)" value="">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <DIV>Adviser:</DIV></td><td><INPUT type="number" id="idAdviser" min=0 max=1000000000000 value="0">
+                </td>
             </tr>
             <tr>
                 <td></td><td><INPUT type="checkbox" checked id="idAutoSetMining">Mining on this account</td>
@@ -2172,6 +2199,7 @@
             <th id="Item.Description" class="name">Account name</th>
             <th id="Item.Value.OperationID" class="num">Operation</th>
             <th id="Item.RefID" class="num">Adviser</th>
+            <th id="Item.WN" class="num" style="width: 30px;">WN</th>
 
         </tr>
     </table>

@@ -635,7 +635,8 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
 
 
     var row0=htmlTable.rows[0];
-    var colcount=row0.cells.length;
+    var row0cells=row0.cells;
+    var colcount=row0cells.length;
     for(var i=0;arr && i<arr.length;i++)
     {
         var Item=arr[i];
@@ -652,7 +653,10 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
             map[ID]=row;
             for(var n=0;n<colcount;n++)
             {
-                var cell0=row0.cells[n];
+                var cell0=row0cells[n];
+                if(!cell0.innerText)
+                    continue;
+
                 var cell=row.insertCell(n);
                 cell.className  = cell0.className;
             }
@@ -660,10 +664,14 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
         row.Work=glWorkNum;
         for(var n=0;n<colcount;n++)
         {
+            var cell=row.cells[n];
+            if(!cell)
+                continue;
+
+            var cell0=row0cells[n];
+
             //TODO оптимизировать!!!!
 
-            var cell=row.cells[n];
-            var cell0=row0.cells[n];
             var formula=cell0.id;
             if(formula.substr(0,1)==="(")
             {

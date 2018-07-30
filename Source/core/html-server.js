@@ -1403,9 +1403,8 @@ if(global.HTTP_PORT_NUMBER)
             return;
 
 
-
-        // if(host.substr(0,4)!=="test" && host!=="localhost" && host!=="127.0.0.1")
-        //     return;
+        if(!global.HTTP_PORT_PASSWORD && host!=="127.0.0.1")
+             return;
 
         let RESPONSE=response0;
         var response=

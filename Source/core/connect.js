@@ -312,6 +312,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(Data.LoadHistoryMode || !Data.CanStart)
         if(Node.Hot)
         {
+            ADD_TO_STAT("PONG-NotHot");
             this.DeleteNodeFromHot(Node);
         }
 
@@ -542,10 +543,12 @@ module.exports = class CConnect extends require("./transfer-msg")
         ToLogNet("FROM "+NodeInfo(Info.Node)+" DISCONNECT: "+Info.Data);
         this.DeleteNodeFromActive(Info.Node);
         this.DeleteNodeFromHot(Info.Node);
+        ADD_TO_STAT("DISCONNECT");
     }
     DISCONNECTHOT(Info,CurTime)
     {
         this.DeleteNodeFromHot(Info.Node);
+        ADD_TO_STAT("DISCONNECTHOT");
         ToLogNet("FROM "+NodeInfo(Info.Node)+" DISCONNECTHOT: "+Info.Data);
     }
 
@@ -796,7 +799,7 @@ module.exports = class CConnect extends require("./transfer-msg")
         });
 
         if((new Date())-this.StartTime > 120*1000)
-            SaveParams(GetDataPath("nodes.lst"),this.GetDirectNodesArray(true));
+            SaveParams(GetDataPath("nodes.lst"),this.GetDirectNodesArray(true).slice(1));
     }
 
 
@@ -847,6 +850,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             this.DeleteNodeFromActive(Node);
         }
 
+        ADD_TO_STAT("NETCONFIGARATION");
 
 
         if(Node.Active && Node.CanHot)
@@ -1057,6 +1061,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 {
                     //ToLog("Node.Hot="+Node.Hot+" DeltaTime="+DeltaTime);
                     this.DeleteNodeFromHot(Node);
+                    ADD_TO_STAT("StartCheckConnect");
                     this.StartDisconnectHot(Node,"StartCheckConnect:D="+DeltaTime);
                     break;
                 }
@@ -1203,8 +1208,10 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         this.SendGetMessage(Node);
 
+        ADD_TO_STAT("NETCONFIGARATION");
+
         ADD_TO_STAT("AddLevelConnect");
-        //ToLog("AddLevelConnect: "+Level+"  "+Node.addrStr.substr(0,4)+"  "+Node.ip+":"+Node.port);
+        ToLog("Add Level connect: "+Level+"  "+NodeName(Node));
     }
 
     //КРИТЕРИИ НОРМАЛЬНОСТИ СВЯЗЕЙ:
@@ -1227,6 +1234,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                         ChildCount--;
                         Node.Hot=false;
                         this.DeleteNodeFromHot(Node);
+                        ADD_TO_STAT("DisconnectChild");
                         this.StartDisconnectHot(Node,"CheckDisconnectChilds");
                         bWas=1;
                         continue;
@@ -1641,8 +1649,12 @@ module.exports = class CConnect extends require("./transfer-msg")
             for(var n=0;arr && n<arr.length;n++)
                 if(arr[n]===Node)
                 {
+                    ToLog("Del Level connect: "+i+"  "+NodeName(Node));
+
                     ADD_TO_STAT("DeleteLevelConnect");
                     arr.splice(n,1);
+                    ADD_TO_STAT("NETCONFIGARATION");
+
                     break;
                 }
         }
@@ -1659,6 +1671,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 var Node=arr[n];
                 if(Node.Hot)
                 {
+                    ADD_TO_STAT("DeleteAllNodesFromHot");
                     this.DeleteNodeFromHot(Node);
                     this.StartDisconnectHot(Node,Str);
                 }

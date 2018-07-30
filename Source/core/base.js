@@ -390,5 +390,6 @@ function GetCheckAccHash(Map,BlockNum,Hash)
         else
             return "=MY:NO=";
     }
-
 }
+global.GetCheckAccHash=GetCheckAccHash;
+

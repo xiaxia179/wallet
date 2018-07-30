@@ -1,6 +1,9 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=155;
-global.MIN_CODE_VERSION_NUM=144;
+global.UPDATE_CODE_VERSION_NUM=162;
+global.MIN_CODE_VERSION_NUM=155;
+
+
+global.InitParamsArg=InitParamsArg;
 
 
 global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
@@ -108,7 +111,7 @@ var NETWORK2="TERA-R3";//10
 global.DEF_MAJOR_VERSION="0001";//4
 
 
-InitParams();
+InitParamsArg();
 
 
 if(global.LOCAL_RUN)
@@ -207,7 +210,7 @@ global.RUN_SERVER=1;
 
 
     //----------------------------------------------------------------------------------------------------------------------
-function InitParams()
+function InitParamsArg()
 {
     // if(!global.RUN_NW_SERVER && typeof window === 'object')//client
     //     return;
