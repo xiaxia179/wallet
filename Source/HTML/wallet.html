@@ -73,6 +73,7 @@
     var idPercentItem;
 
     var CurrentTR={};
+    var WasSetRestart=0;
 
 </script>
 
@@ -142,6 +143,8 @@
 
         var Select=document.getElementById("idTypeKey");
         Select.value="private";
+
+        SetVisibleItemByTypeKey();
     }
     function EditPrivateKey()
     {
@@ -169,20 +172,57 @@
         }
     }
 
+    function ConvertToPrivateKey()
+    {
+        var Str=document.getElementById("idKeyNew").value;
+        if(!Str || Str.length<=20)
+        {
+            SetError("Enter secret words pls longer than 20 characters");
+            return;
+        }
+
+        var Str2=document.getElementById("idKeyNew2").value;
+        if(Str2 && Str!==Str2)
+        {
+            SetError("Re-entered secret does not match");
+            return;
+        }
+
+        document.getElementById("idTypeKey").value="private";
+        SetVisibleItemByTypeKey();
+        document.getElementById("idKeyNew").value=GetPrivateKeyFromStr(Str);
+        document.getElementById("idKeyNew2").value="";
+    }
+
+    function GetPrivateKeyFromStr(Str)
+    {
+        var StrHex=sha3_str(Str);
+        for(var i=0;i<100000;i++)
+            StrHex=sha3_str(StrHex);
+
+        return StrHex.toUpperCase();
+    }
+
     function SavePrivateKey()
     {
         var Select=document.getElementById("idTypeKey");
+        if(Select.value==="brain")
+        {
+            ConvertToPrivateKey();
+            return;
+        }
+
         var Str=document.getElementById("idKeyNew").value;
         Str=Str.trim();
-        if(Str.length!==64 && Select.value==="private")
+        if(Select.value==="private" && (Str.length!==64 || !IsHexStr(Str)))
         {
-            SetStatus("Error: Length must 64 HEX chars. (Length="+Str.length+")");
+            SetError("Error: Length must 64 HEX chars. (Length="+Str.length+")");
             return;
         }
         else
-        if(Str.length!==66 && Select.value!=="private")
+        if(Select.value!=="private" && (Str.length!==66 || Str.substr(0,1)!=="0" || !IsHexStr(Str)))
         {
-            SetStatus("Error: Length must 66 HEX chars. (Length="+Str.length+")");
+            SetError("Error: Length must 66 HEX chars. (Length="+Str.length+")");
             return;
         }
 
@@ -212,12 +252,6 @@
         SetVisibleEditKeys(0);
     }
 
-    function SetVisibleEditKeys(bSet)
-    {
-        SetVisibleBlock("edit_keys",bSet);
-        if(bSet)
-            document.getElementById("idKeyNew").focus();
-    }
 
 
     function SetVisibleBlock(name,bSet)
@@ -380,15 +414,68 @@
         }
     }
 
+    function IsHexStr(Str)
+    {
+        var arr=GetArrFromHex(Str);
+        var Str2=GetHexFromArr(arr);
+        if(Str2===Str.toUpperCase())
+            return true;
+        else
+            return false;
+    }
+
+    function SetVisibleEditKeys(bSet)
+    {
+        SetVisibleBlock("edit_keys",bSet);
+        if(bSet)
+        {
+            SetVisibleItemByTypeKey();
+            document.getElementById("idKeyNew").focus();
+        }
+    }
+
     function SelectTypeKey()
     {
         var Select=document.getElementById("idTypeKey");
         var Item=document.getElementById("idKeyNew");
-        if(Select.value==="public" && Item.value===PrivKeyStr)
+        var Item2=document.getElementById("idKeyNew2");
+
+        if(Select.value==="public" && (Item.value.length!==66 || Item.value.substr(0,1)!=="0"))
+        {
             Item.value="";
+            Item2.value="";
+        }
         else
         if(Select.value==="private" && Item.value===PubKeyStr)
+        {
             Item.value="";
+            Item2.value="";
+        }
+        else
+        if(Select.value==="brain" && Item.value.length>=64 && IsHexStr(Item.value))
+        {
+            Item.value="";
+            Item2.value="";
+        }
+
+        SetVisibleItemByTypeKey();
+
+    }
+    function SetVisibleItemByTypeKey()
+    {
+        var Select=document.getElementById("idTypeKey");
+        if(Select.value==="brain")
+        {
+            SetVisibleBlock("idViewKeyNew2","table-row");
+            SetVisibleBlock("idBtConvertKey","inline-block");
+            SetVisibleBlock("idBtSaveKey",false);
+        }
+        else
+        {
+            SetVisibleBlock("idViewKeyNew2","none");
+            SetVisibleBlock("idBtConvertKey",false);
+            SetVisibleBlock("idBtSaveKey","inline-block");
+        }
     }
 
 
@@ -725,6 +812,28 @@
 
 
     //UTIL
+
+    function CleanChain()
+    {
+        var BlockNum=ParseNum(document.getElementById("idBlockNum").value);
+        if(!BlockNum)
+        {
+            SetError("The block number must be more then 0");
+            return;
+        }
+
+
+        SetVisibleBlock("idServerBlock",1);
+        SetStatus("Start clean chain: "+BlockNum);
+
+        GetData("/CleanChain",BlockNum, function (Data)
+        {
+            if(Data && Data.result)
+            {
+                SetStatus("Clean completed ");
+            }
+        });
+    }
     function RewriteTransactions()
     {
         var BlockNum=ParseNum(document.getElementById("idBlockNum").value);
@@ -1010,7 +1119,7 @@
 //            SetStatus("Client num="+MaxBlockNum+"  server num="+Data.CurBlockNum)
 
 
-        min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE;
+        min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE+2;
         PubKeyStr=Data.PublicKey;
         PrivKeyStr=Data.PrivateKey;
         WalletOpen=Data.WalletOpen;
@@ -1042,7 +1151,15 @@
 
         if(Data.NeedRestart)
         {
-            SetStatus("<H1 align='center' style='color:blue'>Wallet updating complete. Please restart program.</H1>");
+            SetStatus("<H1 align='center' style='color:blue'>Restarting program...</H1>");
+            if(!WasSetRestart)
+            {
+                WasSetRestart=1;
+                setTimeout(function ()
+                {
+                    window.location.reload();
+                },10*1000)
+            }
         }
 
 
@@ -1061,9 +1178,9 @@
 
 
         if(Data.CPU_COUNT>1 && CONFIG_DATA.CONSTANTS.USE_MINING)
-            SetVisibleBlock("idPrecentBlock","inline-block");
+            SetVisibleBlock("idPercentBlock","inline-block");
         else
-            SetVisibleBlock("idPrecentBlock",0);
+            SetVisibleBlock("idPercentBlock",0);
 
 
     }
@@ -1338,6 +1455,8 @@
                 nonce=CreateHashBodyPOWInnerMinPower(Body,SumPow)
 
             var StrHex=GetHexFromArr(Body);
+//            SetStatus("StrHex: "+StrHex)
+//            return;
 
             GetData("/SendTransactionHex/"+StrHex, function (Data)
             {
@@ -1438,6 +1557,7 @@
         }
 
         SetVisibleTab();
+        SaveValues();
     }
 
     function CheckCtrlEnterAndESC(e,F)
@@ -1599,13 +1719,20 @@
     function SetCodeVersion()
     {
         var Data=JSON.parse(JSON.stringify(CONFIG_DATA.CODE_VERSION));
+        if(!Data.Hash)
+        {
+            Data.LevelUpdate=160;
+        }
+
         Data.VersionNum++;
         Data.BlockNum=CONFIG_DATA.CurBlockNum;
         Data.addrArr=GetHexFromArr(Data.addrArr);
         Data.Hash=GetHexFromArr(Data.Hash);
         Data.Sign=GetHexFromArr(Data.Sign);
-        Data.Hash=Data.Hash.substr(0,8)+"...";
-        Data.Sign=Data.Sign.substr(0,16)+"...";
+        Data.Hash=undefined;//Data.Hash.substr(0,8)+"...";
+        Data.Sign=undefined;//Data.Sign.substr(0,16)+"...";
+        Data.StartLoadVersionNum=undefined;
+
 
         var Str=JSON.stringify(Data,"",2);
         document.getElementById("idDevService").value=Str;
@@ -1921,7 +2048,7 @@
 
 
     <input type="checkbox" class="checkbox" id="idUseMining" onchange = "UseMining()"/>
-    <label for="idUseMining">MINING</label> <DIV id="idPrecentBlock" style="color: blue;display: none"> CPU use:<input type="number" min=0 max=100 id="idPercentMining" onchange="SetPercentMining()"/>%</DIV><BR>
+    <label for="idUseMining">MINING</label> <DIV id="idPercentBlock" style="color: blue;display: none"> CPU use:<input type="number" min=0 max=100 id="idPercentMining" onchange="SetPercentMining()"/>%</DIV><BR>
     <DIV id="idDevelopService" style="display: none">
         <INPUT type="button" id="idDown" onclick="SetVisibleBlock('idDevelopServiceView',!IsVisibleBlock('idDevelopServiceView'));SetImg(this,'idDevelopServiceView')"
                class="btdoit bt" value="DEV SERVICE">
@@ -1987,18 +2114,25 @@
         <table class="form_input keys" id="grid_edit_key">
             <tr>
                 <td>
-                    <select size="1" id="idTypeKey" onkeyup="SelectTypeKey();SaveValues()" onchange="SelectTypeKey();SaveValues()">
+                    <select size="1" id="idTypeKey" onkeyup="SelectTypeKey();" onchange="SelectTypeKey();">
                         <option value="private">Private key</option>
                         <option value="public">Public key (sign from another wallet)</option>
+                        <option value="brain">Brain key generator</option>
                     </select>
                 </td><td><INPUT type="string" id="idKeyNew" value=""></td>
             </tr>
+            <tr id="idViewKeyNew2" style="display: none">
+                <td>You can repeat the secret words:</td>
+                <td><INPUT type="string" id="idKeyNew2" value=""></td>
+            </tr>
+
             <tr>
                 <td></td>
-                <td><INPUT type="button" onclick="SavePrivateKey()" class="bt" value="Save">
+                <td>
+                    <INPUT type="button" onclick="ConvertToPrivateKey()" class="btdoit bt" style="width: 130px;display: none;" id="idBtConvertKey" value="Convert to key">
+                    <INPUT type="button" onclick="SavePrivateKey()" class="bt" id="idBtSaveKey" value="Save">
                     <INPUT type="button" onclick="CancelSavePrivateKey()" class="bt" value="Cancel">
                 </td>
-
             </tr>
         </table>
     </DIV>
@@ -2108,9 +2242,11 @@
 
 <DIV id="TabHistory" style="display: none">
     <DIV id="idPaginationHistory" style="display: none">
+        <INPUT type="button" onclick="ViewBegin(DefHistory)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefHistory)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewHistoryNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefHistory)">
         <INPUT type="button" onclick="ViewNext(DefHistory,HistoryMaxNum)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewEnd(DefHistory,HistoryMaxNum)" class="btdoitm bt" value="->|">
     </DIV>
 
     <table id="grid_history" class="grid">
@@ -2216,9 +2352,11 @@
     <DIV id="idPaginationAccount" style="display: none">
         <HR>
         <DIV id="view_header" >Accounts</DIV><BR>
+        <INPUT type="button" onclick="ViewBegin(DefAccounts)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefAccounts)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewAccountNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefAccounts)">
         <INPUT type="button" onclick="ViewNext(DefAccounts,MaxAccID)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewEnd(DefAccounts,MaxAccID)" class="btdoitm bt" value="->|">
 
         <table id="grid_accounts_all" class="grid">
             <tr>
@@ -2244,9 +2382,11 @@
     <DIV id="idPaginationBlock" style="display: none">
         <HR>
         <DIV id="view_header" >Blocks<BR></DIV>
+        <INPUT type="button" onclick="ViewBegin(DefBlock)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefBlock)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewBlockNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefBlock)">
         <INPUT type="button" onclick="ViewNext(DefBlock,ServerBlockNumDB)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewEnd(DefBlock,ServerBlockNumDB)" class="btdoitm bt" value="->|">
 
         <table id="grid_block_all" class="grid">
             <tr>
@@ -2269,9 +2409,11 @@
     <DIV id="idPaginationAct" style="display: none">
         <HR>
         <DIV id="view_header" >Accounts acts<BR></DIV>
+        <INPUT type="button" onclick="ViewBegin(DefActs)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefActs)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewActNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefActs)">
         <INPUT type="button" onclick="ViewNext(DefActs,MaxActNum)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewEnd(DefActs,MaxActNum)" class="btdoitm bt" value="->|">
 
 
         <table id="grid_acts_all" class="grid">
@@ -2295,9 +2437,11 @@
     <DIV id="idPaginationHash" style="display: none">
         <HR>
         <DIV id="view_header" >Accounts hash<BR></DIV>
+        <INPUT type="button" onclick="ViewBegin(DefHash)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefHash)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewHashNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefHash)">
         <INPUT type="button" onclick="ViewNext(DefHash,ServerBlockNumDB)" class="btdoit bt" value="Next >>">
+        <INPUT type="button" onclick="ViewEnd(DefHash,ServerBlockNumDB)" class="btdoitm bt" value="->|">
 
         <table id="grid_hash_all" class="grid">
             <tr>
@@ -2318,6 +2462,7 @@
         <INPUT type="button" onclick="RewriteTransactions()"  class="bt btdoit btlong" value="Rewrite Transactions">
         <INPUT type="button" onclick="CheckBlocks()"  class="bt btdoit btlong" value="Check Blocks">
         <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit btlong bt" value="Truncate chain <!>">
+        <INPUT type="button" onclick="CleanChain()"  class="bt btdoit btlong" value="Clean chain">
         <BR>
 
     </DIV>

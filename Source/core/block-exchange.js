@@ -72,7 +72,7 @@ module.exports = class CConsensus extends require("./block-loader")
 
     StartBlockChain()
     {
-        this.DoBlockChain();
+        this.OnStartSecond();
 
         var CurTimeNum=GetCurrentTime()-CONSENSUS_PERIOD_TIME/2;
         var StartTimeNum=Math.floor((CurTimeNum+CONSENSUS_PERIOD_TIME)/CONSENSUS_PERIOD_TIME)*CONSENSUS_PERIOD_TIME;
@@ -90,11 +90,19 @@ module.exports = class CConsensus extends require("./block-loader")
             setTimeout(function ()
             {
                 self.idBlockChainTimer=setInterval(self.StartBlockChain.bind(self),CONSENSUS_PERIOD_TIME);
-                self.DoBlockChain();
+                self.OnStartSecond();
             },DeltaForStart)
         }
 
 
+    }
+
+    OnStartSecond()
+    {
+        PrepareStatEverySecond();
+
+        this.AddStatOnTimer();
+        this.DoBlockChain();
     }
 
     CreateBlockContext()
@@ -1353,8 +1361,6 @@ module.exports = class CConsensus extends require("./block-loader")
 
     DoBlockChain()
     {
-        this.AddStatOnTimer();
-
         if(glStopNode)
             return;
         if(!CAN_START)

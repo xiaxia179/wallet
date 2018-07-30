@@ -78,10 +78,6 @@ module.exports = class CCode extends require("./base")
 
     GETCODE(Info)
     {
-        if(this.StopDoSendPacket(Info.Node,"GETCODE"))
-        {
-            return;
-        }
 
 
         //отправка файла из спец. каталога
@@ -289,6 +285,8 @@ global.RestartNode=function RestartNode()
 {
     global.NeedRestart=1;
 
+
+
     var it=SERVER.ActualNodes.iterator(), Node;
     while((Node = it.next()) !== null)
     {
@@ -297,27 +295,29 @@ global.RestartNode=function RestartNode()
     }
     SERVER.StopServer();
     SERVER.StopNode();
+    global.USE_MINING=0;
+    RunStopPOWProcess();
 
     ToLog("****************************************** RESTART!!!");
 
-    if(global.nw)
+    setTimeout(function ()
     {
-        //window only
-        var StrRun='"'+process.argv[0]+'" .\n';
-        StrRun+='"'+process.argv[0]+'" .\n';//A some of magic for reliable work
-        SaveToFile("run-next.bat",StrRun);
+        if(global.nw)
+        {
+            ToLog("RESTART NW");
+            //window only
+            var StrRun='"'+process.argv[0]+'" .\n';
+            StrRun+='"'+process.argv[0]+'" .\n';//A some of magic for reliable work
+            SaveToFile("run-next.bat",StrRun);
 
 
-        const child_process = require('child_process');
-        child_process.exec("run-next.bat",{shell :true});
-        // child_process.spawn("run-next.bat",[],{detached  :true});
-        // child_process.unref();
-    }
-    else
-    {
-        //Must loop start from cmd-file
-    }
+            const child_process = require('child_process');
+            child_process.exec("run-next.bat",{shell :true});
+            // child_process.spawn("run-next.bat",[],{detached  :true});
+            // child_process.unref();
+        }
 
-    process.exit(0);
+        process.exit(0);
+    },5000)
 }
 

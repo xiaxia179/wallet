@@ -19,6 +19,7 @@ cd ..\..\..\
 git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
 npm install
+node set httpport:8080 password:<секретное слово без пробела>
 run-node.bat
 
 ```
@@ -52,6 +53,7 @@ git pull
 Просто введите подряд в ssh-терминал команды указанные ниже (в зависимости от версии дистрибутива)
 
 
+
 ### Дистрибутив CentOS 7:
 
 ```
@@ -62,6 +64,7 @@ sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
 sudo npm install
+sudo node set httpport:8080 password:<секретное слово без пробела>
 sudo pm2 start run-node.js
 ```
 
@@ -82,6 +85,7 @@ sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
 sudo npm install
+sudo node set httpport:8080 password:<секретное слово без пробела>
 sudo pm2 start run-node.js
 ```
 

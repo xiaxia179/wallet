@@ -6,6 +6,8 @@
 const fs = require('fs');
 const DBLib=require("./db");
 
+const MAX_ARR_PERIOD=MAX_STAT_PERIOD*2+10;
+
 global.BlockDB=new DBLib();
 global.BLOCK_HEADER_SIZE=150;//144;
 
@@ -846,6 +848,17 @@ module.exports = class CDB extends require("../code")
             this.StatMap.CaclBlockNum=0;
         }
     }
+    ClearStat()
+    {
+        this.StatMap=
+            {
+                StartPos:0,
+                StartBlockNum:0,
+                Length:0,
+                "ArrPower":new Uint8Array(MAX_ARR_PERIOD),
+                "ArrPowerMy":new Uint8Array(MAX_ARR_PERIOD),
+            };
+    }
 
     GetStatBlockchain(name,MinLength)
     {
@@ -853,18 +866,10 @@ module.exports = class CDB extends require("../code")
         if(!MinLength)
             return arr;
 
-        const MAX_ARR_PERIOD=MAX_STAT_PERIOD*2+10;
 
         if(!this.StatMap)//init
         {
-            this.StatMap=
-                {
-                    StartPos:0,
-                    StartBlockNum:0,
-                    Length:0,
-                    "ArrPower":new Uint8Array(MAX_ARR_PERIOD),
-                    "ArrPowerMy":new Uint8Array(MAX_ARR_PERIOD),
-                };
+            this.ClearStat();
         }
 
         //ToLog("this.StatMap.CaclBlockNum="+this.StatMap.CaclBlockNum)
@@ -875,6 +880,8 @@ module.exports = class CDB extends require("../code")
             this.StatMap.CalcMinLength=MinLength;
 
 
+            // var finish=GetCurrentBlockNumByTime()+TIME_START_POW;
+            // var start=finish-MinLength+1;
             var start=this.BlockNumDB-MinLength+1;
             var finish=this.BlockNumDB+1;
 
@@ -902,35 +909,43 @@ module.exports = class CDB extends require("../code")
                 {
                     CountReadDB++;
                     var Power=0,PowerMy=0;
-                    var Block=this.ReadBlockHeaderDB(num);
-                    if(Block)
+                    if(num<=this.BlockNumDB)
                     {
-                        Power=GetPowPower(Block.Hash);
-                        var Miner=ReadUintFromArr(Block.AddrHash,0);
-                        if(Miner===GENERATE_BLOCK_ACCOUNT)
+                        var Block=this.ReadBlockHeaderDB(num);
+                        if(Block)
                         {
-                            PowerMy=Power;
+                            Power=GetPowPower(Block.Hash);
+                            var Miner=ReadUintFromArr(Block.AddrHash,0);
+                            if(Miner===GENERATE_BLOCK_ACCOUNT)
+                            {
+                                PowerMy=Power;
+                            }
                         }
                     }
+
                     arr[i]=Power;
                     arrmy[i]=PowerMy;
 
                     ArrPower[i2]=Power;
                     ArrPowerMy[i2]=PowerMy;
-                    this.StatMap.StartBlockNum=num-this.StatMap.Length;
-                    this.StatMap.Length++;
-                    if(this.StatMap.Length>MAX_ARR_PERIOD)
+
+                    if(num>FinishNumStat)
                     {
-                        this.StatMap.Length=MAX_ARR_PERIOD;
-                        this.StatMap.StartBlockNum++;
-                        this.StatMap.StartPos++;
+                        this.StatMap.StartBlockNum=num-this.StatMap.Length;
+                        this.StatMap.Length++;
+                        if(this.StatMap.Length>MAX_ARR_PERIOD)
+                        {
+                            this.StatMap.Length=MAX_ARR_PERIOD;
+                            this.StatMap.StartBlockNum++;
+                            this.StatMap.StartPos++;
+                        }
                     }
                 }
             }
 
             //ToLog("CountReadDB="+CountReadDB)
 
-            this.StatMap["MAX:POWER_BLOCKCHAIN"]=arr;
+            this.StatMap["POWER_BLOCKCHAIN"]=arr;
             this.StatMap["MAX:WIN:POWER_MY"]=arrmy;
         }
 

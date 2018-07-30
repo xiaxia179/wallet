@@ -221,7 +221,7 @@ global.GET_STATDIAGRAMS=function(Keys)
         }
 
         if(MinLength)
-        if(",MAX:WIN:POWER_MY,MAX:POWER_BLOCKCHAIN,".indexOf(","+ItemServer.name+",")>=0)
+        if(",MAX:WIN:POWER_MY,POWER_BLOCKCHAIN,".indexOf(","+ItemServer.name+",")>=0)
         {
             //calc from blockhain stat
             arr=SERVER.GetStatBlockchain(ItemServer.name,MinLength);
@@ -231,7 +231,8 @@ global.GET_STATDIAGRAMS=function(Keys)
         var AvgValue=0;
         for(var j=0;j<arr.length;j++)
         {
-            AvgValue+=arr[j];
+            if(arr[j])
+                AvgValue+=arr[j];
         }
         if(arr.length>0)
             AvgValue=AvgValue/arr.length;
@@ -277,6 +278,8 @@ global.ClearCommonStat=function()
     StartStatTime=undefined;
     CONTEXT_STATS={Total:{},Interval:[]};
     CONTEXT_ERRORS={Total:{},Interval:[]};
+
+    SERVER.ClearStat();
 }
 
 
@@ -438,13 +441,14 @@ function CopyStatInterval(Context,index)
 
 
 
-setInterval(function ()
+
+global.PrepareStatEverySecond=function()
 {
     CurStatIndex++;
     var index=GetCurrentStatIndex();
     CopyStatInterval(CONTEXT_STATS,index);
     CopyStatInterval(CONTEXT_ERRORS,index);
-},1000);
+}
 
 
 if(DEBUG_MODE)

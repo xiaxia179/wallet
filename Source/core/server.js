@@ -517,7 +517,7 @@ module.exports = class CTransport extends require("./connect")
         }
 
 
-        Info.Node.LastTime=CurTime;
+        Info.Node.LastTime=CurTime-0;
 
 
         var F=this[Info.Method.toUpperCase()];
@@ -1646,7 +1646,7 @@ module.exports = class CTransport extends require("./connect")
 
         ADD_TO_STAT("USEPACKET");
         var CurTime=GetCurrentTime();
-        Meta.Node.LastTime=CurTime;
+        Meta.Node.LastTime=CurTime-0;
         this.OnGetMethod(Meta,CurTime);
 
 
@@ -1852,21 +1852,25 @@ module.exports = class CTransport extends require("./connect")
         else
         {
 
-            if(0)
             if(Prioritet===500)
             {
-                Node.WantHardTraffic=1;
-                if(!Node.CanHardTraffic)
+                if(this.StopDoSendPacket(Node,Buf.Method))
                 {
-                    TO_DEBUG_LOG(""+Buf.Method+" - ADD TO BUF");
-
-                    Node.LoadPacketNum++;
-                    Buf.PacketNum=Node.LoadPacketNum;
-                    Buf.LoadTimeNum=(new Date)-0;
-                    this.HardPacketForSend.insert(Buf);
-
                     return 1;
                 }
+
+                // Node.WantHardTraffic=1;
+                // if(!Node.CanHardTraffic)
+                // {
+                //     TO_DEBUG_LOG(""+Buf.Method+" - ADD TO BUF");
+                //
+                //     Node.LoadPacketNum++;
+                //     Buf.PacketNum=Node.LoadPacketNum;
+                //     Buf.LoadTimeNum=(new Date)-0;
+                //     this.HardPacketForSend.insert(Buf);
+                //
+                //     return 1;
+                // }
             }
 
 

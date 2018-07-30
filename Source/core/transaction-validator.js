@@ -236,7 +236,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
     {
         if(!this.NexdDeltaAccountNum)//init
         {
-            this.NexdDeltaAccountNum=100;
+            this.NexdDeltaAccountNum=DELTA_BLOCK_ACCOUNT_HASH;
             this.LastNumAccountHashOK=this.BlockNumDB;
         }
         this.StartNumRewriteTransactions=Math.trunc(this.LastNumAccountHashOK-this.NexdDeltaAccountNum);
@@ -244,7 +244,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
         this.NexdDeltaAccountNum=this.NexdDeltaAccountNum*1.5;
         if(this.StartNumRewriteTransactions<=0)
         {
-            this.NexdDeltaAccountNum=100;
+            this.NexdDeltaAccountNum=DELTA_BLOCK_ACCOUNT_HASH;
         }
     }
 

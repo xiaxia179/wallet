@@ -1,11 +1,11 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=144;
-global.MIN_CODE_VERSION_NUM=141;
+global.UPDATE_CODE_VERSION_NUM=155;
+global.MIN_CODE_VERSION_NUM=144;
 
 
 global.CONST_NAME_ARR=["DELTA_CURRENT_TIME","SERVER_PRIVATE_KEY_HEX","NET_WORK_MODE","STAT_MODE",
     "UPDATE_NUM_COMPLETE","HTTP_PORT_NUMBER","HTTP_PORT_PASSWORD","WALLET_NAME","COUNT_VIEW_ROWS","ADDRLIST_MODE",
-    "USE_MINING","POW_MAX_PERCENT","USE_LOG_NETWORK","ALL_LOG_TO_CLIENT","LIMIT_SEND_TRAFIC"];
+    "USE_MINING","POW_MAX_PERCENT","USE_LOG_NETWORK","ALL_LOG_TO_CLIENT","LIMIT_SEND_TRAFIC","MAX_WNUM"];
 
 global.DELTA_CURRENT_TIME=0;
 global.SERVER_PRIVATE_KEY_HEX=undefined;
@@ -25,6 +25,7 @@ global.USE_LOG_NETWORK=0;
 global.LIMIT_SEND_TRAFIC=0;
 global.COUNT_VIEW_ROWS=20;
 
+global.MAX_WNUM=undefined;
 
 require("./startlib.js");
 
@@ -114,9 +115,9 @@ if(global.LOCAL_RUN)
 {
     global.START_MINING=100;
     global.REF_PERIOD_MINING=100;
-    global.START_NETWORK_DATE=1532790949621-100*1000//((new Date)-0)-50*1000;
+    global.START_NETWORK_DATE=((new Date)-0)-50*1000;
     global.DELTA_BLOCK_ACCOUNT_HASH=16;
-    global.TEST_TRANSACTION_GENERATE=0;
+    global.TEST_TRANSACTION_GENERATE=10;
     global.MIN_POWER_POW_TR=0;
     global.MIN_POWER_POW_ACC_CREATE=0;
 
@@ -223,6 +224,11 @@ function InitParams()
         if(str.substr(0,9)=="httpport:")
         {
             global.HTTP_PORT_NUMBER=parseInt(str.substr(9));
+        }
+        else
+        if(str.substr(0,9)=="password:")
+        {
+            global.HTTP_PORT_PASSWORD=str.substr(9);
         }
         else
         if(str.substr(0,5)=="path:")

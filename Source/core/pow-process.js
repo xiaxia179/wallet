@@ -24,22 +24,20 @@ else
     PROCESS=global.DEBUGPROCESS;
 }
 
-var idInterval;
+var LastAlive=new Date()-0;
+var idInterval=undefined;
 var Block={};
 
 PROCESS.on('message', (msg) =>
 {
     //ToLog("CHILD GET: "+JSON.stringify(msg))
+    LastAlive=(new Date())-0;
 
     if(msg.cmd==="SetBlock")
     {
-
         var StartNonce=10000000*(1+msg.Num);
         if(Block.LastNonce)
         {
-            // var Power=GetPowPower(Block.Hash);
-            // if(msg.Num===0)
-            //     ToLog("PrevPower="+Power+"  "+JSON.stringify(msg));
             process.send({cmd:"HASHRATE",CountNonce:Block.LastNonce-StartNonce, Hash:Block.Hash});
         }
         Block=msg;
@@ -58,6 +56,10 @@ PROCESS.on('message', (msg) =>
         }
     }
     else
+    if(msg.cmd==="Alive")
+    {
+    }
+    else
     if(msg.cmd==="Exit")
     {
         PROCESS.exit(0);
@@ -67,14 +69,20 @@ PROCESS.on('message', (msg) =>
 
 function CalcPOWHash()
 {
+    var Delta=(new Date())-LastAlive;
+    if(Math.abs(Delta)>600*1000)
+    {
+        PROCESS.exit(0);
+        return;
+    }
+
     if(!Block.SeqHash)
         return;
 
     if(new Date()-Block.Time>Block.Period)
     {
         clearInterval(idInterval);
-        idInterval=0;
-        //ToLog(""+Block.Num+". Stop interval on block="+Block.BlockNum)
+        idInterval=undefined;
         return;
     }
 

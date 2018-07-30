@@ -664,7 +664,8 @@
     }
   };
 
-    root.shaarr_original  = methods.sha3_array_256;
+    root.sha3_str  = methods.sha3_256;
+    root.sha3_array_256  = methods.sha3_array_256;
 
 
     // root.sha  = methods.sha3_256;
@@ -782,7 +783,7 @@ function meshhash(hash)
         ret[i*2+1]=mem[i]>>8;
     }
 
-    return shaarr_original(ret);
+    return sha3_array_256(ret);
 }
 
 

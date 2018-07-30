@@ -582,6 +582,16 @@ function ViewNext(Def,MaxNum)
     }
     ViewCurrent(Def);
 }
+function ViewBegin(Def)
+{
+    document.getElementById(Def.NumName).value=0;
+    ViewCurrent(Def);
+}
+function ViewEnd(Def,MaxNum)
+{
+    document.getElementById(Def.NumName).value=MaxNum-MaxNum%CountViewRows;
+    ViewCurrent(Def);
+}
 
 
 

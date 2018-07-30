@@ -33,6 +33,18 @@
     line-height: 20px;
     margin: 10px;
     cursor: pointer;
+    font-family: monospace;
+}
+
+
+.btdoitm
+{
+    width: 40px;
+    height: 32px;
+    line-height: 20px;
+    margin: 10px;
+    cursor: pointer;
+    font-family: monospace;
 }
 
 
@@ -47,7 +59,7 @@
 
 .btlong
 {
-    width: 200px;
+    width: 170px;
 }
 
 .btmedium

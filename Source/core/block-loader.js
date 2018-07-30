@@ -284,6 +284,11 @@ module.exports = class CBlock extends require("./db/block-db")
     StartLoadHistory(Node)
     {
         this.FREE_ALL_MEM_CHAINS();
+        if(global.NO_HISTORY_MODE)
+        {
+            return;
+        }
+
 
         if(global.CREATE_ON_START && !LOCAL_RUN)
             return;
@@ -728,19 +733,7 @@ module.exports = class CBlock extends require("./db/block-db")
 
     GETBLOCKHEADER(Info,CurTime)
     {
-        if(this.StopDoSendPacket(Info.Node,"GETBLOCKHEADER"))
-        {
-            return;
-            return this.Send(Info.Node,
-                {
-                    "Method":"RETBLOCKHEADER",
-                    "Context":Info.Context,
-                    "Data":BufLib.GetNewBuffer(10)
-                },1);
-        }
-
-
-        var Data=this.DataFromF(Info);
+          var Data=this.DataFromF(Info);
 
 
         var arr=[];
@@ -1875,17 +1868,6 @@ module.exports = class CBlock extends require("./db/block-db")
 
     GETBLOCK(Info,CurTime)
     {
-        if(this.StopDoSendPacket(Info.Node,"GETBLOCK"))
-        {
-            return;
-            return this.Send(Info.Node,
-                {
-                    "Method":"RETGETBLOCK",
-                    "Context":Info.Context,
-                    "Data":BufLib.GetNewBuffer(100)
-                },1);
-        }
-
         var Data=this.DataFromF(Info);
         var BlockNum=Data.BlockNum;
         var TreeHash=Data.TreeHash;
@@ -2078,16 +2060,6 @@ module.exports = class CBlock extends require("./db/block-db")
 
     CANBLOCK(Info,CurTime)
     {
-        if(this.StopDoSendPacket(Info.Node,"CANBLOCK"))
-        {
-            return;
-            return this.SendF(Info.Node,
-                {
-                    "Method":"RETCANBLOCK",
-                    "Data":{Result:0}
-                });
-        }
-
         var Data=this.DataFromF(Info);
 
         this.SendF(Info.Node,

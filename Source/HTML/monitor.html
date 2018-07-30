@@ -189,8 +189,14 @@
                 AvgValue+=arr[i];
         }
         //среднее значение
-        AvgValue=Math.floor(Item.AvgValue+0.5);
-        //AvgValue=Math.floor(AvgValue/arr.length+0.5);
+        if(!Item.AvgValue)
+            AvgValue=0;
+        else
+        if(Item.AvgValue<50)
+            AvgValue=Item.AvgValue.toFixed(1);
+        else
+            AvgValue=Math.trunc(Item.AvgValue);
+
 
         if(Item.MaxValue!==undefined)
             MaxValue=Item.MaxValue;
@@ -320,15 +326,19 @@
         {
             var heigh=StartY-Top;
             var KKY=AvgValue/MaxValue;
-            if(KKY<0.90)
+            //if(KKY<0.95)
             {
+                var dTop=0;
+                if(KKY>0.8)
+                    dTop=8;
+
                 var y=(heigh-Math.floor(KKY*heigh));
                 ctx.beginPath();
                 ctx.moveTo(Left-2,y+Top);
                 ctx.lineTo(Left+2,y+Top);
                 ctx.stroke();
                 ctx.strokeStyle = "#00F";
-                ctx.fillText(Rigth("          "+AvgValue,8),0,y+Top+4);
+                ctx.fillText(Rigth("          "+AvgValue,8),0,y+Top+dTop);
             }
         }
 
@@ -405,7 +415,7 @@
             {name:"HASHRATE",text:"Hash Rate",value:0,red:"#95d6b9"},
             {name:"MAX:POWER",text:"MAX:POWER",value:0,red:"#95d6b9"},
             {name:"MAX:WIN:POWER_MY",text:"WIN:POWER_MY",value:0,red:"#088a4a"},
-            {name:"MAX:POWER_BLOCKCHAIN",text:"BLOCKCHAIN POWER",value:0,red:"#7f448a"},
+            {name:"POWER_BLOCKCHAIN",text:"BLOCKCHAIN POWER",value:0,red:"#7f448a"},
 
             {isLine:true,text:"NETWORK"},
 
@@ -475,7 +485,7 @@
 //            {name:"MINING-COUNT",text:"MINING-COUNT",value:0,red:"#95d6b9"},
             {name:"MAX:POWER",text:"MAX:POWER",value:0,red:"#95d6b9"},
             {name:"MAX:WIN:POWER_MY",text:"WIN:POWER_MY",value:0,red:"#088a4a"},
-            {name:"MAX:POWER_BLOCKCHAIN",text:"BLOCKCHAIN POWER",value:0,red:"#7f448a"},
+            {name:"POWER_BLOCKCHAIN",text:"BLOCKCHAIN POWER",value:0,red:"#7f448a"},
 
 
 

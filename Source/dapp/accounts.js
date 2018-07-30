@@ -323,8 +323,8 @@ class AccountApp extends require("./dapp")
                 if(!Result)
                 {
                     ToLog("2. ****FIND BAD ACCOUNT HASH IN BLOCK: "+BlockNumHash+ " DO BLOCK="+BlockNum);
-                    SERVER.SetTruncateBlockDB(BlockNum-1);
-                    //SERVER.SetTruncateBlockDB(BlockNumHash-1);
+                    //SERVER.SetTruncateBlockDB(BlockNum-1);
+                    SERVER.SetTruncateBlockDB(BlockNumHash-1);
                     SERVER.SetRewriteBlockDB();
                 }
                 else
@@ -493,7 +493,14 @@ class AccountApp extends require("./dapp")
 
         var HASH=shaarr(Body);
         var power=GetPowPower(HASH);
-        if(power<MIN_POWER_POW_ACC_CREATE)
+
+        var MinPower;
+        if(BlockNum<2500000)
+            MinPower=MIN_POWER_POW_ACC_CREATE;
+        else
+            MinPower=MIN_POWER_POW_ACC_CREATE+2;
+
+        if(power<MinPower)
             return "Error min power POW for create account (update client)";
 
         try

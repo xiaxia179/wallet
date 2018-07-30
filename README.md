@@ -21,6 +21,7 @@ cd ..\..\..\
 git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
 npm install
+node set httpport:8080 password:<secret word (no spaces)>
 run-node.bat
 
 ```
@@ -59,6 +60,7 @@ sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
 sudo npm install
+sudo node set httpport:8080 password:<secret word (no spaces)>
 sudo pm2 start run-node.js
 ```
 
@@ -89,6 +91,7 @@ sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
 sudo npm install
+sudo node set httpport:8080 password:<secret word (no spaces)>
 sudo pm2 start run-node.js
 ```
 

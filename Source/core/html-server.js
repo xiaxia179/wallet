@@ -688,6 +688,16 @@ HTTPCaller.ClearStat=function (flag)
 }
 
 
+
+HTTPCaller.CleanChain=function (StartNum)
+{
+    global.SendLogToClient=1;
+    if(global.CleanChain)
+        global.CleanChain(StartNum);
+    global.SendLogToClient=0;
+    return {result:1,sessionid:sessionid};
+}
+
 HTTPCaller.RewriteTransactions=function (Param)
 {
     global.SendLogToClient=1;
@@ -695,6 +705,7 @@ HTTPCaller.RewriteTransactions=function (Param)
     global.SendLogToClient=0;
     return {result:1,sessionid:sessionid};
 }
+
 
 
 HTTPCaller.CheckBlocks=function (StartNum)

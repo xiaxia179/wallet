@@ -315,7 +315,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             this.DeleteNodeFromHot(Node);
         }
 
-        Node.LastTime=GetCurrentTime();
+        Node.LastTime=GetCurrentTime()-0;
         Node.NextConnectDelta=1000;//connection is good
         Node.GrayConnect=Data.GrayConnect;
 
@@ -698,6 +698,12 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(Item.GrayConnect)
                 continue;
 
+            // if(!global.ADDRLIST_MODE && !Item.LastTime)
+            //      continue;
+
+            if(!Item.LastTime)
+                continue;
+
             if(Item.LastTime || Item.NextConnectDelta>10*1000)
             if(Item.LastTime-0<CurTime-3600*1000)
                 continue;
@@ -707,7 +713,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 addrStr:Item.addrStr,
                 ip:Item.ip,
                 port:Item.port,
-                LastTime:Item.LastTime,
+                LastTime:Item.LastTime-0,
                 DeltaTime:Item.DeltaTime,
                 Hot:Item.Hot,
                 BlockProcessCount:Item.BlockProcessCount,
@@ -797,9 +803,26 @@ module.exports = class CConnect extends require("./transfer-msg")
     LoadNodesFromFile()
     {
         var arr=LoadParams(GetDataPath("nodes.lst"),[]);
+        // arr.sort(function (a,b)
+        // {
+        //     if(a.ip>b.ip)
+        //         return 1;
+        //     else
+        //         if(a.ip<b.ip)
+        //             return -1;
+        //     else
+        //         return 0;
+        // });
+
         for(var i=0;i<arr.length;i++)
         {
-            this.AddToArrNodes(arr[i],true);
+            if(arr[i].LastTime)
+            {
+                if(typeof arr[i].LastTime === "string")
+                    arr[i].LastTime=0;
+
+                this.AddToArrNodes(arr[i],true);
+            }
         }
     }
 
@@ -952,7 +975,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                             //addrArr:Node.addrArr,
                             ip:Node.ip,
                             port:Node.port,
-                            LastTime:Node.LastTime,
+                            LastTime:Node.LastTime-0,
                             DeltaTime:Node.DeltaTime
                         }
                     );
@@ -1027,7 +1050,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             {
                 var Node=arr[n];
                 if(!Node.LastTime)
-                    Node.LastTime=CurTime;
+                    Node.LastTime=CurTime-0;
 
                 var DeltaTime=CurTime-Node.LastTime;
                 if(!Node.Hot  || !Node.CanHot || DeltaTime>MAX_WAIT_PERIOD_FOR_HOT)
