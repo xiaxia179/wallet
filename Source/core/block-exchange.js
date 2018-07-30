@@ -358,6 +358,7 @@ module.exports = class CConsensus extends require("./block-loader")
         var Delta=(new Date())-this.StartLoadBlockTime;
         if(Delta>10*1000)
         {
+            Info.Node.Stage=0;
             Info.Node.BlockProcessCount++;
         }
     }

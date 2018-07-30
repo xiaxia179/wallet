@@ -680,8 +680,6 @@ module.exports = class CBlock extends require("./db/block-db")
                 if(Node.TaskLastSend)
                 {
                      var Delta=CurTime-Node.TaskLastSend;
-                     //if(Delta<1000/MAX_CONNECTION_WHITE*2)
-                    //if(Delta<1000/COUNT_TASK_FOR_NODE)
                     if(Delta<PERIOD_SEND_TASK)
                     {
                         timewait=true;
@@ -1708,30 +1706,7 @@ module.exports = class CBlock extends require("./db/block-db")
             var Ret=this.GetNextNode(Block,Key,true,Block.BlockNum);
             if(Ret.Result)
             {
-                //ADD_TO_STAT("DO_SENDBLOCKNEXT");
-
                 var Node=Ret.Node;
-                // if(Node.INFO && Block.BlockNum>Node.INFO.BlockNumDB)
-                // {
-                //
-                //     //var keysend=""+Node.addrStr+":"+Key;
-                //     //Block.MapSend[keysend]=1;
-                //     //Block.time=undefined;
-                //     continue;
-                // }
-                //
-                //this.RecalcLoadBlockStatictic();
-                // if(Node.LoadBlockCountAll===0)
-                // {
-                //     if(Node.SendBlockCountAll+Node.SendBlockCount===0)
-                //     {
-                //         this.SendCanBlock(Node,Block);
-                //     }
-                //     return 0;
-                // }
-                // if(Node.CanGetBlocks<=0)
-                //     return 0;
-                // Node.CanGetBlocks--;
 
 
                 if(!Block.Context)

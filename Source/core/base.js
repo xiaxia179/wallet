@@ -361,6 +361,20 @@ class STreeBuffer
 
 }
 
+function ReadHashFromBufDB(Map,BlockNum)
+{
+    var MyHash=Map[BlockNum];
+    if(!MyHash)
+    {
+        var Block=SERVER.ReadBlockHeaderDB(BlockNum);
+        if(Block)
+            MyHash=Block.Hash;
+        else
+            MyHash=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        Map[BlockNum]=MyHash;
+    }
+    return MyHash;
+}
 
 function GetCheckAccHash(Map,BlockNum,Hash)
 {
@@ -392,4 +406,4 @@ function GetCheckAccHash(Map,BlockNum,Hash)
     }
 }
 global.GetCheckAccHash=GetCheckAccHash;
-
+global.ReadHashFromBufDB=ReadHashFromBufDB;

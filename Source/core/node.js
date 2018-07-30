@@ -41,6 +41,8 @@ module.exports = class CNode
         this.Stage=0;
         this.CanHot=false;
 
+        this.CountChildConnect=0;
+
         //статистика
         this.BlockProcessCount=0;
 

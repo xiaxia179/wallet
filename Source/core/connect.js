@@ -208,6 +208,13 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(Block)
                 CheckPointHashDB=Block.Hash;
         }
+        var HashDB=[];
+        if(this.BlockNumDB>0)
+        {
+            var Block=this.ReadBlockHeaderDB(this.BlockNumDB);
+            if(Block)
+                HashDB=Block.Hash;
+        }
 
         var Ret=
             {
@@ -231,6 +238,7 @@ module.exports = class CConnect extends require("./transfer-msg")
                 AddrList:global.ADDRLIST_MODE,
                 CheckPointHashDB:CheckPointHashDB,
                 NodesLevelCount:this.GetNodesLevelCount(),
+                HashDB:HashDB,
                 Reserve:[],
             };
 
@@ -259,6 +267,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             AddrList:byte,\
             CheckPointHashDB:hash,\
             NodesLevelCount:uint16,\
+            HashDB:hash,\
             Reserve:arr40,\
             }";
     }
@@ -788,34 +797,31 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         this.NodesArr.sort(function (a,b)
         {
-            if(a.Hot!==b.Hot)
-                return b.Hot-a.Hot;
-
-            if(a.Active!==b.Active)
-                return b.Active-a.Active;
-
-            return a.DeltaTime-b.DeltaTime;
-            //return a.LastTime-b.LastTime;
+            return b.BlockProcessCount-a.BlockProcessCount;
+            // if(a.Hot!==b.Hot)
+            //     return b.Hot-a.Hot;
+            //
+            // if(a.Active!==b.Active)
+            //     return b.Active-a.Active;
+            //
+            // return a.DeltaTime-b.DeltaTime;
         });
 
         if((new Date())-this.StartTime > 120*1000)
-            SaveParams(GetDataPath("nodes.lst"),this.GetDirectNodesArray(true).slice(1));
+        {
+            var arr=this.GetDirectNodesArray(true).slice(1);
+            SaveParams(GetDataPath("nodes.lst"),arr);
+        }
     }
 
 
     LoadNodesFromFile()
     {
         var arr=LoadParams(GetDataPath("nodes.lst"),[]);
-        // arr.sort(function (a,b)
-        // {
-        //     if(a.ip>b.ip)
-        //         return 1;
-        //     else
-        //         if(a.ip<b.ip)
-        //             return -1;
-        //     else
-        //         return 0;
-        // });
+        arr.sort(function (a,b)
+        {
+            return b.BlockProcessCount-a.BlockProcessCount;
+        });
 
         for(var i=0;i<arr.length;i++)
         {
@@ -841,16 +847,16 @@ module.exports = class CConnect extends require("./transfer-msg")
         if(this.LoadHistoryMode || !global.CAN_START)
             return;
 
-        // if(!Node.Stage)
-        //     Node.Stage=0;
+        if(!Node.Stage)
+            Node.Stage=0;
         Node.Stage++;
 
-        if(Node.Stage>1000 && Node.Active)
+        if(Node.Stage>10 && Node.Active)
         {
             this.DeleteNodeFromActive(Node);
         }
 
-        ADD_TO_STAT("NETCONFIGARATION");
+        ADD_TO_STAT("NETCONFIGURATION");
 
 
         if(Node.Active && Node.CanHot)
@@ -926,7 +932,7 @@ module.exports = class CConnect extends require("./transfer-msg")
             Info.Node.Stage++
         }
 
-        Info.Node.CountConnect=Data.Count;
+        Info.Node.CountChildConnect=Data.Count;
     }
 
 
@@ -1087,18 +1093,20 @@ module.exports = class CConnect extends require("./transfer-msg")
         }
 
 
-        this.StatLevels=this.CalcLevels();
-        for(var i=0;i<this.StatLevels.length;i++)
+        var StatLevels=this.CalcLevels();
+        for(var i=0;i<StatLevels.length;i++)
         {
+            var Stat=StatLevels[i];
+            if(!Stat)
+                continue;
+
             var arr=this.LevelNodes[i];
             if(arr && arr.length>=MIN_CONNECT_CHILD)
                 continue;
 
-            if(!this.StatLevels[i])
-                continue;
 
             //требуется соединение
-            var Node=this.StatLevels[i].Node;
+            var Node=Stat.Node;
             this.StartAddLevelConnect(Node);
         }
 
@@ -1132,46 +1140,59 @@ module.exports = class CConnect extends require("./transfer-msg")
     CalcLevels()
     {
         var Levels=[];
-        for(let n=0;n<this.NodesArr.length;n++)
+        for(var n=0;n<this.NodesArr.length;n++)
         {
             var Child=this.NodesArr[n];
 
-            if(Child.CountDeltaTime<=2)
+            if(Child.BlockProcessCount<100 && Child.CountDeltaTime<=2)
                 continue;
             if(Child.DeltaTime>=MAX_PING_FOR_CONNECT)
+                continue;
+
+            if(!Child.CountChildConnect)
+                Child.CountChildConnect=0;
+            if(!Child.Stage)
+                Child.Stage=0;
+            if(Child.CountChildConnect>=MAX_CONNECT_CHILD)
                 continue;
 
             if(!this.IsCanConnect(Child) || Child.Hot)
                 continue;
 
-            var Level=this.AddrLevelNode(Child);
-
-
-
-
-            var stat=Levels[Level];
-
+            var LevelNum=this.AddrLevelNode(Child);
+            var stat=Levels[LevelNum];
             if(!stat)
-                stat={Prioritet:0};
-            if(!Child.CountConnect)
-                Child.CountConnect=0;
-            if(!Child.Stage)
-                Child.Stage=0;
-
-            if(Child.CountConnect>=MAX_CONNECT_CHILD)
-                continue;
-
-            var Prioritet=1000*Child.Stage+Child.CountConnect;
-
-            if(!stat.Node || Prioritet < stat.Prioritet)
             {
-                stat.Node=Child;
-                stat.Prioritet=Prioritet;
+                stat={Prioritet:0,arr:[]};
             }
+            Levels[LevelNum]=stat;
+            stat.arr.push(Child);
 
-            Levels[Level]=stat;
+
+            //var Prioritet=10*Child.Stage+Child.CountChildConnect;
+            //var Prioritet=1000000000*(200-(100*Child.Stage+Child.CountChildConnect))+Child.BlockProcessCount;
+            // var Prioritet=Child.BlockProcessCount;
+            // if(!stat.Node || Prioritet > stat.Prioritet)
+            // {
+            //     stat.Node=Child;
+            //     stat.Prioritet=Prioritet;
+            // }
+
         }
 
+
+        for(var n=0;n<Levels.length;n++)
+        {
+            var Stat=Levels[n];
+            if(Stat)
+            {
+                Stat.arr.sort(function (a,b)
+                {
+                    return b.BlockProcessCount-a.BlockProcessCount;
+                });
+                Stat.Node=Stat.arr[0];
+            }
+        }
 
         return Levels;
     }
@@ -1208,7 +1229,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
         this.SendGetMessage(Node);
 
-        ADD_TO_STAT("NETCONFIGARATION");
+        ADD_TO_STAT("NETCONFIGURATION");
 
         ADD_TO_STAT("AddLevelConnect");
         ToLog("Add Level connect: "+Level+"  "+NodeName(Node));
@@ -1653,7 +1674,7 @@ module.exports = class CConnect extends require("./transfer-msg")
 
                     ADD_TO_STAT("DeleteLevelConnect");
                     arr.splice(n,1);
-                    ADD_TO_STAT("NETCONFIGARATION");
+                    ADD_TO_STAT("NETCONFIGURATION");
 
                     break;
                 }

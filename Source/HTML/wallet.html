@@ -321,14 +321,14 @@
     {
         if(CONFIG_DATA.CONSTANTS.MAX_WNUM)
         {
-            SetVisibleBlock("idRowWN","table-row");
-            SetVisibleBlock("Item.WN","table-cell;");
             document.getElementById("Item.WN").innerText="WN";
+            SetVisibleBlock("idRowWN","table-row");
+            SetVisibleBlock("Item.WN","table-column;");
         }
         else
         {
-            SetVisibleBlock("Item.WN","none");
             document.getElementById("Item.WN").innerText="";
+            SetVisibleBlock("Item.WN","none");
         }
     }
     function CancelCreateAccount()
@@ -1164,6 +1164,9 @@
         document.getElementById("idAdviser").max=MaxAccID;
 
         SetVisibleBlock("idDevelopService",Data.IsDevelopAccount);
+        SetVisibleBlock("idCleanChain",Data.IsDevelopAccount);
+
+
 
         if(Data.NeedRestart)
         {
@@ -2159,12 +2162,6 @@
 
     <DIV id="edit_create_acc" style="display: none">
         <table class="form_input keys" id="grid_edit_newacc">
-            <tr id="idRowWN" style="display: none">
-                <td>
-                    <DIV>WN:</DIV></td><td><INPUT type="number" id="idWN" min=0 max=100 value="0">
-                </td>
-            </tr>
-
             <tr>
                 <td><DIV>Short public name:</DIV></td>
                 <td>
@@ -2178,6 +2175,12 @@
             </tr>
             <tr>
                 <td></td><td><INPUT type="checkbox" checked id="idAutoSetMining">Mining on this account</td>
+            </tr>
+
+            <tr id="idRowWN" style="display: none">
+                <td>
+                    <DIV>Wallet number:</DIV></td><td><INPUT type="number" id="idWN" min=0 max=100 value="0">
+             </td>
             </tr>
 
             <tr>
@@ -2199,7 +2202,7 @@
             <th id="Item.Description" class="name">Account name</th>
             <th id="Item.Value.OperationID" class="num">Operation</th>
             <th id="Item.RefID" class="num">Adviser</th>
-            <th id="Item.WN" class="num" style="width: 30px;">WN</th>
+            <th id="Item.WN" class="num" style="width: 30px;"></th>
 
         </tr>
     </table>
@@ -2490,7 +2493,7 @@
         <INPUT type="button" onclick="RewriteTransactions()"  class="bt btdoit btlong" value="Rewrite Transactions">
         <INPUT type="button" onclick="CheckBlocks()"  class="bt btdoit btlong" value="Check Blocks">
         <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit btlong bt" value="Truncate chain <!>">
-        <INPUT type="button" onclick="CleanChain()"  class="bt btdoit btlong" value="Clean chain">
+        <INPUT type="button" onclick="CleanChain()"  class="bt btdoit btlong" value="Clean chain" id="idCleanChain">
         <BR>
 
     </DIV>

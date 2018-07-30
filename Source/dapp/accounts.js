@@ -826,6 +826,8 @@ class AccountApp extends require("./dapp")
     ReadState(Num)
     {
         var Data=this.DBState.Read(Num);
+        if(Data)
+            Data.WN="";
         return Data;
     }
 

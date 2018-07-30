@@ -654,7 +654,7 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
             for(var n=0;n<colcount;n++)
             {
                 var cell0=row0cells[n];
-                if(!cell0.innerText)
+                if(cell0.innerText=="")
                     continue;
 
                 var cell=row.insertCell(n);
