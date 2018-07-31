@@ -305,15 +305,6 @@ function ReconnectingFromServer()
     {
         var Node=ArrReconnect.shift();
 
-        if(global.TEST_DEVELOP_MODE)
-        {
-            if(!Node.StartFindList)
-            {
-                ToLog("!StartFindList")
-                return;
-            }
-        }
-
         Node.WasAddToReconnect=undefined;
         Node.CreateConnect();
     }
@@ -343,6 +334,8 @@ function ConnectToNodes()
             return;
     }
 
+    if(SERVER.NodeInBan(Node))
+        return;
 
     if(GetSocketStatus(Node.Socket)===100)
     {
@@ -355,8 +348,6 @@ function ConnectToNodes()
     {
         SERVER.StartConnectTry(Node);
     }
-
-
     //connect to next node on another time
 }
 
@@ -456,7 +447,8 @@ function RunOnUpdate()
         //CheckRewriteTr(2334620,"C4F34B512FFD78B603B2C694CEDF7B1D6BF9BC19C421690EAE9599D744D7CE1F",2320000);
         //CheckRewriteTr(2344820,"3EAB02656957C39377C83345B211A4DD90B8B24A4281DC93EB28672F9AA99446",2334620);
         //CheckRewriteTr(2488600,"C302D2FF3940E0DE4B334D6DABE13AE34E6F5867663280294321817DCBCFB7C8",2344820);
-        CheckRewriteTr(2520160,"EC89CC847BB073456CFAF1B6923AEE3E0A44AE07ACB34C7D01A7CAFEDC9B6832",2488600);
+        //CheckRewriteTr(2520160,"EC89CC847BB073456CFAF1B6923AEE3E0A44AE07ACB34C7D01A7CAFEDC9B6832",2488600);
+        CheckRewriteTr(2588600,"1E36CAC18C3B7359E3910E8B8432E2DB299E6513D4094F474463A823D3698025",2520160);
 
 
 

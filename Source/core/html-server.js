@@ -1403,7 +1403,7 @@ if(global.HTTP_PORT_NUMBER)
             return;
 
 
-        if(!global.HTTP_PORT_PASSWORD && host!=="127.0.0.1")
+        if(!global.HTTP_PORT_PASSWORD && host.substr(0,9)!=="127.0.0.1")
              return;
 
         let RESPONSE=response0;

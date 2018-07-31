@@ -26,6 +26,7 @@ module.exports = class CNode
         this.WhiteConnect=0;
         this.GrayConnect=0;
 
+        this.POW=0;
         this.LastTime=0;
         this.DeltaTime=1000;
         this.SumDeltaTime=0;

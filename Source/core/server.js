@@ -1564,7 +1564,8 @@ module.exports = class CTransport extends require("./connect")
     AddToBanIP(ip)
     {
         var Key=""+ip;
-        this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+1000*24*3600*10,BanDelta:1000};
+        this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+600*1000,BanDelta:1000};
+        ToLog("ADD TO BAN: "+Key);
         ADD_TO_STAT("AddToBanIP");
     }
     AddToBan(Node)
@@ -1572,14 +1573,19 @@ module.exports = class CTransport extends require("./connect")
         Node.IsBan=true;
         this.DeleteNodeFromActive(Node);
 
-        var Key=""+Node.ip;// + ':' + Node.port;
-        this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+1000*24*3600*10,BanDelta:1000};
+        var Key=""+Node.ip;
+        this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+600*1000,BanDelta:1000};
+        ToLog("ADD TO BAN: "+Key);
         ADD_TO_STAT("AddToBan");
+    }
+    NodeInBan(Node)
+    {
+        return this.WasBan({address:Node.ip});
     }
 
     WasBan(rinfo, decrError)
     {
-        var Key=""+rinfo.address;// + ':' + rinfo.port;
+        var Key=""+rinfo.address;
         var Stat=this.BAN_IP[Key];
         if(Stat)
         {
@@ -1928,9 +1934,16 @@ module.exports = class CTransport extends require("./connect")
         if(!Node.LastHardTime)
             Node.LastHardTime=0;
         var Delta=(new Date())-Node.LastHardTime;
-        if(Delta<PERIOD_SEND_TASK)
+        if(Delta<PERIOD_SEND_TASK/2)
         {
             ADD_TO_STAT("STOP_HARD");
+            Node.BlockProcessCount--;
+
+            if(Node.BlockProcessCount<0)
+            {
+                this.AddToBan(Node);
+            }
+
             return 1;
         }
         Node.LastHardTime=new Date();

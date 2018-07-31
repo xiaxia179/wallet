@@ -176,9 +176,9 @@
     function ConvertToPrivateKey()
     {
         var Str=document.getElementById("idKeyNew").value;
-        if(!Str || Str.length<=20)
+        if(!Str || Str.length<20)
         {
-            SetError("Enter secret words pls longer than 20 characters");
+            SetError("Enter secret words that are at least 20 characters long");
             return;
         }
 

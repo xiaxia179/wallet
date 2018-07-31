@@ -35,7 +35,7 @@ const PERIOD_FOR_CTAR_CHECK_TIME=300;//sec
 
 
 
-module.exports = class CConnect extends require("./transfer-msg")
+module.exports = class CConnect extends require("./balanser")
 {
     constructor(SetKeyPair,RunIP,RunPort,UseRNDHeader,bVirtual)
     {
