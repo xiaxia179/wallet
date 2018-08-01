@@ -397,7 +397,7 @@ module.exports = class CConnect extends require("./balanser")
             Times.Count++;
             Times.AvgDelta=Times.SumDelta/Times.Count;
 
-            if(Times.Count>1 && Node.addrStr==="FEEEA074D87C2071882E782911C412A214983407EAAB9CC6F8208FE0598E9E1D" && global.DELTA_CURRENT_TIME===0)
+            if(Times.Count>2 && Node.addrStr==="FEEEA074D87C2071882E782911C412A214983407EAAB9CC6F8208FE0598E9E1D" && global.DELTA_CURRENT_TIME===0)
             {
                 global.DELTA_CURRENT_TIME+=Times.AvgDelta;
             }

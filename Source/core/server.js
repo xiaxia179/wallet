@@ -480,6 +480,7 @@ module.exports = class CTransport extends require("./connect")
     {
         if(global.NeedRestart)
             return;
+        return;
 
         Node.IsBan=true;
         this.DeleteNodeFromActive(Node);
@@ -764,7 +765,7 @@ module.exports = class CTransport extends require("./connect")
 
         if(!Buf.Context)
         {
-            if(Param.Period===0 && Buf.Method!=="RETBLOCKHEADER")
+            if(Param && Param.Period===0 && Buf.Method!=="RETBLOCKHEADER")
             {
                 //ToLog("NO Buf.Context "+Buf.Method+" from: "+NodeName(Node)+" context="+GetHexFromArr(Buf.ContextID));
                 this.AddCheckErrCount(Node,1);

@@ -1,6 +1,6 @@
 //Copyright: Yuriy Ivanov, 2017-2018 e-mail: progr76@gmail.com
-global.UPDATE_CODE_VERSION_NUM=200;
-global.MIN_CODE_VERSION_NUM=199;
+global.UPDATE_CODE_VERSION_NUM=203;
+global.MIN_CODE_VERSION_NUM=203;
 
 
 global.InitParamsArg=InitParamsArg;
