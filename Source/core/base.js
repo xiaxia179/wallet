@@ -29,7 +29,9 @@ module.exports = class CCommon
         this.VirtualMode=bVirtual;
 
         this.KeyPair=SetKeyPair;
-        this.addrArr=SetKeyPair.getPublicKey('','compressed').slice(1);
+        var PubKey=SetKeyPair.getPublicKey('','compressed');
+        this.PubKeyType=PubKey[0];
+        this.addrArr=PubKey.slice(1);
         this.addrStr=GetHexFromArr(this.addrArr);
         this.HashDBArr=shaarr2(this.KeyPair.getPrivateKey(),[0,0,0,0,0,0,0,1]);
 
@@ -65,9 +67,9 @@ module.exports = class CCommon
                 bHasCP=1;
         }
 
-        var BufMap={};
+        var BufMap={},BufMap2={};
         var arr=SERVER.GetActualNodes();
-        var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0,CountLowLevels=0;
+        var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0,CountHash=0;
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
@@ -84,12 +86,18 @@ module.exports = class CCommon
                 CountLH++;
             if(Node.Hot && Node.INFO.NodesLevelCount)
                 CountLevels+=Node.INFO.NodesLevelCount;
-            // if(Node.INFO.NodesLevelCount && Node.INFO.NodesLevelCount<=global.LEV_COUNT)
-            //     CountLowLevels++;
 
 
 
             Count++;
+
+            if(Node.INFO && Node.INFO.BlockNumDB && Node.INFO.BlockNumDB<=SERVER.BlockNumDB)
+            {
+                var HashDB=ReadHashFromBufDB(BufMap2,Node.INFO.BlockNumDB);
+                if(HashDB && CompareArr(HashDB,Node.INFO.HashDB)===0)
+                    CountHash++;
+            }
+
             var StrChk=GetCheckAccHash(BufMap,Node.INFO.AccountBlockNum,Node.INFO.AccountsHash);
             var Chck=0;
             if(StrChk.indexOf("=OK=")>=0)
@@ -117,7 +125,8 @@ module.exports = class CCommon
         ADD_TO_STAT("MAX:ACTUAL_OK",CountActualOK);
         ADD_TO_STAT("MAX:CHECK_POINT_OK",CountCP);
         ADD_TO_STAT("MAX:COUNTLH",CountLH);
-        // ADD_TO_STAT("MAX:COUNTLOWLEVELS",CountLowLevels);
+        ADD_TO_STAT("MAX:HASH_OK",CountHash);
+
 
 
 

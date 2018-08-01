@@ -430,13 +430,14 @@
             {name:"MAX:LOADEDCHAINLIST",text:"Loaded chains, count",value:0,red:"#95d6b9"},
 
             {isLine:true,text:"NODES"},
-            {name:"STOP_HARD",text:"STOP_HARD",value:0,red:"#8a3d74"},
+            {name:"STOP_METHOD",text:"STOP_METHOD",value:0,red:"#8a3d74"},
             {name:"AddToBan",text:"AddToBan",value:0,red:"#8a3d74"},
             {name:"NETCONFIGURATION",text:"NETCONFIGURATION",value:0,red:"#8a5663"},
 
 
             {name:"MAX:ACTUAL_NODES",text:"Nodes count",value:0,red:"#83a3d6"},
-            {name:"MAX:CHECK_POINT_OK",text:"Check point = OK",value:0,red:"#2b6311"},
+            {name:"MAX:HASH_OK",text:"Block chain Hash = OK",value:0,red:"#2b6311"},
+            {name:"MAX:CHECK_POINT_OK",text:"Check point = OK",value:0,red:"#356361"},
             {name:"MAX:ACTUAL_OK",text:"Accounts Hash - OK",value:0,red:"#658a61"},
             {name:"MAX:COUNTLH",text:"Nodes in Load History mode",value:0,red:"#83a3d6"},
 
@@ -458,9 +459,11 @@
 
     var DiagramArrD=
         [
-            {name:"STOP_HARD",text:"STOP_HARD",value:0,red:"#8a3d74"},
+            {name:"STOP_METHOD",text:"STOP_METHOD",value:0,red:"#8a3d74"},
             {name:"AddToBan",text:"AddToBan",value:0,red:"#8a3d74"},
             {name:"NETCONFIGURATION",text:"NETCONFIGURATION",value:0,red:"#8a5663"},
+
+
             {name:"SEND:ADDLEVELCONNECT",text:"SEND:ADDLEVELCONNECT",value:0,red:"#8a5663"},
             {name:"GET:ADDLEVELCONNECT",text:"GET:ADDLEVELCONNECT",value:0,red:"#8a5663"},
 //            {name:"NETCONFIGURATION",text:"NETCONFIGURATION",value:0,red:"#8a5663"},
@@ -469,10 +472,14 @@
             {name:"AddLevelConnect",text:"AddLevelConnect",value:0,red:"#755d8a"},
             {name:"DisconnectChild",text:"DisconnectChild",value:0,red:"#755d8a"},
             {name:"DeleteLevelConnect",text:"DeleteLevelConnect",value:0,red:"#755d8a"},
-            {name:"PONG-NotHot",text:"PONG-NotHot",value:0,red:"#755d8a"},
+//            {name:"PONG-NotHot",text:"PONG-NotHot",value:0,red:"#755d8a"},
 
-            {name:"DISCONNECTHOT",text:"DISCONNECTHOT",value:0,red:"#755d8a"},
+//            {name:"DISCONNECTHOT",text:"DISCONNECTHOT",value:0,red:"#755d8a"},
             {name:"StartCheckConnect",text:"StartCheckConnect",value:0,red:"#755d8a"},
+
+        {name:"ClientConnected",text:"ClientConnected",value:0,red:"#755d8a"},
+        {name:"ClientEnd",text:"ClientEnd",value:0,red:"#755d8a"},
+        {name:"ClientClose",text:"ClientClose",value:0,red:"#755d8a"},
 
 
             {name:"POWER_BLOCKCHAIN",text:"BLOCKCHAIN POWER",value:0,red:"#2b6311"},
@@ -486,9 +493,9 @@
 
 
             {name:"MAX:ACTUAL_NODES",text:"Nodes count",value:0,red:"#83a3d6"},
+            {name:"MAX:HASH_OK",text:"Block chain Hash = OK",value:0,red:"#2b6311"},
+            {name:"MAX:CHECK_POINT_OK",text:"Check point = OK",value:0,red:"#356361"},
 
-
-            {name:"MAX:CHECK_POINT_OK",text:"Check point = OK",value:0,red:"#2b6311"},
             {name:"MAX:ACTUAL_OK",text:"Accounts Hash - OK",value:0,red:"#658a61"},
             {name:"MAX:COUNTLH",text:"Nodes in Load History mode",value:0,red:"#83a3d6"},
 

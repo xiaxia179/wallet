@@ -361,7 +361,7 @@ module.exports = class CConnect extends require("./balanser")
             Node.CanHot=false;
             if(CodeVersion.VersionNum<MIN_CODE_VERSION_NUM)
             {
-                ToLog("ERR VersionNum="+CodeVersion.VersionNum+" from "+NodeInfo(Node));
+                //ToLog("ERR VersionNum="+CodeVersion.VersionNum+" from "+NodeInfo(Node));
                 Node.NextConnectDelta=60*1000;
             }
         }
@@ -372,6 +372,7 @@ module.exports = class CConnect extends require("./balanser")
             if(DeltaTime>MAX_PING_FOR_CONNECT)
                 ToLog("DeltaTime="+DeltaTime+">"+MAX_PING_FOR_CONNECT+" ms  -  "+NodeInfo(Node))
         }
+
 
 
         var Times;
@@ -396,8 +397,13 @@ module.exports = class CConnect extends require("./balanser")
             Times.Count++;
             Times.AvgDelta=Times.SumDelta/Times.Count;
 
+            if(Times.Count>1 && Node.addrStr==="FEEEA074D87C2071882E782911C412A214983407EAAB9CC6F8208FE0598E9E1D" && global.DELTA_CURRENT_TIME===0)
+            {
+                global.DELTA_CURRENT_TIME+=Times.AvgDelta;
+            }
 
-            this.CorrectTime();
+
+            //this.CorrectTime();
         }
         else
         {
@@ -541,6 +547,7 @@ module.exports = class CConnect extends require("./balanser")
         this.Send(Node,
             {
                 "Method":"DISCONNECTHOT",
+                "Context":{},
                 "Data":StrError
             },STR_TYPE
         );
@@ -580,6 +587,7 @@ module.exports = class CConnect extends require("./balanser")
             this.Send(Node,
                 {
                     "Method":"GETNODES",
+                    "Context":{},
                     "Data":undefined
                 }
             );
@@ -863,6 +871,7 @@ module.exports = class CConnect extends require("./balanser")
         this.Send(Node,
             {
                 "Method":"ADDLEVELCONNECT",
+                "Context":{},
                 "Data":undefined
             }
         );
@@ -958,6 +967,7 @@ module.exports = class CConnect extends require("./balanser")
             this.Send(Node,
                 {
                     "Method":"GETHOTLEVELS",
+                    "Context":{},
                     "Data":undefined
                 }
             );
@@ -1232,7 +1242,7 @@ module.exports = class CConnect extends require("./balanser")
         ADD_TO_STAT("NETCONFIGURATION");
 
         ADD_TO_STAT("AddLevelConnect");
-        ToLog("Add Level connect: "+Level+"  "+NodeName(Node));
+        //ToLog("Add Level connect: "+Level+"  "+NodeName(Node));
     }
 
     //КРИТЕРИИ НОРМАЛЬНОСТИ СВЯЗЕЙ:
@@ -1337,6 +1347,7 @@ module.exports = class CConnect extends require("./balanser")
 
     CorrectTime()
     {
+
         var ArrNodes=this.GetHotTimeNodes();
         var CountNodes=ArrNodes.length;
         var DeltaArr=[];
@@ -1383,8 +1394,6 @@ module.exports = class CConnect extends require("./balanser")
             start=Math.floor(DeltaArr.length/2);
             finish=start;
         }
-        // start=0;
-        // finish=DeltaArr.length-1;
 
         var Sum=0;
         var Count=0;
@@ -1414,9 +1423,6 @@ module.exports = class CConnect extends require("./balanser")
         if(AvgDelta > MAX_TIME_CORRECT)
             AvgDelta=MAX_TIME_CORRECT;
 
-
-        // if(Math.abs(AvgDelta)<5)//CONSENSUS_CHECK_TIME
-        //     return;
 
 
         if(Math.abs(AvgDelta)<25)//CONSENSUS_CHECK_TIME
@@ -1670,7 +1676,7 @@ module.exports = class CConnect extends require("./balanser")
             for(var n=0;arr && n<arr.length;n++)
                 if(arr[n]===Node)
                 {
-                    ToLog("Del Level connect: "+i+"  "+NodeName(Node));
+                    //ToLog("Del Level connect: "+i+"  "+NodeName(Node));
 
                     ADD_TO_STAT("DeleteLevelConnect");
                     arr.splice(n,1);

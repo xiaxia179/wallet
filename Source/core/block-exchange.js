@@ -310,13 +310,6 @@ module.exports = class CConsensus extends require("./block-loader")
     TRANSFER(Info,CurTime)
     {
         var startTime = process.hrtime();
-        if(!USE_TCP)
-        this.Send(Info.Node,
-            {
-                "Method":"OKTRANSFER",
-                "Context":Info.Context,
-                "Data":undefined
-            });
         try
         {
             var Data=BufLib.GetObjectFromBuffer(Info.Data,FORMAT_DATA_TRANSFER,WorkStructSend);
@@ -378,15 +371,6 @@ module.exports = class CConsensus extends require("./block-loader")
     }
 
 
-    OKTRANSFER(Info,CurTime)
-    {
-        // if(!Info.Node.Weight)
-        //     Info.Node.Weight=0;
-        // Info.Node.Weight++;
-
-        if(USE_CHECK_SEND)
-            this.TreeSendPacket.remove({hash:Info.PacketID})
-    }
 
     DoTransfer()
     {
@@ -434,7 +418,8 @@ module.exports = class CConsensus extends require("./block-loader")
                 this.SendData(Transfer,BufData,1);
 
                 //цикл контроля данных
-                if(Block.MLevelSend<Block.StartLevel)
+                //TODO if(Block.MLevelSend<Block.StartLevel)
+                if(Block.MLevelSend===0 && Block.MLevelSend<Block.StartLevel)
                 {
                     var TreeHash=this.CalcTreeHashFromArrTr(arrTr);
                     for(var L=Block.StartLevel;L>Block.MLevelSend;L--)
@@ -554,12 +539,12 @@ module.exports = class CConsensus extends require("./block-loader")
         else
         {
 
-            this.Send(Info.Node,
-                {
-                    "Method":"OKCONTROLHASH",
-                    "Context":Info.Context,
-                    "Data":undefined
-                });
+            // this.Send(Info.Node,
+            //     {
+            //         "Method":"OKCONTROLHASH",
+            //         "Context":Info.Context,
+            //         "Data":undefined
+            //     });
         }
     }
     static GETTRANSFER_F()
@@ -567,9 +552,9 @@ module.exports = class CConsensus extends require("./block-loader")
         return "{BlockNum:uint}";
     }
 
-    OKCONTROLHASH(Info,CurTime)
-    {
-    }
+    // OKCONTROLHASH(Info,CurTime)
+    // {
+    // }
 
     GETTRANSFER(Info,CurTime)
     {

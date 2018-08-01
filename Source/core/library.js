@@ -591,6 +591,10 @@ if(!LOAD_CONST() && !global.NWMODE)
     CheckTime();
 }
 
+if(global.UPDATE_CODE_VERSION_NUM<200)
+    global.DELTA_CURRENT_TIME=0;
+
+
 
 //TODO - функция бинарного преобразования пакетов будет содержать валидаторы значений полей, если поле не удовлетворяет заданному диапазону значений - пакет отбрасывается
 

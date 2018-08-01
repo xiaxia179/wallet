@@ -120,6 +120,15 @@ class CApp
 
     }
 
+    CloseWallet()
+    {
+        this.Password="";
+        this.WalletOpen=false;
+        this.KeyPair = crypto.createECDH('secp256k1');
+        ToLogClient("Wallet close");
+        return 1;
+    }
+
     OpenWallet(StrPassword)
     {
         if(this.WalletOpen!==false)

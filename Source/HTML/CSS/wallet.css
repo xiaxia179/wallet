@@ -1,8 +1,4 @@
-﻿.bold
-{
-    font-weight: 600;
-}
-
+﻿
 /*Списки*/
 table
 {
@@ -21,18 +17,24 @@ table
     vertical-align:top;
 }
 
-td.bold
+.bold
 {
     font-weight: 700;
 }
+
+.smallbold
+{
+    font-weight: 600;
+}
+
 
 
 td.sum
 {
     text-align: right;
     width: 120px;
-    font-weight: 700;
 }
+
 
 
 td.num
@@ -59,7 +61,7 @@ td.desc
 }
 td.name
 {
-    text-align: center;
+    text-align: left;
     width: 100px;
 }
 

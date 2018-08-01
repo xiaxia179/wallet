@@ -61,9 +61,6 @@ function DoCommand(response,Path,params)
         case "sendcommand":
             OnSendCommand(response,params[1],params[2],params[3]);
             break;
-        case "getpacketinfosend":
-            GetPacketInfoSend(response);
-            break;
 
         case "sendtransaction":
             SendTransaction(response,params[1],params[2],params[3],params[4]);
@@ -175,8 +172,9 @@ HTTPCaller.GetAccount=function (id)
 {
     id=parseInt(id);
 
-    var Item=DApps.Accounts.GetAccount(id);
-    return {Item:Item,result:1};
+    //var Item=DApps.Accounts.GetAccount(id);
+    var arr=DApps.Accounts.GetRowsAccounts(id,1);
+    return {Item:arr[0],result:1};
 }
 
 HTTPCaller.GetAccountsAll=function (id,count,Param3)
@@ -184,7 +182,7 @@ HTTPCaller.GetAccountsAll=function (id,count,Param3)
     id=parseInt(id);
     count=parseInt(count);
 
-    var arr=DApps.Accounts.GetAccountsAll(id,count);
+    var arr=DApps.Accounts.GetRowsAccounts(id,count);
     return {arr:arr,result:1};
 }
 
@@ -322,7 +320,7 @@ HTTPCaller.GetWalletAccounts=function (Param1,Param2,Param3)
     var Ret=
         {
             result:1,
-            ArrAcc:DApps.Accounts.GetAccounts(WALLET.AccountMap),
+            ArrAcc:DApps.Accounts.GetWalletAccounts(WALLET.AccountMap),
         };
 
     Ret.PrivateKey=WALLET.KeyPair.PrivKeyStr;
@@ -346,6 +344,12 @@ HTTPCaller.OpenWallet=function (Password)
     var res=WALLET.OpenWallet(Password);
     return {result:res};
 }
+HTTPCaller.CloseWallet=function ()
+{
+    var res=WALLET.CloseWallet();
+    return {result:res};
+}
+
 
 // HTTPCaller.SetPassword=function (Password)
 // {
@@ -878,82 +882,6 @@ setInterval(function ()
 
 
 
-function GetPacketInfoSend(response)
-{
-    response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
-    response.writeHead(200, { 'Content-Type': 'application/json' });
-
-
-    var Count=Math.min(MAX_FRAGMENT_INFO_ARRAY,1400);
-    var ArrStatNode=[];
-    var KJ=Count/MAX_FRAGMENT_INFO_ARRAY;
-
-    var ArrNodes=SERVER.GetActualNodes();
-    for(var Node of ArrNodes)
-    {
-        var SendFragmentNum=Node.SendQOSNumFragment;
-        if(!SendFragmentNum || !Node.SendFragmentArr)
-            continue;
-
-        //получаем предыдущие
-        var Arr=[];
-        var j=0;
-
-        for(var i=0;i<MAX_FRAGMENT_INFO_ARRAY;i++)
-        {
-            var num=(SendFragmentNum-MAX_FRAGMENT_INFO_ARRAY+i);
-            if(num<0)
-                continue;
-            var num2=num%MAX_FRAGMENT_INFO_ARRAY;
-            var ValArr=Node.SendFragmentArr[num2];
-            var Value;
-            if(ValArr===undefined)//было подтверждение
-                Value=1;
-            else
-            if(ValArr===0)
-                Value=2;
-            else
-                Value=0;
-
-            var j2=Math.floor(j);
-            if(Arr[j2]===undefined)
-                Arr[j2]=1;
-            Arr[j2] = Arr[j2]*Value;
-
-
-            j=j+KJ;
-        }
-
-
-         ArrStatNode.push(
-             {
-                 addrStr:Node.addrStr,
-                 ip:Node.ip,
-                 port:Node.port,
-                 FragmentOverflow:Node.FragmentOverflow,
-                 SendFragmentH:Node.SendFragmentH,
-                 SendFragmentL:Node.SendFragmentL,
-                 LimitFragmentLightSend:Node.LimitFragmentLightSend,
-                 LimitFragmentHardSend:Node.LimitFragmentHardSend,
-                 SkipFragmentLightSend:Node.SkipFragmentLightSend,
-                 SkipFragmentHardSend:Node.SkipFragmentHardSend,
-                 SendNum:SendFragmentNum,
-                 "Arr":Arr
-             });
-    }
-
-
-    var Result=
-        {
-            result:1,
-            sessionid:sessionid,
-            ArrStat:ArrStatNode,
-        };
-    response.end(JSON.stringify(Result));
-
-}
-
-
 function GetNetParams(response)
 {
     response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
@@ -1388,6 +1316,7 @@ function parseCookies (rc)
 if(global.HTTP_PORT_NUMBER)
 {
     var ClientTokenMap={};
+    var ClientIPMap={};
     setInterval(function ()
     {
         ClientTokenMap={};
@@ -1426,20 +1355,46 @@ if(global.HTTP_PORT_NUMBER)
             return;
         }
 
-
         var fromURL = url.parse(request.url);
         var Path=querystring.unescape(fromURL.path);
-        //var Path=decodeURIComponent(fromURL.path);//??
+
+        if(!ClientIPMap[request.socket.remoteAddress])
+        {
+            ClientIPMap[request.socket.remoteAddress]=1;
+            ToLog("CONNECT TO HTTP ACCESS FROM: "+request.socket.remoteAddress);
+            ToLog("Path: "+Path);
+        }
 
         if(global.HTTP_PORT_PASSWORD)
         {
             var cookies = parseCookies(request.headers.cookie);
             if(cookies.token && cookies.hash && ClientTokenMap[cookies.token]===0)
             {
-                var hash=ClientHex(cookies.token+"-"+global.HTTP_PORT_PASSWORD);
+                if(cookies.hash.substr(0,4)!=="0000")
+                {
+                    //ToLog("NOT POW hash="+cookies.hash+" from: "+request.socket.remoteAddress);
+                    SendFileHTML(response,"./HTML/password.html","token="+cookies.token+";path=/");
+                    return;
+                }
+
+                var nonce=0;
+                var index=cookies.hash.indexOf("-");
+                if(index>0)
+                {
+                    nonce=parseInt(cookies.hash.substr(index+1));
+                    if(!nonce)
+                        nonce=0;
+                }
+
+                var hash=ClientHex(cookies.token+"-"+global.HTTP_PORT_PASSWORD,nonce);
                 if(hash===cookies.hash)
                 {
                     ClientTokenMap[cookies.token]=1;
+                }
+                else
+                {
+                    SendFileHTML(response,"./HTML/password.html","token="+cookies.token+";path=/");
+                    return;
                 }
             }
 
@@ -1449,7 +1404,6 @@ if(global.HTTP_PORT_NUMBER)
             {
                 var StrToken=GetHexFromArr(crypto.randomBytes(16));
                 ClientTokenMap[StrToken]=0;
-
                 SendFileHTML(response,"./HTML/password.html","token="+StrToken+";path=/");
                 return;
             }

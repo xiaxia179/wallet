@@ -297,9 +297,6 @@ module.exports = class CMessages extends require("./transaction-validator")
 
         this.SendTransaction(Tr);
 
-        // var Tr2=CopyObjValue(Tr);Tr2.num++;this.TimePoolTransaction.push(Tr2);
-        // Tr2=CopyObjValue(Tr2);Tr2.num++;this.TimePoolTransaction.push(Tr2);
-
 
         if(Res===-3)
         {
@@ -337,11 +334,27 @@ module.exports = class CMessages extends require("./transaction-validator")
 
     SendTransaction(Tr)
     {
+        var CurTime=GetCurrentTime(0)-0;
+
         //отправляем транзакцию всем нодам
         var ArrNodes=this.GetHotTimeNodes();
         for(var i=0;i<ArrNodes.length;i++)
         {
             var Node=ArrNodes[i];
+            if(!Node)
+                continue;
+
+            if(Node.TaskLastSend)
+            {
+                var Delta=CurTime-Node.TaskLastSend;
+                if(Delta<PERIOD_HARD_SEND_TASK)
+                {
+                    continue;//wait (not spaming)
+                }
+            }
+
+
+            Node.TaskLastSend=CurTime;
             this.SendF(Node,
                 {
                     "Method":"TRANSACTION",
@@ -360,13 +373,6 @@ module.exports = class CMessages extends require("./transaction-validator")
     TRANSACTION(Info,CurTime)
     {
         var Tr=this.DataFromF(Info);
-
-        // this.CheckCreateTransactionHASH(Tr);
-        // Tr.num++;//!!!!
-        // this.TimePoolTransaction.push(Tr);
-        // var delta=Tr.num-this.CurrentBlockNum;
-        // ToLogContext("Receive "+TrName(Tr)+" from "+NodeName(Info.Node)+" added to time pool. Send transaction after "+(delta)+" sec");
-        // return;
 
 
         var Res=this.IsValidTransaction(Tr,this.CurrentBlockNum);

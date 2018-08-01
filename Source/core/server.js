@@ -34,10 +34,9 @@ const TRAFIC_LIMIT_NODE=TRAFIC_LIMIT_NODE_1S*STAT_PERIOD/1000;
 const BUF_PACKET_SIZE=16*1024;
 
 
-global.USE_TCP=1;
 global.MAX_PACKET_LENGTH=1.5*1000000;//1Mb
 
-global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW:uint,Reserve:arr100}";
+global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW_HANDSHAKE:uint,Reserve:arr100}";
 global.FORMAT_POW_TO_SERVER=
     "{\
         DEF_NETWORK:str15,\
@@ -51,7 +50,9 @@ global.FORMAT_POW_TO_SERVER=
         nonce:uint,\
         Reconnect:byte,\
         SendBytes:uint,\
-        Reserve:arr100\
+        PubKeyType:byte,\
+        Sign:arr64,\
+        Reserve:arr35\
     }";
 
 const WorkStructPacketSend={};
@@ -67,94 +68,6 @@ const FORMAT_PACKET_SEND_TCP=
     Hash:hash,\
     Data:data,\
     }";
-
-
-
-
-
-//UDP constants:
-const TRAFIC_LIGHT_LIMIT_SEND=150*STAT_PERIOD/1000;//Kb
-const TRAFIC_HARD_LIMIT_SEND=100*STAT_PERIOD/1000;//Kb
-
-const DELTA_TIME_SEND2=20;//ms
-const TEST_RANDOM_SEND_PERCENT=100;
-
-
-const PACKET_LIVE_PERIOD=1000;
-const PACKET_LIGHT_LIVE_PERIOD=1000;
-const PACKET_HARD_LIVE_PERIOD=300*1000;
-
-
-const H_PACKET_LIMIT_USE=100;
-
-//константы QOS
-
-
-global.MAX_FRAGMENT_INFO_ARRAY=4*1400;
-const UDP_BUF_SIZE=64000;//BUF_PACKET_SIZE*1;
-//const MIN_PACKET_DELTA_TIME_FOR_LOAD=100;//ms - мин время сборки фрагмента (ограничено MAX_TIME_NETWORK_TRANSPORT в модуле node.js)
-const MAX_FRAGMENT_COUNT=2000;
-if(!USE_TCP)
-    global.MAX_PACKET_LENGTH=MAX_FRAGMENT_COUNT*BUF_PACKET_SIZE;
-
-
-const QOSNUMFRAGMENTPOS=(6+6+1);
-const PACKETSIZEPOS=(6);
-const MAX_SIZE1=BUF_PACKET_SIZE-300;//252
-const FORMAT_PACKET_SEND=
-    "{\
-    NumXORRND:uint,\
-    PacketSize:uint,\
-    PacketType: byte,\
-    QOSNumFragment:uint,\
-    NumFragment: uint16,\
-    CountFragment: uint16,\
-    PacketNum: uint32,\
-    PacketID: hash,\
-    SessionID: hash,\
-    SessionArr: [{DEF_NETWORK:str15,DEF_VERSION:str9,DEF_CLIENT:str16, addrArr:addres, ToIP:str26,ToPort:uint16, FromIP:str26,FromPort:uint16, nonce:uint}],\
-    Data:data,\
-    Method:str25,\
-    NodeTime:time,\
-    TypeData:byte,\
-    Length:uint,\
-    }";
-
-const MAX_SIZE2=BUF_PACKET_SIZE-(6+6+1+6+2+2+4+32+32+4);
-const FORMAT_PACKET_SEND2=
-    "{\
-    NumXORRND:uint,\
-    PacketSize:uint,\
-    PacketType: byte,\
-    QOSNumFragment:uint,\
-    NumFragment: uint16,\
-    CountFragment: uint16,\
-    PacketNum: uint32,\
-    PacketID: hash,\
-    SessionID: hash,\
-    Data:data,\
-    }";
-const WorkStructPacketSend2={};
-
-const START_CHECK_PACKET_DELTA_TIME=5;
-const CHECK_PACKET_DELTA_TIME=5;
-const MAX_CHECK_PACKET_ARRAY=5;
-const MAX_CHECK_PACKET_ARRAY2=Math.floor(MAX_SIZE2/2)-20;
-
-const FORMAT_PACKET_SEND3=
-    "{\
-    NumXORRND:uint,\
-    PacketSize:uint,\
-    PacketType: byte,\
-    QOSNumFragment:uint,\
-    NumFragment: uint16,\
-    CountFragment: uint16,\
-    PacketNum: uint32,\
-    PacketID: hash,\
-    SessionID: hash,\
-    Array:[uint16],\
-    }";
-const WorkStructPacketSend3={};
 
 
 
@@ -185,7 +98,6 @@ module.exports = class CTransport extends require("./connect")
 
         this.SendFormatMap={};
 
-        //setInterval(this.RecalcSendStatictic.bind(this),STAT_PERIOD);
         this.ActualNodes=new RBTree(function (a,b)
         {
             if(a.Prioritet!==b.Prioritet)
@@ -195,123 +107,63 @@ module.exports = class CTransport extends require("./connect")
         this.SendTrafficFree=0;
 
 
-        if(USE_TCP)
+        setInterval(this.DoLoadBuf.bind(this),1);
+        this.LoadBuf=new RBTree(function (a,b)
         {
-            setInterval(this.DoLoadBuf.bind(this),1);
-            this.LoadBuf=new RBTree(function (a,b)
-            {
-                return a.Prioritet-b.Prioritet;
-            });
+            return a.Prioritet-b.Prioritet;
+        });
 
 
-            setInterval(this.DoHardPacketForSend.bind(this),2);
-            this.HardPacketForSend=new RBTree(function (a,b)
-            {
-                return b.PacketNum-a.PacketNum;
-            });
-
-
-            setInterval(this.DoSendPacket.bind(this),2);
-            setInterval(this.DoSendBuf.bind(this),1);
-        }
-        else//UDP
+        setInterval(this.DoHardPacketForSend.bind(this),2);
+        this.HardPacketForSend=new RBTree(function (a,b)
         {
-            this.SendPacketMode=0;
-            setInterval(this.DoSendPacketUDP.bind(this),1);
-
-            this.LightSendBuf=new RBTree(function (a,b)
-            {
-                //быстрая приоритетная очередь, выборка через min()
-                if(a.NodePrioritet!==b.NodePrioritet)
-                    return a.NodePrioritet-b.NodePrioritet;
-                else
-                if(a.PacketNum!==b.PacketNum)
-                    return a.PacketNum-b.PacketNum;
-                else
-                    return a.NumFragment-b.NumFragment;
-            });
-            this.HardSendBuf=new RBTree(function (a,b)
-            {
-                //последовательная приоритетная очередь, выборка через min()
-                if(a.NodePrioritet!==b.NodePrioritet)
-                    return a.NodePrioritet-b.NodePrioritet;
-                if(a.PacketNum!==b.PacketNum)
-                    return a.PacketNum-b.PacketNum;
-                else
-                    return a.NumFragment-b.NumFragment;
-            });
+            return b.PacketNum-a.PacketNum;
+        });
 
 
+        setInterval(this.DoSendPacket.bind(this),2);
+        setInterval(this.DoSendBuf.bind(this),1);
 
 
-            this.UsePacketIdle=0;
-            setInterval(this.DoUsePacket.bind(this),10);
-            this.QuoteUsePacket=new RBTree(function (a,b)
-            {
-                //приоритетная очередь, выборка через min()
-
-                if(a.NodePrioritet!==b.NodePrioritet)
-                    return a.NodePrioritet-b.NodePrioritet;
-                else
-                if(a.PacketPrioritet!==b.PacketPrioritet)
-                    return a.PacketPrioritet-b.PacketPrioritet;
-                else
-                if(a.LoadTimeNum!==b.LoadTimeNum)
-                    return a.LoadTimeNum-b.LoadTimeNum;
-                else
-                    return CompareArr(a.PacketID,b.PacketID);
-            });
-
-            this.SessionTree=new RBTree(CompareItemHASH32);
-
-            //QOS
-            setInterval(this.CheckLoadFragments.bind(this),100);
-            //setInterval(this.CheckSendFragments.bind(this),100);
-            setInterval(this.CaclLostFragments.bind(this),1000);
-
-            this.SendPacketNum=0;
-
-        }
-
-
+        var Map={};
+        this.MethodPrioritet=Map;
         MethodPrioritet:
         {
-            this.MethodPrioritet={};
-            this.MethodPrioritet["PACKETINFO"]=1;
+            Map["STARTBLOCK"]=  {Prioritet:10,Period:1000};
+            Map["TRANSFER"]=    {Prioritet:10,Period:1000};
+            Map["GETTRANSFER"]= {Prioritet:20,Period:1000};
+            Map["CONTROLHASH"]= {Prioritet:10,Period:500};
+            //Map["OKCONTROLHASH"]= {Prioritet:10,Period:1000};
 
-            this.MethodPrioritet["STARTBLOCK"]=10;
-            this.MethodPrioritet["TRANSFER"]=10;
-            this.MethodPrioritet["OKTRANSFER"]=15;
-            this.MethodPrioritet["GETTRANSFER"]=20;
-            this.MethodPrioritet["OKCONTROLHASH"]=25;
+            Map["PING"]=        {Prioritet:50,Period:1000};
+            Map["PONG"]=        {Prioritet:50,Period:0};
+            Map["GETNODES"]=    {Prioritet:50,Period:1000};
+            Map["RETGETNODES"]= {Prioritet:50,Period:0};
 
-            this.MethodPrioritet["HAND"]=50;
-            this.MethodPrioritet["SHAKE"]=50;
-            this.MethodPrioritet["PING"]=50;
-            this.MethodPrioritet["PONG"]=50;
-            this.MethodPrioritet["GETNODES"]=50;
-            this.MethodPrioritet["RETGETNODES"]=50;
-
-            this.MethodPrioritet["RETADDLEVELCONNECT"]=100;
-            this.MethodPrioritet["GETHOTLEVELS"]=100;
-            this.MethodPrioritet["RETGETHOTLEVELS"]=100;
-
-            this.MethodPrioritet["GETMESSAGE"]=400;
-            this.MethodPrioritet["MESSAGE"]=450;
+            Map["ADDLEVELCONNECT"]=     {Prioritet:100,Period:1000};
+            Map["RETADDLEVELCONNECT"]=  {Prioritet:100,Period:0};
+            Map["GETHOTLEVELS"]=        {Prioritet:100,Period:1000};
+            Map["RETGETHOTLEVELS"]=     {Prioritet:100,Period:0};
+            Map["DISCONNECTHOT"]=       {Prioritet:100,Period:1000};
 
 
-            this.MethodPrioritet["CANBLOCK"]=500;
-            this.MethodPrioritet["GETBLOCKHEADER"]=500;
-            this.MethodPrioritet["GETBLOCK"]=500;
-            this.MethodPrioritet["GETCODE"]=500;
+            Map["GETMESSAGE"]=          {Prioritet:400,Period:1000};
+            Map["MESSAGE"]=             {Prioritet:450,Period:1000};
+            Map["TRANSACTION"]=         {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
 
 
 
-            //this.MethodPrioritet["BLOCKHEADER"]=800;
-            this.MethodPrioritet["RETBLOCKHEADER"]=900;
-            this.MethodPrioritet["RETGETBLOCK"]=950;
-            this.MethodPrioritet["RETCODE"]=970;
+            //Map["CANBLOCK"]=500;
+            Map["GETBLOCKHEADER"]=      {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
+            Map["GETBLOCK"]=            {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
+            Map["GETCODE"]=             {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
 
+
+
+            //Map["BLOCKHEADER"]=800;
+            Map["RETBLOCKHEADER"]={Prioritet:900,Period:0};
+            Map["RETGETBLOCK"]={Prioritet:950,Period:0};
+            Map["RETCODE"]={Prioritet:970,Period:0};
         }
 
 
@@ -492,8 +344,6 @@ module.exports = class CTransport extends require("./connect")
     OnGetMethod(Info,CurTime)
     {
 
-
-
         if(DEBUG_MODE)
         {
             var Str="";
@@ -502,12 +352,6 @@ module.exports = class CTransport extends require("./connect")
             TO_DEBUG_LOG("GET:"+Info.Method+Str+" from: Node="+NodeInfo(Info.Node));
         }
 
-        // if(Info.Version>DEF_VERSION)
-        // {
-        //     TO_ERROR_LOG("TRANSPORT",10,"Different versions of protocol","rinfo",rinfo);
-        //     Net.AddIpToErrorStat(rinfo);
-        //     return;
-        // }
 
         if(global.ADDRLIST_MODE)
         {
@@ -538,443 +382,6 @@ module.exports = class CTransport extends require("./connect")
 
     //------------------------------------------------------------------------------------------------------------------
 
-    SendUDP(Node,Info,typeData)
-    {
-        var startTime = process.hrtime();
-        ADD_TO_STAT("SEND:"+Info.Method);
-
-
-        /**  =ФОРМАТ ПАКЕТА=
-         *6  - RND инициализация для XOR операции с данными пакета
-         *4  - Номер фрагмента, 0 - новый пакет
-         *32 - ИД пакета, в т.ч. для ответного пакета это RetMeta
-         *   если новый пакет (0):
-         *          32 - ИД сессии (информация о заголовке пакета - после HANDSHAKE)
-         *          1  - Тип сессии, 1-существующая, 0-новая
-         *              Если новая сессия (0):
-         *                  300 - Данные заголовка и HANDSHAKE
-         *              Если существующая сессия (1):
-         *                  300 - Данные шапки пакета (Метод, время, размер данных, число фрагментов...), данные пакета
-         *   если продолжение пакета (>0)
-         *  4           -   Длина данных
-         *  переменная  -   Данные фрагмента
-         *
-         **/
-
-        // if(this.VirtualMode)
-        // {
-        //     process.send({id:this.id,Node:Node,buf:buf,Meta:Meta});
-        //     return;
-        // }
-        //
-        // if(this.WasBan({address:Node.ip, port:Node.port}))
-        //     return;
-
-        var PacketPrioritet=this.MethodPrioritet[Info.Method];
-        if(PacketPrioritet===undefined)
-            PacketPrioritet=500;
-
-
-
-        var BUF={};
-        BUF.NumXORRND=0;
-        BUF.PacketType=1;
-        BUF.QOSNumFragment=0;
-        BUF.NumFragment=0;
-
-        if(!Info.Context)
-            Info.Context={};
-        var Meta=Info.Context;
-        Meta.Method=Info.Method;
-
-        if(!Meta.PacketID)
-            Meta.PacketID=crypto.randomBytes(32);
-        Meta.SendTime=startTime;
-
-        Meta.Node=Node;
-        Meta.arrSend=[];
-        this.PacketTree.SaveValue(Meta.PacketID,Meta);
-
-        this.SendPacketNum++;
-        BUF.PacketNum=this.SendPacketNum;
-        BUF.PacketID=Meta.PacketID;
-
-
-
-
-        if(!Node.SessionID || Node.bResetSessionID)
-        {
-            if(!Node.SessionID)
-                Node.SessionID=crypto.randomBytes(32);
-            Node.bResetSessionID=0;
-
-            //параметры сессии
-            var Session={};
-            Session.DEF_NETWORK=GetNetworkName();
-            Session.DEF_VERSION=DEF_VERSION;
-            Session.DEF_CLIENT=DEF_CLIENT;
-            Session.addrArr=this.addrArr;
-            Session.ToIP=Node.ip;
-            Session.ToPort=Node.port;
-            Session.FromIP=this.ip;
-            Session.FromPort=this.port;
-            Session.nonce=CreateNoncePOWExtern(Node.SessionID,0,3*(1<<MIN_POWER_POW_HANDSHAKE));
-
-
-            BUF.SessionID=Node.SessionID;
-            BUF.SessionArr=[Session];//новая сессия
-        }
-        else
-        {
-            BUF.SessionID=Node.SessionID;
-            BUF.SessionArr=[];//существующая сессия
-        }
-
-
-
-        var BufData;
-        if(typeData)
-        {
-            BufData=Info.Data;
-        }
-        else
-        {
-            BufData=Buffer.from(JSON.stringify(Info.Data));
-        }
-
-
-        BUF.Method=Info.Method;
-        BUF.NodeTime=GetCurrentTime();
-        BUF.TypeData=typeData;
-        BUF.Length=BufData.length;
-        BUF.CountFragment=1+Math.floor((BUF.Length-MAX_SIZE1)/MAX_SIZE2+0.999999999);
-
-
-
-
-        var j=0;
-        if(BUF.Length>MAX_SIZE1)
-        {
-            BUF.Data=BufData.slice(0,MAX_SIZE1);
-            BufData.len=MAX_SIZE1;
-        }
-        else
-        {
-            BUF.Data=BufData;
-        }
-
-
-        var BufMessage=BufLib.GetBufferFromObject(BUF,FORMAT_PACKET_SEND,BUF_PACKET_SIZE,WorkStructPacketSend);
-
-
-        var BufAll;
-        // if(Node.addrArr)
-        // {
-        //     try
-        //     {
-        //         BufSignHash=GetSignHash(this,Node,BufMessage);
-        //     }
-        //     catch (e)
-        //     {
-        //         TO_ERROR_LOG("TRANSPORT",160,"Error GetSignHash to "+Node.ip+":"+Node.port);
-        //         this.AddIpToErrorStat({address:Node.ip,port:Node.port});
-        //         return;
-        //     }
-        //     BufAll=Buffer.concat([BufMessage,Buffer.from(BufSignHash)]);
-        // }
-        // else
-        {
-            BufAll=BufMessage;
-        }
-        //ToLog("LENGTH="+BufData.length);
-
-        BUF.SendTime=startTime;
-        BUF.SendTimeNum=(new Date)-0;
-        BUF.SendTimeNum2=BUF.SendTimeNum;
-        BUF.DeltaTimeSend2=DELTA_TIME_SEND2;
-
-        var NInfo=this.NodeIp(Node);
-        BUF.Node=Node;
-        BUF.ip=NInfo.ip;
-        BUF.port=NInfo.port;
-
-        BUF.buf=BufAll;
-        BUF.PacketPrioritet=PacketPrioritet;
-        BUF.NodePrioritet=Node.Prioritet;
-        if(!BUF.NodePrioritet)
-            BUF.NodePrioritet=100;
-
-        Meta.arrSend[0]=BUF;
-        this.SendFragment(BUF);
-
-
-        if(BUF.CountFragment>1)
-        {
-            //var j=BufData.len;
-            var NumFragment=0;
-            while(BufData.len<BufData.length)
-            {
-                NumFragment++;
-
-                var BUF2={};
-                BUF2.NumXORRND=0;
-                BUF2.PacketType=2;
-                BUF2.PacketID=BUF.PacketID;
-                BUF2.SessionID=BUF.SessionID;
-                BUF2.NumFragment=NumFragment;
-                BUF2.QOSNumFragment=0;
-                BUF2.CountFragment=BUF.CountFragment;
-                BUF2.PacketNum=BUF.PacketNum;
-
-                BUF2.SendTime=BUF.SendTime;
-                BUF2.SendTimeNum=BUF.SendTimeNum;
-                BUF2.SendTimeNum2=BUF.SendTimeNum2;
-                BUF2.DeltaTimeSend2=BUF.DeltaTimeSend2;
-                BUF2.Node=BUF.Node;
-                BUF2.ip=BUF.ip;
-                BUF2.port=BUF.port;
-                BUF2.PacketPrioritet=BUF.PacketPrioritet;
-                BUF2.NodePrioritet=BUF.NodePrioritet;
-
-                var finish=Math.min(BufData.length,BufData.len+MAX_SIZE2);
-                BUF2.Data=BufData.slice(BufData.len,finish);
-                BufData.len+=MAX_SIZE2;
-
-                BUF2.buf=BufLib.GetBufferFromObject(BUF2,FORMAT_PACKET_SEND2,BUF_PACKET_SIZE,WorkStructPacketSend2);
-                this.SendFragment(BUF2);
-                Meta.arrSend[BUF2.NumFragment]=BUF2;
-            }
-        }
-
-        if(DEBUG_MODE)
-        ToLog("SEND "+Info.Method+" to "+NodeInfo(Node)+" NUM:"+BUF.PacketNum+" LENGTH="+BUF.Length);
-
-
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    OnGetData(buf, rinfo, Socket)
-    {
-        var startTime = process.hrtime();
-        var StartTimeNum=(new Date)-0;
-        var PacketType=buf[12];
-
-        ADD_TO_STAT("GETDATA(KB)",buf.length/1024);
-        ADD_TO_STAT("LOADFRAGMENT");
-
-
-        var Format,WorkStruct;
-        if(PacketType===1)//основная часть пакета (первый фрагмент)
-        {
-            Format=FORMAT_PACKET_SEND;
-            WorkStruct=WorkStructPacketSend;
-        }
-        else
-        if(PacketType===2)//последующие фрагменты
-        {
-            Format=FORMAT_PACKET_SEND2;
-            WorkStruct=WorkStructPacketSend2;
-        }
-        else
-        {
-            return;
-        }
-
-        try
-        {
-            var Buf=BufLib.GetObjectFromBuffer(buf,Format,WorkStruct);
-        }
-        catch (e)
-        {
-            //TODO
-            TO_ERROR_LOG("TRANSPORT",400,"Error parsing buffer");
-            //this.AddIpToErrorStat({address:Node.ip,port:Node.port});
-            return;
-        }
-
-
-        var Item=this.SessionTree.find({HASH:Buf.SessionID});
-        if(Buf.NumFragment===0)
-        {
-            //новый пакет
-            if(Buf.SessionArr.length>0)
-            {
-                var Session=Buf.SessionArr[0];
-                if(!Item)
-                {
-                    //check new Session;
-
-                    //...
-                    //...
-
-
-                    Item={HASH:Buf.SessionID};
-                    this.SessionTree.insert(Item);
-
-                    var addrStr=GetHexFromAddres(Session.addrArr);
-                    var Node=this.NodesMap[addrStr];
-                    if(!Node)
-                    {
-                        Node=this.GetNewNode(addrStr,Session.FromIP,Session.FromPort)
-                    }
-                    Node.addrArr=Session.addrArr;
-                    Node.ip=Session.FromIP;
-                    Node.port=Session.FromPort;
-
-                    Item.Node=Node;
-                }
-                Item.Session=Session;
-
-            }
-
-            if(!Item)
-            {
-                ToLog("#1 ERROR  :  "+Buf.Method+"  - not session found: PacketType="+PacketType+" from:"+rinfo.port)
-                return;
-            }
-
-            Item.Node.ip_arrival=rinfo.address;
-            Item.Node.port_arrival=rinfo.port;
-        }
-
-
-        //сборка пакетов
-        if(!Item)
-        {
-            ToLog("2 ERROR - not session found!!")
-            return;
-
-        }
-        var Node=Item.Node;
-        if(Socket && Node.Socket && Node.Socket!==Socket)
-        {
-            ToLog("------------------------Node.Socket!==Socket");
-        }
-        Node.Socket=Socket;
-        if(Socket)
-            Socket.Node=Node;
-
-
-
-        var Meta=this.PacketTree.LoadValue(Buf.PacketID,true);
-        if(!Meta)
-        {
-            Meta={};
-            this.PacketTree.SaveValue(Buf.PacketID,Meta);
-        }
-
-
-
-        if(Meta.bLoad)
-            return;
-
-        if(!Meta.LoadTime)
-        {
-            Meta.LoadTime=startTime;
-            Meta.LoadTimeNum=StartTimeNum;
-            Meta.Node=Node;
-            Meta.arrGet=[];
-            Meta.CheckArr=[];
-            Meta.StartCheckPacket=0;
-            Meta.CountFragment=Buf.CountFragment;
-            Meta.PacketNum=Buf.PacketNum;
-            Meta.PacketID=Buf.PacketID;
-            Meta.SessionID=Buf.SessionID;
-
-            Meta.ip=rinfo.address;
-            Meta.port=rinfo.port;
-
-            Meta.DELTA_TIME_CHECK=CHECK_PACKET_DELTA_TIME;
-        }
-
-
-
-
-
-
-        if(Buf.NumFragment===0)
-        {
-
-            Meta.Method=Buf.Method;
-            Meta.NodeTime=Buf.NodeTime;
-            Meta.Length=Buf.Length;
-            Meta.TypeData=Buf.TypeData;
-        }
-        if(Buf.CountFragment>MAX_FRAGMENT_COUNT)
-        {
-            ToLog("#1 ERROR - MAX_FRAGMENT_COUNT, CountFragment = "+Buf.CountFragment)
-            return;
-        }
-        if(Buf.Length>MAX_PACKET_LENGTH)
-        {
-            ToLog("#2 ERROR - MAX_PACKET_LENGTH, Length = "+Buf.Length)
-            return;
-        }
-
-        if(Buf.NumFragment>Buf.CountFragment)
-        {
-            ToLog("#3 ERROR - NumFragment = "+Buf.NumFragment+"  FragmentCount="+Buf.CountFragment);
-            return;
-        }
-
-        //QOS
-        if(!Node.LoadFragmentArr)
-        {
-            Node.LoadQOSNumFragment=0;
-            Node.LoadFragmentArr=new Float64Array(MAX_FRAGMENT_INFO_ARRAY);
-        }
-        Node.LoadQOSNumFragment=Math.max(Node.LoadQOSNumFragment,Buf.QOSNumFragment);
-        Node.LoadFragmentArr[Buf.QOSNumFragment%MAX_FRAGMENT_INFO_ARRAY]=StartTimeNum;
-        //this.LoadedNodes.SaveValue(Node.addrArr,Node);
-
-
-        if(!Meta.arrGet[Buf.NumFragment])
-        {
-            if(Meta.FragmentLoadCount===undefined)
-                Meta.FragmentLoadCount=0;
-            Meta.FragmentLoadCount++;
-            Meta.arrGet[Buf.NumFragment]=Buf.Data;
-        }
-
-
-
-        if(Meta.FragmentLoadCount>0 && Meta.FragmentLoadCount===Buf.CountFragment)
-        {
-            if(Buf.CountFragment===1)
-            {
-                Meta.Data=Buf.Data;
-            }
-            else
-            {
-                var Data=Buffer.alloc(Meta.Length);
-                Meta.Data=Data;
-
-                var j=0;
-                for(var n=0;n<Meta.FragmentLoadCount;n++)
-                {
-                    var arr=Meta.arrGet[n];
-                    if(!arr)
-                    {
-                        ToLog("#4 Error data fragment: "+n);
-                        return;
-                    }
-                    for(var i=0;i<arr.length;i++)
-                    {
-                        Data[j]=arr[i];
-                        j++;
-                    }
-
-                }
-            }
-            this.AddToLoadPacket(Meta);
-        }
-
-        ADD_TO_STAT_TIME("TIMEDOGETDATA", startTime);
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
-
     GetActualNodes()
     {
         var Arr=[];
@@ -989,191 +396,6 @@ module.exports = class CTransport extends require("./connect")
             }
         }
         return Arr;
-     }
-
-    CheckLoadFragments()
-    {
-        //var Count=MAX_FRAGMENT_INFO_ARRAY/2-10;
-        var Count=MAX_FRAGMENT_INFO_ARRAY;
-        var StartTimeNum=(new Date)-0;
-
-
-        var ArrNodes=this.GetActualNodes();
-        for(var Node of ArrNodes)
-        {
-            if(!Node.LoadFragmentArr)
-                continue;
-
-            var MaxNum=Node.LoadQOSNumFragment;
-            var Arr=[];
-
-            var startTime=process.hrtime()
-            for(var num=MaxNum-Count;num<MaxNum+Count;num++)
-            {
-                if(num<0)
-                    continue;
-                var num2=num%MAX_FRAGMENT_INFO_ARRAY;
-                if(num<=MaxNum)
-                {
-                    var timeLoadNum=Node.LoadFragmentArr[num2];
-                    if(timeLoadNum)
-                    {
-                        var deltaTime=StartTimeNum-timeLoadNum;
-                        if(deltaTime<PACKET_LIVE_PERIOD)
-                        {
-                            Arr.push(num);
-                        }
-                    }
-                }
-                else//clear
-                {
-                    Node.LoadFragmentArr[num2]=0;
-                }
-            }
-
-            if(Arr.length<1)
-                continue;
-            Arr.sort(function (a,b) {return a-b});
-            var BaseIndex=Arr[0];
-
-            var ArrIndex=[];
-            var ArrCount=[];
-            var PrevValue=undefined;
-            for(var i=0;i<Arr.length;i++)
-            {
-                var Value=Arr[i]-BaseIndex;
-                if(PrevValue===Value-1)
-                {
-                    ArrCount[ArrCount.length-1]++;
-                }
-                else
-                {
-                    if(ArrIndex.length>=MAX_CHECK_PACKET_ARRAY2/2)
-                    {
-                        break;
-                    }
-
-                    ArrIndex.push(Value);
-                    ArrCount.push(1);
-                }
-                PrevValue=Value;
-            }
-
-            var BufWrite=BufLib.GetBufferFromObject({BaseIndex:BaseIndex,ArrIndex:ArrIndex,ArrCount:ArrCount},"{BaseIndex:uint,ArrIndex:[uint16],ArrCount:[uint16]}",BUF_PACKET_SIZE,{});
-            this.Send(Node,
-                {
-                    "Method":"PACKETINFO",
-                    "Data":BufWrite,
-                },1);
-
-
-        }
-    }
-    PACKETINFO(Context,CurTime)
-    {
-        var Node=Context.Node;
-        if(!Node.SendFragmentArr)
-            return;
-
-        Node.PrevMaxSendProof=Node.MaxSendProof;
-
-        var Item=BufLib.GetObjectFromBuffer(Context.Data,"{BaseIndex:uint,ArrIndex:[uint16],ArrCount:[uint16]}",{});
-        for(var i=0;i<Item.ArrIndex.length;i++)
-        {
-            var num1=Item.ArrIndex[i]+Item.BaseIndex;
-            for(var j=0;j<Item.ArrCount[i];j++)
-            {
-                var num=num1+j;
-                Node.MaxSendProof=Math.max(Node.MaxSendProof,num);
-                var num2=num%MAX_FRAGMENT_INFO_ARRAY;
-                Node.SendFragmentArr[num2]=undefined;
-            }
-        }
-    }
-
-    CheckSendFragments()
-    {
-
-        var StartTimeNum=(new Date)-0;
-        //var Count=Math.floor(4*MAX_CHECK_PACKET_ARRAY2/4);
-        var Count=MAX_CHECK_PACKET_ARRAY2;
-
-        var ArrNodes=this.GetActualNodes();
-        for(var Node of ArrNodes)
-        {
-            if(!Node.SendFragmentArr)
-                continue;
-
-            //повторно отправляем данные
-            //var MaxNum=Node.SendQOSNumFragment;
-            var MaxNum=Node.PrevMaxSendProof;
-            for(var num=MaxNum-Count;num<=MaxNum;num++)
-            {
-                if(num<0)
-                    continue;
-
-
-                var num2=num%MAX_FRAGMENT_INFO_ARRAY;
-                var Item=Node.SendFragmentArr[num2];
-
-
-                if(Item)
-                {
-                    var deltaTime=StartTimeNum-Item.SendTimeNum;
-                    //if(deltaTime>Item.DeltaTimeSend2)// && deltaTime<PACKET_LIVE_PERIOD/2)
-                    {
-
-                        var Repeat=this.GET_CURRENT_STAT_TIME("SEND_REPEAT_FRAGMENT");
-                        if(100*Repeat/TRAFIC_LIGHT_LIMIT_SEND>10)
-                        {
-                            continue;
-                        }
-                        this.ADD_CURRENT_STAT_TIME("SEND_REPEAT_FRAGMENT",Item.buf.length/1024);
-
-
-
-                        //Item.DeltaTimeSend2+=5*DELTA_TIME_SEND2;
-                        Node.SendFragmentArr[num2]=0;
-
-                        this.SendFragment(Item);
-                    }
-                }
-            }
-
-
-
-
-        }
-
-    }
-    CaclLostFragments()
-    {
-        var SendTimeNum=(new Date)-0;
-
-        var ArrNodes=this.GetActualNodes();
-        for(var Node of ArrNodes)
-        {
-            if(!Node.SendFragmentArr)
-                continue;
-
-            for(var num2=0;num2<Node.SendFragmentArr.length;num2++)
-            {
-                var Item=Node.SendFragmentArr[num2];
-                if(Item)
-                {
-                    var deltaTime=SendTimeNum-Item.SendTimeNum;
-                    if(deltaTime>PACKET_LIVE_PERIOD)
-                    {
-                        ADD_TO_STAT("FRAGMENT_LOST");
-                        Node.SendFragmentArr[num2]=null;
-                    }
-                }
-            }
-
-
-
-
-        }
     }
 
 
@@ -1191,320 +413,6 @@ module.exports = class CTransport extends require("./connect")
         {
             return {ip:Node.ip,port:Node.port}
         }
-    }
-
-    GetQuoteByItem(Item)
-    {
-        if(Item.PacketPrioritet<600)
-            return this.LightSendBuf;
-        else
-            return this.HardSendBuf;
-    }
-    SendFragment(Item)
-    {
-        if(USE_TCP)
-        {
-            this.SendToNetwork(Item);
-        }
-        else
-        {
-            var Quote=this.GetQuoteByItem(Item);
-            Quote.insert(Item);
-        }
-    }
-
-
-    DoSendPacketLight()
-    {
-        var SendTimeNum=(new Date)-0;
-
-        while(this.LightSendBuf.size>0)
-        {
-            var Item=this.LightSendBuf.min();
-            var Value=Item.buf.length/1024;
-
-            if(this.GET_CURRENT_STAT_TIME("SENDFRAGMENT_L")>TRAFIC_LIGHT_LIMIT_SEND)
-            {
-                Item.Node.LimitFragmentLightSend++;
-
-                break;
-            }
-
-
-            this.LightSendBuf.remove(Item);
-
-            var deltaTime=SendTimeNum-Item.SendTimeNum;//ms
-            if(deltaTime>PACKET_LIGHT_LIVE_PERIOD)
-            {
-                ADD_TO_STAT("SKIPFRAGMENTSEND");
-                Item.Node.SkipFragmentLightSend++;
-
-                var num2=Item.NumSendFragmentArr;
-                Item.Node.SendFragmentArr[num2]=null;
-
-
-                while(this.LightSendBuf.size>0)
-                {
-                    Item=this.LightSendBuf.min();
-                    var deltaTime=SendTimeNum-Item.SendTimeNum;//ms
-                    if(deltaTime>PACKET_LIGHT_LIVE_PERIOD/2)
-                    {
-                        this.LightSendBuf.remove(Item);
-
-                        ADD_TO_STAT("SKIPFRAGMENTSEND");
-                        Item.Node.SkipFragmentLightSend++;
-
-                        var num2=Item.NumSendFragmentArr;
-                        Item.Node.SendFragmentArr[num2]=null;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-
-                break;
-            }
-
-            this.ADD_CURRENT_STAT_TIME("SENDFRAGMENT_L",Value);
-            ADD_TO_STAT("SENDFRAGMENT_L",Value);
-            Item.Node.SendFragmentL++;
-
-            this.SendToNetwork(Item);
-            break;
-        }
-    }
-    DoSendPacketUDP()
-    {
-        for(var i=0;i<2;i++)
-        {
-            this.SendPacketMode++;
-            if(this.SendPacketMode%2==0)
-                this.DoSendPacketLight();
-            else
-                this.DoSendPacketHard();
-        }
-    }
-
-
-    DoSendPacketHard()
-    {
-        var SendTimeNum=(new Date)-0;
-        var Sender=this.Net4;
-
-        while(this.HardSendBuf.size>0)
-        {
-            var Item=this.HardSendBuf.min();
-            var Value=Item.buf.length/1024;
-
-            if(this.GET_CURRENT_STAT_TIME("SENDFRAGMENT_H")>TRAFIC_HARD_LIMIT_SEND)
-            {
-                Item.Node.LimitFragmentHardSend++;
-
-                break;
-            }
-
-            this.HardSendBuf.remove(Item);
-
-            var deltaTime=SendTimeNum-Item.SendTimeNum;//ms
-            if(deltaTime>PACKET_HARD_LIVE_PERIOD)
-            {
-                ADD_TO_STAT("SKIPFRAGMENTSEND");
-                Item.Node.SkipFragmentHardSend++;
-
-                var num2=Item.NumSendFragmentArr;
-                Item.Node.SendFragmentArr[num2]=null;
-
-
-                while(this.HardSendBuf.size>0)
-                {
-                    Item=this.HardSendBuf.min();
-                    var deltaTime=SendTimeNum-Item.SendTimeNum;//ms
-                    if(deltaTime>=PACKET_HARD_LIVE_PERIOD)
-                    {
-                        this.HardSendBuf.remove(Item);
-
-                        ADD_TO_STAT("SKIPFRAGMENTSEND");
-                        Item.Node.SkipFragmentHardSend++;
-
-                        var num2=Item.NumSendFragmentArr;
-                        Item.Node.SendFragmentArr[num2]=null;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-
-                break;
-            }
-
-            ADD_TO_STAT("SENDFRAGMENT_H",Value);
-            this.ADD_CURRENT_STAT_TIME("SENDFRAGMENT_H",Value);
-            Item.Node.SendFragmentH++;
-
-
-            this.SendToNetwork(Item);
-            break;
-        }
-
-    }
-
-
-    AddToQOSArray(Item)
-    {
-        var Node=Item.Node;
-        if(!Node.SendFragmentArr)
-        {
-            Node.SendQOSNumFragment=0;
-            Node.SendFragmentArr=[];
-        }
-        Node.SendQOSNumFragment++;
-        Item.QOSNumFragment=Node.SendQOSNumFragment;
-        var num2=Item.QOSNumFragment%MAX_FRAGMENT_INFO_ARRAY;
-        Item.NumSendFragmentArr=num2;
-
-        Item.buf.len=QOSNUMFRAGMENTPOS;
-        BufLib.Write(Item.buf,Item.QOSNumFragment,"uint");
-
-
-        if(Node.SendFragmentArr[num2])
-        {
-            Node.FragmentOverflow++;
-            ADD_TO_STAT("FRAGMENT_OVERFLOW");
-        }
-
-        Node.SendFragmentArr[num2]=Item;
-    }
-
-
-
-
-    AddToLoadPacket(Meta)
-    {
-        if(Meta.bLoad)
-            return;
-        Meta.bLoad=1;
-
-        Meta.PacketPrioritet=this.MethodPrioritet[Meta.Method];
-        if(Meta.PacketPrioritet===undefined)
-            Meta.PacketPrioritet=500;
-
-        Meta.NodePrioritet=Meta.Node.Prioritet;
-        if(!Meta.NodePrioritet)
-            Meta.NodePrioritet=100;
-
-        ADD_TO_STAT("LOADPACKET");
-        this.QuoteUsePacket.insert(Meta);
-    }
-
-    DoUsePacket()
-    {
-        var StartTimeNum=(new Date)-0;
-
-        var MaxCount=1;
-        for(var Count=0;Count<MaxCount;Count++)
-        if(this.QuoteUsePacket.size>0)
-        {
-            this.UsePacketIdle=0;
-            var Item=this.QuoteUsePacket.min();
-            var Time = process.hrtime(Item.LoadTime);
-            var deltaTime=Math.floor(Time[0]*1000 + Time[1]/1e6);//ms
-
-            if(this.GET_CURRENT_STAT_TIME("USE_PACKET")>H_PACKET_LIMIT_USE && Item.PacketPrioritet>=600)
-                break;
-
-            if(deltaTime<100 && Item.PacketPrioritet>=600)
-            {
-                break;
-            }
-
-            this.QuoteUsePacket.remove(Item);
-            if(Item.PacketPrioritet<=1)//All
-            {
-                Count--;
-            }
-            else
-            {
-                this.ADD_CURRENT_STAT_TIME("USE_PACKET",1);
-            }
-
-            if(deltaTime>PACKET_LIVE_PERIOD)
-            {
-                //ToLog("Skip "+Item.Method+" load deltaTime="+deltaTime)
-
-                ADD_TO_STAT("SKIPFRAGMENTUSE");
-                continue;
-            }
-            else
-            {
-                this.OnPacket(Item);
-            }
-
-
-        }
-        else
-        {
-            this.UsePacketIdle++;
-        }
-    }
-
-
-
-    SendToNetwork(Item)
-    {
-        if(Item.Node && this.addrArr && Item.Node.addrArr && CompareArr(this.addrArr,Item.Node.addrArr)===0)
-            return;
-
-        var Value=Item.buf.length/1024;
-        ADD_TO_STAT("SENDDATA",Value);
-        ADD_TO_STAT("SENDFRAGMENT");
-        this.ADD_CURRENT_STAT_TIME("SENDFRAGMENT",Value);
-        this.AddToQOSArray(Item)
-
-        Item.buf.len=PACKETSIZEPOS;
-        BufLib.Write(Item.buf,Item.buf.length,"uint");
-
-        if(random(100)>TEST_RANDOM_SEND_PERCENT)
-        {
-            return;
-        }
-
-
-        var Sender=this.Net4;
-        Sender.send(Item.buf, 0, Item.buf.length, Item.port, Item.ip, function (err,len)
-        {
-            if(err)
-            {
-                TO_ERROR_LOG("TRANSPORT",170,"Error send data: "+err.message);
-                this.AddCheckErrCount(Item.Node,1,"Error send data");
-            }
-        });
-    }
-
-
-    OnPacket(Meta)
-    {
-        var startTime=process.hrtime();
-
-        ADD_TO_STAT("USEPACKET");
-
-        if(Meta.TypeData===STR_TYPE)
-        {
-            Meta.Data=Meta.Data.toString();
-        }
-
-
-        var CurTime=GetCurrentTime();
-        this.OnGetMethod(Meta,CurTime);
-
-        ADD_TO_STAT_TIME("MAX:TIME_USE_PACKET", startTime);
-        ADD_TO_STAT_TIME("TIME_USE_PACKET", startTime);
-        ADD_TO_STAT_TIME("MAX:TIME_USE_PACKET:"+Meta.Method, startTime);
-
-
     }
 
 
@@ -1570,12 +478,16 @@ module.exports = class CTransport extends require("./connect")
     }
     AddToBan(Node)
     {
+        if(global.NeedRestart)
+            return;
+
         Node.IsBan=true;
         this.DeleteNodeFromActive(Node);
 
         var Key=""+Node.ip;
         this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+600*1000,BanDelta:1000};
-        ToLog("ADD TO BAN: "+Key);
+        //ToLogTrace("ADD TO BAN: "+Key);
+        ToLog("ADD TO BAN: "+NodeName(Node));
         ADD_TO_STAT("AddToBan");
     }
     NodeInBan(Node)
@@ -1602,6 +514,7 @@ module.exports = class CTransport extends require("./connect")
 
         return false;
     }
+
     AddIpToErrorStat(rinfo,StrDop)
     {
         var Key=""+rinfo.address + ':' + rinfo.port;
@@ -1816,7 +729,7 @@ module.exports = class CTransport extends require("./connect")
     {
         var Node=Socket.Node;
         if(!Node)
-            return;
+            return 0;
 
         var startTime = process.hrtime();
         ADD_TO_STAT("GETDATA(KB)",buf.length/1024);
@@ -1832,61 +745,44 @@ module.exports = class CTransport extends require("./connect")
             return 0;
         }
 
+        var Param=this.MethodPrioritet[Buf.Method];
+        if(this.StopDoSendPacket(Param,Node,Buf.Method))
+        {
+            return 1;
+        }
+
+
+
         ADD_TO_STAT("GET:"+Buf.Method);
         ADD_TO_STAT("GET:(KB)"+Buf.Method,buf.length/1024);
         ADD_TO_STAT("GET:"+Buf.Method+":"+NodeName(Node),1,1);
-
-        //ToLog("LOAD "+Buf.Method+" ContextID="+GetHexFromAddres(Buf.ContextID));
 
         if(!IsZeroArr(Buf.ContextID))
         {
             Buf.Context=this.ContextPackets.LoadValue(Buf.ContextID);
         }
+
         if(!Buf.Context)
+        {
+            if(Param.Period===0 && Buf.Method!=="RETBLOCKHEADER")
+            {
+                //ToLog("NO Buf.Context "+Buf.Method+" from: "+NodeName(Node)+" context="+GetHexFromArr(Buf.ContextID));
+                this.AddCheckErrCount(Node,1);
+                return;
+            }
             Buf.Context={};
+        }
         Buf.Context.ContextID=Buf.ContextID;
 
         Buf.Node=Node;
         Buf.Socket=Socket;
 
-        var Prioritet=this.MethodPrioritet[Buf.Method];
-
-        if(global.ADDRLIST_MODE && Prioritet!==50)
+        if(!global.ADDRLIST_MODE || Param.Prioritet===50)
         {
-
-        }
-        else
-        {
-
-            if(Prioritet===500)
-            {
-                if(this.StopDoSendPacket(Node,Buf.Method))
-                {
-                    return 1;
-                }
-
-                // Node.WantHardTraffic=1;
-                // if(!Node.CanHardTraffic)
-                // {
-                //     TO_DEBUG_LOG(""+Buf.Method+" - ADD TO BUF");
-                //
-                //     Node.LoadPacketNum++;
-                //     Buf.PacketNum=Node.LoadPacketNum;
-                //     Buf.LoadTimeNum=(new Date)-0;
-                //     this.HardPacketForSend.insert(Buf);
-                //
-                //     return 1;
-                // }
-            }
-
-
             this.OnPacketTCP(Buf);
-
         }
 
-        //this.LoadedNodes.SaveValue(Node.addrArr,Node);
         ADD_TO_STAT_TIME("TIMEDOGETDATA", startTime);
-
         return 1;
     }
 
@@ -1929,25 +825,41 @@ module.exports = class CTransport extends require("./connect")
     }
 
 
-    StopDoSendPacket(Node,Method)
+    StopDoSendPacket(Param,Node,Name)
     {
-        if(!Node.LastHardTime)
-            Node.LastHardTime=0;
-        var Delta=(new Date())-Node.LastHardTime;
-        if(Delta<PERIOD_SEND_TASK/2)
+        return 0;
+        var CurTime=GetCurrentTime(0)-0;
+
+        if(!Param)
         {
-            ADD_TO_STAT("STOP_HARD");
-            Node.BlockProcessCount--;
-
-            if(Node.BlockProcessCount<0)
-            {
-                this.AddToBan(Node);
-            }
-
+            ToLog("Not find method: "+Name)
+            this.AddCheckErrCount(Node,1);
             return 1;
         }
-        Node.LastHardTime=new Date();
 
+        var ArrTime=Node.TimeMap[Name];
+        if(!ArrTime)
+        {
+            ArrTime=[0,0,0,0];
+            Node.TimeMap[Name]=ArrTime;
+        }
+
+        ArrTime.sort(function (a,b) {return a-b;});
+
+        var Delta=CurTime-ArrTime[0];
+        if(Delta<Param.Period)
+        {
+            ADD_TO_STAT("STOP_METHOD");
+
+            var Delta2=CurTime-ArrTime[1];
+
+            ToLog("STOP_METHOD: "+Name+" from "+NodeName(Node)+"  delta: "+Delta+","+Delta2+" ms")
+            this.AddCheckErrCount(Node,1);
+            return 1;
+        }
+
+
+        ArrTime[0]=CurTime;
         return 0;
     }
 
@@ -1955,17 +867,11 @@ module.exports = class CTransport extends require("./connect")
     //SEND
     Send(Node,Info,TypeData)
     {
-        if(!USE_TCP)
-            return this.SendUDP(Node,Info,TypeData);
-
-
         if(!Node.Socket)
         {
             this.DeleteNodeFromActive(Node);
             return;
         }
-
-
 
         if(Info.Context)
         {
@@ -2068,7 +974,7 @@ module.exports = class CTransport extends require("./connect")
         else
         {
             ADD_TO_STAT("SEND_ERROR");
-            this.AddCheckErrCount(Node,0.01,"NODE STATUS="+Node.ConnectStatus());
+            this.AddCheckErrCount(Node,0.005,"NODE STATUS="+Node.ConnectStatus());
         }
     }
 
@@ -2233,12 +1139,24 @@ module.exports = class CTransport extends require("./connect")
 
         if(power<MIN_POWER_POW_HANDSHAKE)
         {
-            ToLogNet("END: MIN_POWER_POW_HANDSHAKE")
+            ToLog("END: MIN_POWER_POW_HANDSHAKE")
             Socket.end(this.GetBufFromData("POW_CONNECT2","MIN_POWER_POW_HANDSHAKE",2));
             CloseSocket(Socket,"MIN_POWER_POW_HANDSHAKE");
+            return;
         }
         else
         {
+            // var Result=false;
+            // if(Pow.PubKeyType===2 || Pow.PubKeyType===3)
+            //     Result=secp256k1.verify(Buffer.from(Hash), Buffer.from(Pow.Sign), Buffer.from([Pow.PubKeyType].concat(Pow.addrArr)));
+            // if(!Result)
+            // {
+            //     ToLog("END: ERROR_SIGN_HANDSHAKE")
+            //     Socket.end(this.GetBufFromData("POW_CONNECT8","ERROR_SIGN_HANDSHAKE",2));
+            //     CloseSocket(Socket,"ERROR_SIGN_HANDSHAKE");
+            //     return;
+            // }
+
 
             Node=this.FindRunNodeContext(Pow.addrArr,Pow.FromIP,Pow.FromPort,true);
 
@@ -2319,32 +1237,6 @@ module.exports = class CTransport extends require("./connect")
 
 
 
-    StartServerUDP()
-    {
-        let SELF=this;
-
-        var BinData=
-            {
-                port: START_PORT_NUMBER,
-                exclusive: true,
-                recvBufferSize:UDP_BUF_SIZE,
-                sendBufferSize :UDP_BUF_SIZE,
-            };
-        this.Net4 = dgram.createSocket("udp4");
-        this.Net4.on( "message", this.OnGetData.bind(this));
-        this.Net4.on('error', this.OnError);
-        this.Net4.on('listening', this.OnListening.bind(this));
-        this.Net4.bind(BinData);
-
-        //this.Net6 = dgram.createSocket("udp6");
-        //this.Net6.on( "message", this.OnGetData.bind(this));
-        //this.Net6.on('error', this.OnError);
-        //this.Net6.on('listening', this.OnListening.bind(this));
-        //this.Net6.bind(BinData);
-        //this.Net4.unref();
-        if(!global.NET_WORK_MODE)
-            this.FindInternetIP()
-    }
 
     StopServer()
     {
@@ -2359,12 +1251,6 @@ module.exports = class CTransport extends require("./connect")
             return;
         }
 
-
-        if(!USE_TCP)
-        {
-            this.StartServerUDP();
-            return
-        }
 
         let SELF=this;
 
@@ -2388,10 +1274,11 @@ module.exports = class CTransport extends require("./connect")
 
             // 'connection' listener
             ToLogNet("Client *"+SOCKET.ConnectID+" connected from "+SOCKET.remoteAddress+":"+SOCKET.remotePort);
+            ADD_TO_STAT("ClientConnected");
 
 
             SOCKET.HashRND=crypto.randomBytes(32);
-            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr,HashRND:SOCKET.HashRND,MIN_POWER_POW:MIN_POWER_POW_HANDSHAKE, Reserve:[]},FORMAT_POW_TO_CLIENT,300,{});
+            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr,HashRND:SOCKET.HashRND,MIN_POWER_POW_HANDSHAKE:MIN_POWER_POW_HANDSHAKE, Reserve:[]},FORMAT_POW_TO_CLIENT,300,{});
             var BufWrite=SELF.GetBufFromData("POW_CONNECT5",BufData,1);
             try
             {
@@ -2432,6 +1319,8 @@ module.exports = class CTransport extends require("./connect")
 
             SOCKET.on('end', () =>
             {
+                ADD_TO_STAT("ClientEnd");
+
                 var Status=GetSocketStatus(SOCKET);
                 if(Status)
                     ToLogNet("Get socket end *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
@@ -2446,6 +1335,8 @@ module.exports = class CTransport extends require("./connect")
             });
             SOCKET.on('close', (err) =>
             {
+                ADD_TO_STAT("ClientClose");
+
                 if(SOCKET.ConnectID && GetSocketStatus(SOCKET))
                     ToLogNet("Get socket close *"+SOCKET.ConnectID+" from client Stat: "+SocketStatistic(SOCKET));
 
@@ -2606,7 +1497,7 @@ module.exports = class CTransport extends require("./connect")
         CloseSocket(Socket,Str);
      }
 
-    AddCheckErrCount(Node,Count,StrError)
+    AddCheckErrCount(Node,Count)
     {
         if(!Node)
             return;
@@ -2614,17 +1505,21 @@ module.exports = class CTransport extends require("./connect")
             Count=1;
 
         Node.ErrCount+=Count;
-        if(Node.ErrCount>=10)
+        if(Node.ErrCount>=2)
         {
-
-            //ToErrorTrace("AddCheckErrCount>10 - CloseSocket, StrError: "+StrError+" "+NodeInfo(Node)+"\n");
+            Node.ErrCount=0;
             ADD_TO_STAT("ERRORS");
 
 
-            //TODO - Ban node
-
-            this.DeleteNodeFromActive(Node);
-            Node.ErrCount=0;
+            Node.BlockProcessCount--;
+            if(Node.BlockProcessCount<0)
+            {
+                this.AddToBan(Node);
+            }
+            else
+            {
+                this.DeleteNodeFromActive(Node);
+            }
         }
     }
 

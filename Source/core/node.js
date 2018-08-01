@@ -53,6 +53,7 @@ module.exports = class CNode
 
     ResetNode()
     {
+        this.TimeMap={};
 
         this.bInit=1;
         this.INFO={};
@@ -410,9 +411,9 @@ module.exports = class CNode
         }
 
 
-        if(Buf.MIN_POWER_POW>1+MIN_POWER_POW_HANDSHAKE)
+        if(Buf.MIN_POWER_POW_HANDSHAKE>1+MIN_POWER_POW_HANDSHAKE)
         {
-            ToLogNet("BIG MIN_POWER_POW - NOT CONNECTING")
+            ToLogNet("BIG MIN_POWER_POW_HANDSHAKE - NOT CONNECTING")
             return 0;
         }
 
@@ -440,10 +441,12 @@ module.exports = class CNode
             return 0;
         }
         var Hash=shaarr2(Buf.addrArr,Buf.HashRND);
-        var nonce=CreateNoncePOWExternMinPower(Hash,0,Buf.MIN_POWER_POW);
+        var nonce=CreateNoncePOWExternMinPower(Hash,0,Buf.MIN_POWER_POW_HANDSHAKE);
 
 
-        var Pow=this.GetPOWClientData(nonce)
+        var Pow=this.GetPOWClientData(nonce);
+        Pow.PubKeyType=SERVER.PubKeyType;
+        Pow.Sign=secp256k1.sign(Buffer.from(Hash), SERVER.KeyPair.getPrivateKey('')).signature;
 
 
         if(0)//TODO
@@ -633,7 +636,7 @@ function NodeName(Node)
     if(LOCAL_RUN)
         return ""+Node.port;
     else
-        return ""+Node.ip;
+        return ""+Node.ip+":"+Node.addrStr.substr(0,6);
 }
 
 

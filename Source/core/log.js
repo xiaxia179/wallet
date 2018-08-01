@@ -40,8 +40,9 @@ global.ToErrorTrace=function (Str)
 global.ToLog=function (Str)
 {
     if(global.SendLogToClient || global.ALL_LOG_TO_CLIENT)
-        ToLogClient(Str,undefined,undefined,1);
-    ToLogFile(file_name_log,Str);
+        ToLogClient(Str,undefined,undefined);
+    else
+        ToLogFile(file_name_log,Str);
 }
 global.ToInfo=function (Str)
 {
@@ -67,13 +68,12 @@ function ToLogFile(file_name,Str)
 
 
 global.ArrLogClient=[];
-function ToLogClient(Str,StrKey,bFinal,bNoLog)
+function ToLogClient(Str,StrKey,bFinal)
 {
     if(!Str)
         return;
 
-    if(!bNoLog)
-        ToLog(Str);
+    ToLogFile(file_name_log,Str);
 
     if(!StrKey)
         StrKey="";

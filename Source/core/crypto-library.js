@@ -893,14 +893,25 @@ function Mesh(s,Count)
 };
 
 
-function ClientHex(Str)
+function WriteNumToArr0(body,Num)
 {
-    var arr=[];
-    for(var i=0;i<Str.length;i++)
-        arr[i]=Str.charCodeAt(i);
-    Mesh(arr,100);
-    return GetHexFromArr(arr);
+    body[0] ^=Num&0xFF;
+    body[1] ^=(Num>>>8) & 0xFF;
+    body[2] ^=(Num>>>16) & 0xFF;
+    body[3] ^=(Num>>>24) & 0xFF;
 }
+
+function ClientHex(Str,nonce)
+{
+    var arr=[0,0,0,0];
+    for(var i=0;i<Str.length;i++)
+        arr[4+i]=Str.charCodeAt(i);
+    WriteNumToArr0(arr,nonce);
+    Mesh(arr,60);
+    return GetHexFromArr(arr)+"-"+nonce;
+}
+
+
 
 global.ClientHex=ClientHex;
 

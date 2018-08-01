@@ -25,7 +25,7 @@ global.COUNT_BLOCKS_FOR_CHECK_POW=100;
 
 global.MAX_COUNT_CHAIN_LOAD=120;
 
-global.PERIOD_SEND_TASK=300;//ms
+global.PERIOD_HARD_SEND_TASK=300;//ms
 global.PACKET_ALIVE_PERIOD=4*CONSENSUS_PERIOD_TIME;//ms
 global.PACKET_ALIVE_PERIOD_NEXT_NODE=PACKET_ALIVE_PERIOD/2;//ms
 //global.MAX_BLOCK_LOAD=128;
@@ -115,8 +115,7 @@ module.exports = class CBlock extends require("./db/block-db")
             {
                 BlockNum:Num,
                 TreeHash:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                //AddrHash:[122,161,15,51,83,125,229,81,171,164,241,114,180,152,171,251,32,112,156,178,191,18,183,190,148,136,122,241,74,155,93,184],//code sign
-                AddrHash:DEVELOP_PUB_KEY,
+                AddrHash:DEVELOP_PUB_KEY,//rudiment from old code :)
                 Hash:this.GetHashGenesis(Num),
 
                 PrevHash:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -366,7 +365,8 @@ module.exports = class CBlock extends require("./db/block-db")
 
         this.SetChainNum(chain);
 
-        while(this.SendChainNext(chain,false)){};
+        var max=2;
+        while(this.SendChainNext(chain,false) && max>0){max--};
 
         return true;
     }
@@ -420,8 +420,8 @@ module.exports = class CBlock extends require("./db/block-db")
         var Ret=this.GetNextNode(Context,Context.BlockNum,1);
         if(Ret.Result)
         {
-            //ToLog(Context.BlockNum)//950639
             var Node=Ret.Node;
+            //ToLog("LH Block: "+Context.BlockNum+" to "+NodeName(Node));
             this.SendF(Node,
                 {
                     "Method":"GETBLOCKHEADER",
@@ -430,17 +430,6 @@ module.exports = class CBlock extends require("./db/block-db")
                 }
             );
         }
-        // else
-        // {
-        //     if(!Ret.timewait)
-        //     {
-        //         if(!Context.RestartGetNextNode)
-        //         {
-        //             Context.RestartGetNextNode=1;
-        //             Context.MapSend={};
-        //         }
-        //     }
-        // }
     }
 
     SetChainNum(chain)
@@ -587,6 +576,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 chain.Context={Chain:chain};
 
             var Node=Ret.Node;
+            //ToLog("LC Block: "+chain.BlockNum+" to "+NodeName(Node));
             this.SendF(Node,
                 {
                     "Method":"GETBLOCKHEADER",
@@ -679,8 +669,8 @@ module.exports = class CBlock extends require("./db/block-db")
 
                 if(Node.TaskLastSend)
                 {
-                     var Delta=CurTime-Node.TaskLastSend;
-                    if(Delta<PERIOD_SEND_TASK)
+                    var Delta=CurTime-Node.TaskLastSend;
+                    if(Delta<PERIOD_HARD_SEND_TASK)
                     {
                         timewait=true;
                         continue;//wait (not spaming)

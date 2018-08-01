@@ -409,7 +409,7 @@
     function StartEditTransactionJSON()
     {
         var Item=document.getElementById("idTransaction");
-        Item.className="bold";
+        Item.className="smallbold";
     }
 
     function EditJSONTransaction()
@@ -531,7 +531,7 @@
         {
             element.innerText=StrTo;
             if(Item && Item.MyAccount)
-                element.className="bold";
+                element.className="smallbold";
             else
                 element.className="";
         }
@@ -1135,12 +1135,13 @@
 //            SetStatus("Client num="+MaxBlockNum+"  server num="+Data.CurBlockNum)
 
 
-        min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE+2;
+        min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE+3;
         PubKeyStr=Data.PublicKey;
         PrivKeyStr=Data.PrivateKey;
+
         WalletOpen=Data.WalletOpen;
-        SetVisibleBlock("idOpenWallet",WalletOpen===false);
-        SetVisibleBlock("wallet_config_tab",WalletOpen!==false);
+        SetVisibleBtOpenWallet();
+
         HistoryMaxNum=Data.HistoryMaxNum;
 
         DeltaTime=DeltaTime.toFixed(3);
@@ -1203,6 +1204,24 @@
 
 
         SetViewWN();
+    }
+    function SetVisibleBtOpenWallet()
+    {
+        SetVisibleBlock("idOpenWallet",WalletOpen!==undefined);
+        var item=document.getElementById("idOpenWallet");
+        if(WalletOpen==true)
+        {
+            item.value="Wallet opened";
+            item.style="background-image: url('/HTML/PIC/lock_open.png');color:green;";
+        }
+        else
+        if(WalletOpen==false)
+        {
+            item.value="Wallet closed";
+            item.style="background-image: url('/HTML/PIC/lock_closed.png');color:"+"#9b712a";
+        }
+
+        SetVisibleBlock("wallet_config_tab",WalletOpen!==false);
     }
 
     function SetArrLog(arr)
@@ -1417,11 +1436,16 @@
         });
 
     }
+
+    var PrevServerStr;
     function SetStatusFromServer(Str)
     {
         var id = document.getElementById("idServerLog");
-        if(id.innerText!==Str)
+        if(PrevServerStr!==Str)
+        {
+            PrevServerStr=Str;
             id.innerText=Str;
+        }
     }
 
     var bMainCanClear=true;
@@ -1871,6 +1895,26 @@
         itemPassword2=document.getElementById("idPassword2");
     }
 
+    function OnClickOpenCloseWallet()
+    {
+        if(WalletOpen===true)
+        {
+            GetData("/CloseWallet/",function (Data)
+            {
+                if(Data && Data.result===1)
+                {
+                    SetStatus("Wallet close");
+                }
+            });
+        }
+        else
+        if(WalletOpen===false)
+        {
+            ViewOpenWallet();
+        }
+
+    }
+
     function ViewOpenWallet()
     {
         if(WalletOpen!==false)
@@ -1989,6 +2033,7 @@
         //SetStatus("e.keyCode="+e.keyCode)
     }
 
+
 </script>
 
 <style type="text/css">
@@ -2016,12 +2061,12 @@
         background: transparent;
         font-weight: 600;
 
-        background-image: url('/HTML/PIC/key.png');
+        background-image: url('/HTML/PIC/lock_closed.png');
         background-repeat: no-repeat;
         background-size: 20%;
         cursor: pointer;
-
     }
+
     #idBlockPassword
     {
         z-index:1000;
@@ -2037,7 +2082,6 @@
 
         background-image: url('/HTML/PIC/key.png');
         background-repeat: no-repeat;
-        background-size: 10%;
 
     }
 
@@ -2057,7 +2101,9 @@
     </tr>
 </table>
 
-<INPUT id="idOpenWallet" style="display: none" type="button" onclick="ViewOpenWallet()" value="Open Wallet">
+<INPUT id="idOpenWallet" style="display: none" type="button" onclick="OnClickOpenCloseWallet()" value="Wallet closed">
+
+
 
 <DIV id="idStatus">&nbsp;</DIV>
 <BR><BR><BR>
@@ -2197,9 +2243,9 @@
     <table id="grid_accounts" class="grid">
         <tr>
             <th id="Item.Num" class="num">ID</th>
-            <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
+            <th id="SUM_TO_STRING(Item.Value)" class="sum bold">Amount</th>
             <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
-            <th id="Item.Description" class="name">Account name</th>
+            <th id="Item.Description" class="accname">Account name</th>
             <th id="Item.Value.OperationID" class="num">Operation</th>
             <th id="Item.RefID" class="num">Adviser</th>
             <th id="Item.WN" class="num" style="width: 30px;"></th>
@@ -2285,7 +2331,7 @@
             <th id="Item.Direct">Direct</th>
             <th id="ConfirmationFromBlock(Item.BlockNum)" class="txt">Confirm</th>
             <th id="(escapeHtml(DateFromBlock(Item.BlockNum)))" class="date">Date</th>
-            <th id="SUM_TO_STRING(Item)" class="sum">Amount</th>
+            <th id="SUM_TO_STRING(Item)" class="sum smallbold">Amount</th>
             <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
             <th id="Item.Description"class="desc">Description</th>
             <th id="Item.FromID" class="num">From</th>
@@ -2323,7 +2369,7 @@
 
             </td>
         </tr>
-        <tr><td>&nbsp;</td><td><DIV id="idNameTo" class="bold"></DIV></td></tr>
+        <tr><td>&nbsp;</td><td><DIV id="idNameTo" class="smallbold"></DIV></td></tr>
         <tr>
             <td>Pay to</td>
             <td>
@@ -2366,10 +2412,10 @@
 
 <DIV id="TabExplorer" style="display: none">
 
-    <INPUT type="button" onclick="window.Open('./HTML/stat.html','counters')" class="btdoit btmedium bt" id="idCounters" value="Counters">
-    <INPUT type="button" onclick="window.Open('./HTML/chains.html','chains',1200,600)" class="btdoit btmedium bt" id="idChains" value="Chains">
-    <INPUT type="button" onclick="window.Open('./HTML/monitor.html','monitor',1200)" class="btdoit btmedium bt" id="idMonitor" value="Monitor">
-    <INPUT type="button" onclick="window.Open('./HTML/console.html','console')" class="btdoit btmedium bt" id="idConsole" value="Console">
+    <INPUT type="button" onclick="window.Open('./HTML/stat.html','counters')" class="btdoit btopen bt" id="idCounters" value="Counters">
+    <INPUT type="button" onclick="window.Open('./HTML/chains.html','chains',1200,600)" class="btdoit btopen bt" id="idChains" value="Chains">
+    <INPUT type="button" onclick="window.Open('./HTML/monitor.html','monitor',1200)" class="btdoit btopen bt" id="idMonitor" value="Monitor">
+    <INPUT type="button" onclick="window.Open('./HTML/console.html','console')" class="btdoit btopen bt" id="idConsole" value="Console">
 
     <BR>
     <INPUT type="button" onclick="ViewCurrent(DefAccounts,1,this);" class="btdoit bt btexlporer" id="idDown" value="Accounts">
@@ -2392,7 +2438,7 @@
         <table id="grid_accounts_all" class="grid">
             <tr>
                 <th id="Item.Num" class="num">ID</th>
-                <th id="SUM_TO_STRING(Item.Value)" class="sum">Amount</th>
+                <th id="SUM_TO_STRING(Item.Value)" class="sum smallbold">Amount</th>
                 <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
                 <th id="Item.Description" class="accname">Account name</th>
                 <th id="Item.PubKeyStr" class="pubkey">PubKey</th>
