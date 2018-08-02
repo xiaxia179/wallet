@@ -69,7 +69,7 @@ module.exports = class CCommon
 
         var BufMap={},BufMap2={};
         var arr=SERVER.GetActualNodes();
-        var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0,CountHash=0;
+        var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0,CountHash=0,CountVer=0;
         for(var i=0;i<arr.length;i++)
         {
             var Node=arr[i];
@@ -90,6 +90,9 @@ module.exports = class CCommon
 
 
             Count++;
+
+            if(Node.VersionNum>=global.MIN_VER_STAT)
+                CountVer++;
 
             if(Node.INFO && Node.INFO.BlockNumDB && Node.INFO.BlockNumDB<=SERVER.BlockNumDB)
             {
@@ -126,6 +129,8 @@ module.exports = class CCommon
         ADD_TO_STAT("MAX:CHECK_POINT_OK",CountCP);
         ADD_TO_STAT("MAX:COUNTLH",CountLH);
         ADD_TO_STAT("MAX:HASH_OK",CountHash);
+        ADD_TO_STAT("MIN_VERSION",CountVer);
+
 
 
 

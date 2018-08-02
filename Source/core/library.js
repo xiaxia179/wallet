@@ -591,8 +591,8 @@ if(!LOAD_CONST() && !global.NWMODE)
     CheckTime();
 }
 
-//if(global.UPDATE_CODE_VERSION_NUM<202)
-    global.DELTA_CURRENT_TIME=0;
+if(global.UPDATE_CODE_VERSION_NUM<205)
+   global.DELTA_CURRENT_TIME=0;
 
 
 

@@ -135,9 +135,9 @@ module.exports = class CTransport extends require("./connect")
             Map["CONTROLHASH"]= {Prioritet:10,Period:500};
             //Map["OKCONTROLHASH"]= {Prioritet:10,Period:1000};
 
-            Map["PING"]=        {Prioritet:50,Period:1000};
-            Map["PONG"]=        {Prioritet:50,Period:0};
-            Map["GETNODES"]=    {Prioritet:50,Period:1000};
+            Map["PING"]=        {Prioritet:50,Period:1000,LowVersion:1};
+            Map["PONG"]=        {Prioritet:50,Period:0,LowVersion:1};
+            Map["GETNODES"]=    {Prioritet:50,Period:1000,LowVersion:1};
             Map["RETGETNODES"]= {Prioritet:50,Period:0};
 
             Map["ADDLEVELCONNECT"]=     {Prioritet:100,Period:1000};
@@ -156,7 +156,7 @@ module.exports = class CTransport extends require("./connect")
             //Map["CANBLOCK"]=500;
             Map["GETBLOCKHEADER"]=      {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
             Map["GETBLOCK"]=            {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
-            Map["GETCODE"]=             {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
+            Map["GETCODE"]=             {Prioritet:450,Period:PERIOD_HARD_SEND_TASK,LowVersion:1};
 
 
 
@@ -828,7 +828,7 @@ module.exports = class CTransport extends require("./connect")
 
     StopDoSendPacket(Param,Node,Name)
     {
-        return 0;
+
         var CurTime=GetCurrentTime(0)-0;
 
         if(!Param)
@@ -837,6 +837,13 @@ module.exports = class CTransport extends require("./connect")
             this.AddCheckErrCount(Node,1);
             return 1;
         }
+
+        if(Param.Period && !Node.VersionOK && !Param.LowVersion)
+        {
+            //ToLog("SKIP "+Name+" LOW VERSION="+Node.VersionNum+" from "+NodeName(Node))
+            return 1;
+        }
+
 
         var ArrTime=Node.TimeMap[Name];
         if(!ArrTime)
@@ -1147,16 +1154,16 @@ module.exports = class CTransport extends require("./connect")
         }
         else
         {
-            // var Result=false;
-            // if(Pow.PubKeyType===2 || Pow.PubKeyType===3)
-            //     Result=secp256k1.verify(Buffer.from(Hash), Buffer.from(Pow.Sign), Buffer.from([Pow.PubKeyType].concat(Pow.addrArr)));
-            // if(!Result)
-            // {
-            //     ToLog("END: ERROR_SIGN_HANDSHAKE")
-            //     Socket.end(this.GetBufFromData("POW_CONNECT8","ERROR_SIGN_HANDSHAKE",2));
-            //     CloseSocket(Socket,"ERROR_SIGN_HANDSHAKE");
-            //     return;
-            // }
+            var Result=false;
+            if(Pow.PubKeyType===2 || Pow.PubKeyType===3)
+                Result=secp256k1.verify(Buffer.from(Hash), Buffer.from(Pow.Sign), Buffer.from([Pow.PubKeyType].concat(Pow.addrArr)));
+            if(!Result)
+            {
+                //ToLog("END: ERROR_SIGN_HANDSHAKE ADDR: "+GetHexFromArr(Pow.addrArr).substr(0,16)+" from ip: "+Pow.FromIP);
+                Socket.end(this.GetBufFromData("POW_CONNECT8","ERROR_SIGN_HANDSHAKE",2));
+                CloseSocket(Socket,"ERROR_SIGN_HANDSHAKE");
+                return;
+            }
 
 
             Node=this.FindRunNodeContext(Pow.addrArr,Pow.FromIP,Pow.FromPort,true);

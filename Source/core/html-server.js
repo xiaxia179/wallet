@@ -492,20 +492,26 @@ HTTPCaller.SetCheckPoint=function (BlockNum,Param2,Param3)
     // var SignArr=arr2(Block.Hash,GetArrFromValue(Block.BlockNum));
     // var Sign = secp256k1.sign(shabuf(SignArr), WALLET.KeyPair.getPrivateKey('')).signature;
     // global.CHECK_POINT={BlockNum:BlockNum,Hash:Block.Hash,Sign:Sign};
-    SetCheckPointOnBlock(BlockNum);
-
-    return {result:1,text:"Set check point on BlockNum="+BlockNum};
+    if(SetCheckPointOnBlock(BlockNum))
+        return {result:1,text:"Set check point on BlockNum="+BlockNum};
+    else
+        return {result:0,text:"Error on check point BlockNum="+BlockNum};
 }
 function SetCheckPointOnBlock(BlockNum)
 {
     var Block=SERVER.ReadBlockHeaderDB(BlockNum);
+    if(!Block)
+        return 0;
+
     var SignArr=arr2(Block.Hash,GetArrFromValue(Block.BlockNum));
     var Sign = secp256k1.sign(shabuf(SignArr), WALLET.KeyPair.getPrivateKey('')).signature;
     global.CHECK_POINT={BlockNum:BlockNum,Hash:Block.Hash,Sign:Sign};
 
     //clear Node.NextPing
     SERVER.ResetNextPingAllNode();
+    return 1;
 }
+global.SetCheckPointOnBlock=SetCheckPointOnBlock;
 
 
 var idSetTimeSetCheckPoint;

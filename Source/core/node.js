@@ -47,6 +47,10 @@ module.exports = class CNode
         //статистика
         this.BlockProcessCount=0;
 
+        this.VersionOK=false;
+        this.VersionNum=0;
+
+
         this.ResetNode();
     }
 

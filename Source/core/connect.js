@@ -344,27 +344,6 @@ module.exports = class CConnect extends require("./balanser")
 
         this.CheckCodeVersion(Data,Info.Node);
 
-        var CodeVersion=Data.CodeVersion2;
-        if(CodeVersion.VersionNum>=MIN_CODE_VERSION_NUM && !Data.LoadHistoryMode)
-        {
-            Node.CanHot=true;
-
-            if(CHECK_POINT.BlockNum && Data.CheckPoint.BlockNum)
-            if(CHECK_POINT.BlockNum!==Data.CheckPoint.BlockNum || CompareArr(CHECK_POINT.Hash,Data.CheckPoint.Hash)!==0)
-            {
-                Node.CanHot=false;
-                Node.NextConnectDelta=60*1000;
-            }
-        }
-        else
-        {
-            Node.CanHot=false;
-            if(CodeVersion.VersionNum<MIN_CODE_VERSION_NUM)
-            {
-                //ToLog("ERR VersionNum="+CodeVersion.VersionNum+" from "+NodeInfo(Node));
-                Node.NextConnectDelta=60*1000;
-            }
-        }
 
         if(!global.CAN_START)
         {
@@ -397,9 +376,9 @@ module.exports = class CConnect extends require("./balanser")
             Times.Count++;
             Times.AvgDelta=Times.SumDelta/Times.Count;
 
-            if(Times.Count>2 && Node.addrStr==="FEEEA074D87C2071882E782911C412A214983407EAAB9CC6F8208FE0598E9E1D" && global.DELTA_CURRENT_TIME===0)
+            if(Times.Count>2 && Node.addrStr==="FEEEB413358F0691E6775EC61A1852291863C7478344664ACBAA4214765FFF16" && global.DELTA_CURRENT_TIME===0)
             {
-                global.DELTA_CURRENT_TIME+=Times.AvgDelta;
+                global.DELTA_CURRENT_TIME=Times.AvgDelta;
             }
 
 
@@ -478,12 +457,50 @@ module.exports = class CConnect extends require("./balanser")
     CheckCodeVersion(Data,Node)
     {
         var CodeVersion=Data.CodeVersion2;
-        if(CodeVersion.BlockNum && CodeVersion.BlockNum<=GetCurrentBlockNumByTime() && CodeVersion.BlockNum > CODE_VERSION.BlockNum
+        Node.VersionNum=CodeVersion.VersionNum;
+        if(CodeVersion.VersionNum>=MIN_CODE_VERSION_NUM)
+        {
+            Node.VersionOK=true;
+        }
+        else
+        {
+            Node.VersionOK=false;
+        }
+
+        if(Node.VersionOK && !Data.LoadHistoryMode)
+        {
+            Node.CanHot=true;
+
+            if(CHECK_POINT.BlockNum && Data.CheckPoint.BlockNum)
+                if(CHECK_POINT.BlockNum!==Data.CheckPoint.BlockNum || CompareArr(CHECK_POINT.Hash,Data.CheckPoint.Hash)!==0)
+                {
+                    Node.CanHot=false;
+                    Node.NextConnectDelta=60*1000;
+                }
+        }
+        else
+        {
+            Node.CanHot=false;
+            if(!Node.VersionOK)
+            {
+                //ToLog("ERR VersionNum="+CodeVersion.VersionNum+" from "+NodeInfo(Node));
+                Node.NextConnectDelta=60*1000;
+            }
+        }
+
+
+        var bLoadVer=0;
+        if(CodeVersion.BlockNum && (CodeVersion.BlockNum<=GetCurrentBlockNumByTime() || CodeVersion.BlockPeriod===0) && CodeVersion.BlockNum > CODE_VERSION.BlockNum
             && !IsZeroArr(CodeVersion.Hash)
             && (CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum
                 || CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
         {
+            bLoadVer=1;
+        }
 
+
+        if(bLoadVer)
+        {
             var Level=AddrLevelArrFromStart(this.addrArr,CodeVersion.addrArr);
             if(CodeVersion.BlockPeriod)
             {
