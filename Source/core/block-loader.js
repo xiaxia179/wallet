@@ -18,6 +18,7 @@ const STAT_BLOCK_LOAD_PERIOD=CONSENSUS_PERIOD_TIME/5;
 
 
 global.COUNT_BLOCKS_FOR_LOAD=600;
+global.PERIOD_GET_BLOCK=300;//ms
 
 
 global.COUNT_HISTORY_BLOCKS_FOR_LOAD=3000;
@@ -25,7 +26,6 @@ global.COUNT_BLOCKS_FOR_CHECK_POW=100;
 
 global.MAX_COUNT_CHAIN_LOAD=120;
 
-global.PERIOD_HARD_SEND_TASK=300;//ms
 global.PACKET_ALIVE_PERIOD=4*CONSENSUS_PERIOD_TIME;//ms
 global.PACKET_ALIVE_PERIOD_NEXT_NODE=PACKET_ALIVE_PERIOD/2;//ms
 //global.MAX_BLOCK_LOAD=128;
@@ -670,7 +670,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 if(Node.TaskLastSend)
                 {
                     var Delta=CurTime-Node.TaskLastSend;
-                    if(Delta<PERIOD_HARD_SEND_TASK)
+                    if(Delta<global.PERIOD_GET_BLOCK || Node.StopGetBlock)
                     {
                         timewait=true;
                         continue;//wait (not spaming)

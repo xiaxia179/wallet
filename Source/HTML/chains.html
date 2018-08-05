@@ -637,16 +637,21 @@
             ctx.fillText(Block.Miner1,x+2,y2);
 
 
-            var L1=16;
-            if(Block.Power>L1)
+            var L1=20;
+            if(Block.Power>=L1)
             {
                 ctx.strokeRect(x, y2-12, L1, 2);
-                ctx.strokeStyle = "#fb8";
+                if(Block.Power>=30)
+                    ctx.strokeStyle = "#ff353b";
+                else
+                    ctx.strokeStyle = "#fb8";
+
                 ctx.strokeRect(x+L1, y2-12, Block.Power-L1, 2);
             }
             else
+            {
                 ctx.strokeRect(x, y2-12, Block.Power, 2);
-            //ctx.fillRect(x, y, Block.width, Block.height);
+            }
 
 
         }

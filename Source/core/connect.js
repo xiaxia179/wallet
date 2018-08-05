@@ -17,6 +17,9 @@ global.CHECK_DELTA_TIME={Num:0,bUse:0,StartBlockNum:0,EndBlockNum:0,bAddTime:0,D
 global.CHECK_POINT={BlockNum:0,Hash:[],Sign:[]};
 global.CODE_VERSION={BlockNum:0,addrArr:[],LevelUpdate:0,BlockPeriod:0, VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
 
+global.START_LOAD_CODE={};
+
+
 
 
 
@@ -239,6 +242,7 @@ module.exports = class CConnect extends require("./balanser")
                 CheckPointHashDB:CheckPointHashDB,
                 NodesLevelCount:this.GetNodesLevelCount(),
                 HashDB:HashDB,
+                StopGetBlock:global.STOPGETBLOCK,
                 Reserve:[],
             };
 
@@ -268,6 +272,7 @@ module.exports = class CConnect extends require("./balanser")
             CheckPointHashDB:hash,\
             NodesLevelCount:uint16,\
             HashDB:hash,\
+            StopGetBlock:uint,\
             Reserve:arr40,\
             }";
     }
@@ -328,6 +333,7 @@ module.exports = class CConnect extends require("./balanser")
         Node.LastTime=GetCurrentTime()-0;
         Node.NextConnectDelta=1000;//connection is good
         Node.GrayConnect=Data.GrayConnect;
+        Node.StopGetBlock=Data.StopGetBlock;
 
 
 
@@ -336,8 +342,8 @@ module.exports = class CConnect extends require("./balanser")
 
 
 
-        if(!CODE_VERSION.StartLoadVersionNum)
-            CODE_VERSION.StartLoadVersionNum=0;
+        if(!START_LOAD_CODE.StartLoadVersionNum)
+            START_LOAD_CODE.StartLoadVersionNum=0;
 
 
         //{BlockNum:0,addrArr:[],LevelUpdate:0,BlockPeriod:0, VersionNum:UPDATE_CODE_VERSION_NUM,Hash:[],Sign:[],StartLoadVersionNum:0};
@@ -376,13 +382,17 @@ module.exports = class CConnect extends require("./balanser")
             Times.Count++;
             Times.AvgDelta=Times.SumDelta/Times.Count;
 
-            if(Times.Count>2 && Node.addrStr==="FEEEB413358F0691E6775EC61A1852291863C7478344664ACBAA4214765FFF16" && global.DELTA_CURRENT_TIME===0)
+            if(Times.Count>=2)
+                Node.AvgDelta=Times.AvgDelta;
+
+            if(global.AUTO_COORECT_TIME)
             {
-                global.DELTA_CURRENT_TIME=Times.AvgDelta;
+                // if(Times.Count>2 && Node.addrStr==="FEEEB413358F0691E6775EC61A1852291863C7478344664ACBAA4214765FFF16" && global.DELTA_CURRENT_TIME===0)
+                // {
+                //     global.DELTA_CURRENT_TIME=Times.AvgDelta;
+                // }
+                this.CorrectTime();
             }
-
-
-            //this.CorrectTime();
         }
         else
         {
@@ -434,6 +444,7 @@ module.exports = class CConnect extends require("./balanser")
     }
     CheckDeltaTime(Data,Node)
     {
+        if(global.AUTO_COORECT_TIME)
         if(global.CAN_START && !CREATE_ON_START)
         {
             if(Data.CheckDeltaTime.Num>CHECK_DELTA_TIME.Num)
@@ -492,7 +503,7 @@ module.exports = class CConnect extends require("./balanser")
         var bLoadVer=0;
         if(CodeVersion.BlockNum && (CodeVersion.BlockNum<=GetCurrentBlockNumByTime() || CodeVersion.BlockPeriod===0) && CodeVersion.BlockNum > CODE_VERSION.BlockNum
             && !IsZeroArr(CodeVersion.Hash)
-            && (CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum
+            && (CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>START_LOAD_CODE.StartLoadVersionNum
                 || CodeVersion.VersionNum===CODE_VERSION.VersionNum && IsZeroArr(CODE_VERSION.Hash)))//was restart
         {
             bLoadVer=1;
@@ -515,7 +526,7 @@ module.exports = class CConnect extends require("./balanser")
                 {
                     ToLog("Get new CodeVersion = "+CodeVersion.VersionNum+" HASH:"+GetHexFromArr(CodeVersion.Hash));
 
-                    if(CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>CODE_VERSION.StartLoadVersionNum)
+                    if(CodeVersion.VersionNum>CODE_VERSION.VersionNum && CodeVersion.VersionNum>START_LOAD_CODE.StartLoadVersionNum)
                     {
                         this.StartLoadCode(Node,CodeVersion);
                     }

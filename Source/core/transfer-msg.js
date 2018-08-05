@@ -347,7 +347,7 @@ module.exports = class CMessages extends require("./transaction-validator")
             if(Node.TaskLastSend)
             {
                 var Delta=CurTime-Node.TaskLastSend;
-                if(Delta<PERIOD_HARD_SEND_TASK)
+                if(Delta<global.PERIOD_GET_BLOCK || Node.StopGetBlock)
                 {
                     continue;//wait (not spaming)
                 }

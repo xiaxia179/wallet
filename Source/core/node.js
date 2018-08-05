@@ -57,6 +57,8 @@ module.exports = class CNode
 
     ResetNode()
     {
+        this.StopGetBlock=0;
+
         this.TimeMap={};
 
         this.bInit=1;
@@ -360,7 +362,7 @@ module.exports = class CNode
             {
                 SERVER.AddCheckErrCount(NODE,1,"ERR##1 : socket");
                 ADD_TO_STAT("ERRORS");
-                ToError("ERR##1 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
+                //ToError("ERR##1 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
                 //ToError(err);
             }
         });
@@ -407,6 +409,30 @@ module.exports = class CNode
         }
 
         var addrStr=GetHexFromAddres(Buf.addrArr);
+
+        if(!Node.StartFindList && addrStr!==Node.addrStr)
+        {
+            ToLog("END: CHANGED ADDR: "+Node.addrStr.substr(0,16)+" -> "+addrStr.substr(0,16)+" from ip: "+Socket.remoteAddress);
+            SERVER.SendCloseSocket(Socket,"ADDRESS_HAS_BEEN_CHANGED");
+            return;
+        }
+
+
+
+        var Result=false;
+        var Hash=shaarr(addrStr+"-"+Node.ip+":"+Node.port);
+        if(Buf.PubKeyType===2 || Buf.PubKeyType===3)
+            Result=secp256k1.verify(Buffer.from(Hash), Buffer.from(Buf.Sign), Buffer.from([Buf.PubKeyType].concat(Buf.addrArr)));
+        if(!Result)
+        {
+            //ToLog("END: ERROR_SIGN_HANDSHAKE_FROM_SERVER ADDR: "+addrStr.substr(0,16)+" from ip: "+Socket.remoteAddress);
+            // SERVER.SendCloseSocket(Socket,"ERROR_SIGN_HANDSHAKE_FROM_SERVER");
+            // this.AddToBanIP(Socket.remoteAddress,"ERROR_SIGN_HANDSHAKE_FROM_SERVER");
+            // return;
+        }
+
+
+
         if(Node.addrStrTemp)
         {
             ToLogNet("Set Addr = "+addrStr+"  for: "+NodeInfo(Node));
@@ -417,7 +443,7 @@ module.exports = class CNode
 
         if(Buf.MIN_POWER_POW_HANDSHAKE>1+MIN_POWER_POW_HANDSHAKE)
         {
-            ToLogNet("BIG MIN_POWER_POW_HANDSHAKE - NOT CONNECTING")
+            ToLog("END: BIG_MIN_POWER_POW_HANDSHAKE ADDR: "+addrStr.substr(0,16)+" from ip: "+Socket.remoteAddress);
             return 0;
         }
 

@@ -24,6 +24,11 @@ class CApp
         this.Password="";
         this.WalletOpen=undefined;
 
+        // global.WALLET=this;
+        // if(global.OnWalletStart)
+        //     global.OnWalletStart();
+        //
+
         var Params=LoadParams(CONFIG_NAME,undefined);
         if(!Params)
         {
@@ -46,12 +51,14 @@ class CApp
             this.KeyXOR=GetArrFromHex(Params.KeyXOR);
             this.WalletOpen=false;
 
-            this.SetPrivateKey(Params.PubKey,true);//TODO
+            this.SetPrivateKey(Params.PubKey);//TODO
         }
         else
         {
-            this.SetPrivateKey(Params.Key,true);//TODO
+            this.SetPrivateKey(Params.Key);//TODO
         }
+
+
     }
 
 
@@ -111,8 +118,10 @@ class CApp
 
         if(bSetNew)
         {
-            this.AccountMap=DApps.Accounts.FindAccounts(this.PubKeyArr);
+            this.AccountMap={};
         }
+
+        this.FindMyAccounts();
 
         if(bGo)
             this.SaveWallet();
@@ -165,7 +174,10 @@ class CApp
         }
 
         this.Password=StrPassword;
-        this.WalletOpen=true;
+        if(StrPassword)
+            this.WalletOpen=true;
+        else
+            this.WalletOpen=undefined;
         this.SaveWallet();
     }
 
@@ -208,6 +220,7 @@ class CApp
                 Params.KeyXOR=GetHexFromArr(this.XORHash(this.KeyPair.getPrivateKey(),Hash));
             }
             Params.PubKey=GetHexFromArr(this.PubKeyArr);
+            this.KeyXOR=GetArrFromHex(Params.KeyXOR);
         }
         else
         {
@@ -268,7 +281,7 @@ class CApp
 
     OnCreateAccount(Data)
     {
-        this.AccountMap[Data.Num]=Data.Num;
+        this.AccountMap[Data.Num]=0;
     }
 
     FindMyAccounts()
@@ -276,17 +289,37 @@ class CApp
         if(IsZeroArr(this.PubKeyArr))
             return;
 
-        this.AccountMap=DApps.Accounts.FindAccounts(this.PubKeyArr);
-        this.SaveWallet();
+        DApps.Accounts.FindAccounts(this.PubKeyArr,this.AccountMap,0);
     }
 
-    GetSignFromArr(Arr)
+    GetAccountKey(Num)
+    {
+        if(this.KeyPair.WasInit && global.TestTestWaletMode)
+        {
+            //TODO ...
+
+        }
+
+        return this.KeyPair;
+    }
+
+    GetSignFromArr(Arr,Num)
     {
         if(!this.KeyPair.WasInit)
             return "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
+        var KeyPair;
+        if(Num)
+        {
+            KeyPair=this.GetAccountKey(Num);
+        }
+        else
+        {
+            KeyPair=this.KeyPair;
+        }
+
         var hash=shabuf(Arr);
-        var sigObj = secp256k1.sign(hash, this.KeyPair.getPrivateKey());
+        var sigObj = secp256k1.sign(hash, KeyPair.getPrivateKey());
         return GetHexFromArr(sigObj.signature)
     }
 
@@ -321,19 +354,20 @@ class CApp
         {
             Arr=BufLib.GetBufferFromObject(TR,FORMAT_MONEY_TRANSFER_BODY,MAX_TRANSACTION_SIZE,{});
         }
-        return this.GetSignFromArr(Arr)
+
+        return this.GetSignFromArr(Arr,this.AccountMap[TR.FromID]);
     }
 
     GetHistoryMaxNum()
     {
         return this.DBHistory.GetMaxNum();
     }
-    GetHistoryAct(start,count,Direct)
+    GetHistoryAct(start,count,Direct,Filter)
     {
 
         var arr=[];
         //for(var num=this.GetHistoryMaxNum();num>=0;num--)
-        for(var num=start;num<start+count;num++)
+        for(var num=start;true;num++)
         {
             var Item=this.DBHistory.Read(num);
             if(!Item)
@@ -348,18 +382,33 @@ class CApp
                 continue;
 
             //name
+            Item.ToName="";
             if(Item.ToID!==1000000000000)
             {
                 var Account=DApps.Accounts.ReadState(Item.ToID);
                 if(Account)
+                {
                     Item.ToName=Account.Description;
+                }
             }
 
+            if(Filter)//small filter
+            {
+                var Date=DateFromBlock(Item.BlockNum);
+                var Str=""+Date+" "+Item.Description+" "+Item.FromID+" "+Item.ToID+" "+Item.ToName+" "+Item.FromOperationID+" "+Item.BlockNum;
+
+                if(Str.indexOf(Filter)<0)
+                    continue;
+
+            }
+
+            Item.Value={SumTER:Item.SumTER,SumCENT:Item.SumCENT};
 
             arr.push(Item);
-            //arr.unshift(Item);
-            // if(arr.length>count)
-            //     break;
+
+            count--;
+            if(count<0)
+                break;
         }
         return arr;
     }
@@ -368,4 +417,6 @@ class CApp
 
 //module.exports = CApp;
 global.WALLET=new CApp;
+// if(global.OnWalletStart)
+//     global.OnWalletStart();
 

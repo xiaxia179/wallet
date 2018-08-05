@@ -448,6 +448,15 @@ module.exports = class CConsensus extends require("./block-loader")
                     bNext=true;
                     Block.ErrRun=""+Transfer.LocalLevel+" "+Block.ErrRun;
 
+                    for(var Addr in Transfer.TransferNodes)
+                    {
+                        var Item=Transfer.TransferNodes[Addr];
+                        Item.Node.BlockProcessCount--;
+                        ADD_TO_STAT("TRANSFER_TIME_OUT");
+                    }
+
+
+
                     ADD_TO_STAT("TimeOutLevel");
                 }
             }
@@ -1605,7 +1614,7 @@ function TestCreateTr()
         Currency:uint,\
         PubKey:arr33,\
         Description:str40,\
-        RefID:uint,\
+        Adviser:uint,\
         Reserve:arr7,\
         POWCreate:arr12,\
         }";//1+6+33+40+6+7=93
@@ -1617,7 +1626,7 @@ function TestCreateTr()
             Currency:0,
             PubKey:[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
             Description:"Description",
-            RefID:4,
+            Adviser:4,
         };
     var Body=BufLib.GetBufferFromObject(TR,FORMAT_CREATE,1000,{});
     var startTime = process.hrtime();

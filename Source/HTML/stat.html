@@ -23,10 +23,14 @@
 
 <script type="text/javascript">
 
+    var PrevData;
     function SetResult(Data)
     {
+        if(!Data)
+            Data=PrevData;
         if(!Data || !Data.result)
             return;
+        PrevData=Data;
 
 
         var arrnames=["10s","10m","total, avg"];
@@ -59,9 +63,9 @@
             htmlTable.StatItem["Total"]=rows[1];
         }
 
+        if(0)
         for(var i=1;i<rows.length;i++)
-            for(var j=1;j<rows[i].cells.length;j++)
-                rows[i].cells[j].innerText="";
+            rows[i].Do=1;
 
         for(var m=0;m<arr.length;m++)
         {
@@ -96,6 +100,8 @@
                     }
 
                     item.cells[0].innerText=name;
+                    item.insertCell(arr.length);
+                    item.cells[arr.length+1].innerHTML=`<INPUT type="button" class="add" onclick="AddDiagram('${name}')" value="Add">`;
                 }
 
 
@@ -107,11 +113,33 @@
                    item.style="display:none";
                 else
                     item.style="";
-
+                item.Do=0;
             }
         }
+
+        if(0)
+        for(var i=1;i<rows.length;i++)
+        if(rows[i].Do===1)
+        for(var j=1;j<rows[i].cells.length-1;j++)
+            rows[i].cells[j].innerText="";
+
     }
 
+    function AddDiagram(Name)
+    {
+        var Str=localStorage["DiagramArr"];
+        if(!Str|| Str==="undefined")
+            Str="[]";
+        var DiagramArr=JSON.parse(Str);
+
+        var Item={name:Name,text:Name,value:0,red:"#1c6bb6"};
+
+        AddDiagramToArr(DiagramArr,Item);
+
+        localStorage["DiagramArr"]=JSON.stringify(DiagramArr)
+        localStorage["ExternSetDiagramArr"]=1;
+
+    }
 
 
     var bPause;
@@ -186,6 +214,10 @@
         });
     }
 
+    function OnSetFilter()
+    {
+        SetResult();
+    }
 
 
     window.onload=function()
@@ -215,18 +247,26 @@
     {
         border-collapse: collapse;
     }
-    .stat th, .stat td {
+    .stat th, .stat td
+    {
         border: 1px solid #000;
         padding: 5px;
     }
-    .stat td{
+    .stat td
+    {
         width: 122px;
         text-align: right;
     }
-    .stat td:nth-child(1) {
+    .stat td:nth-child(1)
+    {
         width: 220px;
     }
-    .total {
+    .stat td:nth-child(5)
+    {
+        width: 50px;
+    }
+    .total
+    {
         text-align: right;
         font-weight: 600;
     }
@@ -271,7 +311,7 @@
 <h2 align='center' >Performance counters</h2>
 
 <DIV id="topframeFind">
-    Filter: <INPUT type="search" style="width: 292px" id="idFilter" autofocus onkeyup="GetStat()" value="">
+    Filter: <INPUT type="search" style="width: 292px" id="idFilter" autofocus onkeyup="OnSetFilter()" value="">
 </DIV>
 
 <BR>
@@ -282,6 +322,7 @@
             <th>10 sec</th>
             <th>10 min</th>
             <th>total</th>
+            <th>Diagr</th>
         </tr>
         <tr class="total">
             <td>Total</td>
@@ -299,6 +340,7 @@
             <th>10 sec</th>
             <th>10 min</th>
             <th>total</th>
+            <th>Diagr</th>
         </tr>
         <tr class="total">
             <td>Total</td>

@@ -586,13 +586,25 @@ global.CopyObjValue=CopyObjValue;
 //setTimeout(CheckTime,100);
 //setInterval(CheckTime,2*24*3600*1000*Math.random());
 
+function DateFromBlock(BlockNum)
+{
+    var Str;
+    var now=new Date(FIRST_TIME_BLOCK+BlockNum*1000);
+    Str=now.toISOString();
+    Str=Str.substr(0,Str.indexOf("."));
+    Str=Str.replace("T"," ");
+    return Str;
+}
+global.DateFromBlock=DateFromBlock;
+
 if(!LOAD_CONST() && !global.NWMODE)
 {
     CheckTime();
 }
 
 if(global.UPDATE_CODE_VERSION_NUM<205)
-   global.DELTA_CURRENT_TIME=0;
+    if(global.AUTO_COORECT_TIME)
+        global.DELTA_CURRENT_TIME=0;
 
 
 

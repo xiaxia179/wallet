@@ -19,7 +19,7 @@ const http = require('http')
 // process.exit();
 
 
-var HTTPCaller={};
+global.HTTPCaller={};
 function DoCommand(response,Path,params)
 {
     var F=HTTPCaller[params[0]];
@@ -28,7 +28,7 @@ function DoCommand(response,Path,params)
         response.writeHead(200, { 'Content-Type': 'application/json','Access-Control-Allow-Origin':'*'});
         response.writeHead(200, { 'Content-Type': 'application/json' });
 
-        var Ret=F(params[1],params[2],params[3]);
+        var Ret=F(params[1],params[2],params[3],params[4]);
         try
         {
             var Str=JSON.stringify(Ret);
@@ -177,24 +177,24 @@ HTTPCaller.GetAccount=function (id)
     return {Item:arr[0],result:1};
 }
 
-HTTPCaller.GetAccountsAll=function (id,count,Param3)
+HTTPCaller.GetAccountsAll=function (id,count,Param3,Filter)
 {
     id=parseInt(id);
     count=parseInt(count);
 
-    var arr=DApps.Accounts.GetRowsAccounts(id,count);
+    var arr=DApps.Accounts.GetRowsAccounts(id,count,Filter);
     return {arr:arr,result:1};
 }
 
 
 
-HTTPCaller.GetBlockAll=function (num,count)
+HTTPCaller.GetBlockAll=function (num,count,Param3,Filter)
 {
     num=parseInt(num);
     count=parseInt(count);
 
 
-    var arr=SERVER.GetRows(num,count);
+    var arr=SERVER.GetRows(num,count,Filter);
     return {arr:arr,result:1};
 }
 HTTPCaller.GetTransactionAll=function (num,count,BlockNum)
@@ -236,14 +236,14 @@ HTTPCaller.GetHashAll=function (num,count)
 
 
 
-HTTPCaller.GetHistoryAct=function (num,count,Direct)
+HTTPCaller.GetHistoryAct=function (num,count,Direct,Filter)
 {
     num=parseInt(num);
     count=parseInt(count);
     if(!Direct)
         Direct="";
 
-    var arr=WALLET.GetHistoryAct(num,count,Direct);
+    var arr=WALLET.GetHistoryAct(num,count,Direct,Filter);
     return {arr:arr,result:1};
 }
 
@@ -276,7 +276,6 @@ HTTPCaller.GetWalletInfo=function ()
 
             MiningAccount:global.GENERATE_BLOCK_ACCOUNT,
             AccountMap:WALLET.AccountMap,
-
             ArrLog:ArrLogClient,
             MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
             MaxAccID:DApps.Accounts.GetMaxAccount(),
@@ -315,12 +314,12 @@ HTTPCaller.GetWalletInfo=function ()
 
     return Ret;
 }
-HTTPCaller.GetWalletAccounts=function (Param1,Param2,Param3)
+HTTPCaller.GetWalletAccounts=function ()
 {
     var Ret=
         {
             result:1,
-            ArrAcc:DApps.Accounts.GetWalletAccounts(WALLET.AccountMap),
+            ArrAcc:DApps.Accounts.GetWalletAccountsByMap(WALLET.AccountMap),
         };
 
     Ret.PrivateKey=WALLET.KeyPair.PrivKeyStr;
@@ -671,8 +670,34 @@ HTTPCaller.SetNetMode=function (SetObj)
 }
 
 
+//TEST TEST
+
+HTTPCaller.GetAccountKey=function (Num)
+{
+    var Result={};
+    Result.result=0;
+
+    var KeyPair=WALLET.GetAccountKey(Num);
+    if(KeyPair)
+    {
+        Result.result=1;
+        Result.PubKeyStr=GetHexFromArr(KeyPair.getPublicKey('','compressed'));
+    }
+    return Result;
+}
+
+
+
 
 //STATS
+
+HTTPCaller.GetBlockchainStat=function (Param)
+{
+    var Result=SERVER.GetStatBlockchainPeriod(Param.BlockNum,Param.Count,Param.Miner,Param.Adviser);
+    Result.result=1;
+    Result.sessionid=sessionid;
+    return Result;
+}
 
 HTTPCaller.GetAllCounters=function (SetObj)
 {
@@ -1416,7 +1441,7 @@ if(global.HTTP_PORT_NUMBER)
         }
 
 
-        var params=Path.split('/',5);
+        var params=Path.split('/',6);
         params.splice(0,1);
 
 

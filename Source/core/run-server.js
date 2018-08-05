@@ -74,7 +74,7 @@ global.NeedRestart=0;
 
 
 
-if(global.nw)
+//if(global.nw)
 process.on('uncaughtException', function (err)
 {
     if(process.send)
@@ -82,7 +82,6 @@ process.on('uncaughtException', function (err)
         process.send({cmd:"log",message:err});
     }
 
-    TO_ERROR_LOG("APP",666,err);
     ToError(err.stack);
     ToLog(err.stack);
 
@@ -93,6 +92,8 @@ process.on('uncaughtException', function (err)
     }
     else
     {
+        TO_ERROR_LOG("APP",666,err);
+        ToLog("-----------------EXIT------------------");
         process.exit();
     }
 });
@@ -114,11 +115,11 @@ RunServer(false);
 setInterval(function run1()
 {
     ReconnectingFromServer();
-}, 100);
+}, 200);
 setInterval(function run2()
 {
     ConnectToNodes();
-}, 200);
+}, 500);
 
 
 if(global.ADDRLIST_MODE)
@@ -417,6 +418,16 @@ function RunOnce()
 
         RunOnUpdate();
 
+        if(global.RESTART_PERIOD_SEC)
+        {
+            var Period=(random(600)+global.RESTART_PERIOD_SEC);
+            ToLog("SET RESTART NODE AFTER: "+Period+" sec");
+            setInterval(function ()
+            {
+                RestartNode();
+            },Period*1000)
+        }
+
         setTimeout(function ()
         {
             RunStopPOWProcess();
@@ -450,7 +461,9 @@ function RunOnUpdate()
         //CheckRewriteTr(2520160,"EC89CC847BB073456CFAF1B6923AEE3E0A44AE07ACB34C7D01A7CAFEDC9B6832",2488600);
         //CheckRewriteTr(2588600,"1E36CAC18C3B7359E3910E8B8432E2DB299E6513D4094F474463A823D3698025",2520160);
 
-        CheckRewriteTr(2712200,"62FC9CD8D6A7829B5440554AB2B3B46EE8D70E3EFB30AD72F8127492BBB20F67",2588600);
+        //CheckRewriteTr(2712200,"62FC9CD8D6A7829B5440554AB2B3B46EE8D70E3EFB30AD72F8127492BBB20F67",2588600);
+        CheckRewriteTr(2981080,"FD484F6B2DF9075DA77EB6BECF57C2AF3347D7A6F3851E7594092F9C1D9C0589",2712200);
+
 
 
 

@@ -34,6 +34,7 @@ module.exports = class CCommon
         this.addrArr=PubKey.slice(1);
         this.addrStr=GetHexFromArr(this.addrArr);
         this.HashDBArr=shaarr2(this.KeyPair.getPrivateKey(),[0,0,0,0,0,0,0,1]);
+        this.ServerSign=[];
 
 
         //this.MetaBuf=new STreeBuffer(MAX_TIME_NETWORK_TRANSPORT,CompareItemHash,"object","PACKETS_LOST");
@@ -67,6 +68,10 @@ module.exports = class CCommon
                 bHasCP=1;
         }
 
+        var MinVer=global.MIN_VER_STAT;
+        if(MinVer===0)
+            MinVer=global.MIN_CODE_VERSION_NUM;
+
         var BufMap={},BufMap2={};
         var arr=SERVER.GetActualNodes();
         var Count=0,CountHot=0,CountHotOK=0,CountActualOK=0,SumDeltaHot=0,SumDeltaActual=0,CountCP=0,CountLH=0,CountLevels=0,CountHash=0,CountVer=0;
@@ -91,7 +96,8 @@ module.exports = class CCommon
 
             Count++;
 
-            if(Node.VersionNum>=global.MIN_VER_STAT)
+
+            if(Node.VersionNum>=MinVer)
                 CountVer++;
 
             if(Node.INFO && Node.INFO.BlockNumDB && Node.INFO.BlockNumDB<=SERVER.BlockNumDB)

@@ -36,7 +36,7 @@ const BUF_PACKET_SIZE=16*1024;
 
 global.MAX_PACKET_LENGTH=1.5*1000000;//1Mb
 
-global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW_HANDSHAKE:uint,Reserve:arr100}";
+global.FORMAT_POW_TO_CLIENT="{addrArr:hash,HashRND:hash,MIN_POWER_POW_HANDSHAKE:uint,PubKeyType:byte,Sign:arr64,Reserve:arr33}";
 global.FORMAT_POW_TO_SERVER=
     "{\
         DEF_NETWORK:str15,\
@@ -149,14 +149,14 @@ module.exports = class CTransport extends require("./connect")
 
             Map["GETMESSAGE"]=          {Prioritet:400,Period:1000};
             Map["MESSAGE"]=             {Prioritet:450,Period:1000};
-            Map["TRANSACTION"]=         {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
+            Map["TRANSACTION"]=         {Prioritet:450,Period:PERIOD_GET_BLOCK};
 
 
 
             //Map["CANBLOCK"]=500;
-            Map["GETBLOCKHEADER"]=      {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
-            Map["GETBLOCK"]=            {Prioritet:450,Period:PERIOD_HARD_SEND_TASK};
-            Map["GETCODE"]=             {Prioritet:450,Period:PERIOD_HARD_SEND_TASK,LowVersion:1};
+            Map["GETBLOCKHEADER"]=      {Prioritet:500,Period:PERIOD_GET_BLOCK};
+            Map["GETBLOCK"]=            {Prioritet:500,Period:PERIOD_GET_BLOCK};
+            Map["GETCODE"]=             {Prioritet:500,Period:PERIOD_GET_BLOCK,LowVersion:1};
 
 
 
@@ -469,18 +469,18 @@ module.exports = class CTransport extends require("./connect")
         return false;
     }
 
-    AddToBanIP(ip)
+    AddToBanIP(ip,Str)
     {
         var Key=""+ip;
         this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+600*1000,BanDelta:1000};
-        ToLog("ADD TO BAN: "+Key);
+        ToLog("ADD TO BAN: "+Key+" "+Str);
         ADD_TO_STAT("AddToBanIP");
     }
-    AddToBan(Node)
+    AddToBan(Node,Str)
     {
         if(global.NeedRestart)
             return;
-        return;
+        //return;
 
         Node.IsBan=true;
         this.DeleteNodeFromActive(Node);
@@ -488,7 +488,7 @@ module.exports = class CTransport extends require("./connect")
         var Key=""+Node.ip;
         this.BAN_IP[Key]={Errors:1000000,TimeTo:(GetCurrentTime(0)-0)+600*1000,BanDelta:1000};
         //ToLogTrace("ADD TO BAN: "+Key);
-        ToLog("ADD TO BAN: "+NodeName(Node));
+        ToLog("ADD TO BAN: "+NodeName(Node)+" "+Str);
         ADD_TO_STAT("AddToBan");
     }
     NodeInBan(Node)
@@ -840,7 +840,10 @@ module.exports = class CTransport extends require("./connect")
 
         if(Param.Period && !Node.VersionOK && !Param.LowVersion)
         {
-            //ToLog("SKIP "+Name+" LOW VERSION="+Node.VersionNum+" from "+NodeName(Node))
+            return 1;
+        }
+        if(global.STOPGETBLOCK && Param.Prioritet===500)
+        {
             return 1;
         }
 
@@ -1159,9 +1162,10 @@ module.exports = class CTransport extends require("./connect")
                 Result=secp256k1.verify(Buffer.from(Hash), Buffer.from(Pow.Sign), Buffer.from([Pow.PubKeyType].concat(Pow.addrArr)));
             if(!Result)
             {
-                //ToLog("END: ERROR_SIGN_HANDSHAKE ADDR: "+GetHexFromArr(Pow.addrArr).substr(0,16)+" from ip: "+Pow.FromIP);
+                //ToLog("END: ERROR_SIGN_HANDSHAKE ADDR: "+GetHexFromArr(Pow.addrArr).substr(0,16)+" from ip: "+Socket.remoteAddress);
                 Socket.end(this.GetBufFromData("POW_CONNECT8","ERROR_SIGN_HANDSHAKE",2));
                 CloseSocket(Socket,"ERROR_SIGN_HANDSHAKE");
+                this.AddToBanIP(Socket.remoteAddress,"ERROR_SIGN_HANDSHAKE");
                 return;
             }
 
@@ -1286,7 +1290,7 @@ module.exports = class CTransport extends require("./connect")
 
 
             SOCKET.HashRND=crypto.randomBytes(32);
-            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr,HashRND:SOCKET.HashRND,MIN_POWER_POW_HANDSHAKE:MIN_POWER_POW_HANDSHAKE, Reserve:[]},FORMAT_POW_TO_CLIENT,300,{});
+            var BufData=BufLib.GetBufferFromObject({addrArr:SELF.addrArr, HashRND:SOCKET.HashRND, MIN_POWER_POW_HANDSHAKE:MIN_POWER_POW_HANDSHAKE, PubKeyType:SELF.PubKeyType, Sign:SELF.ServerSign, Reserve:[]}, FORMAT_POW_TO_CLIENT,300,{});
             var BufWrite=SELF.GetBufFromData("POW_CONNECT5",BufData,1);
             try
             {
@@ -1363,7 +1367,7 @@ module.exports = class CTransport extends require("./connect")
 
                 if(SOCKET.Node)
                     SELF.AddCheckErrCount(SOCKET.Node,1,"ERR##2 : socket");
-                ToError("ERR##2 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
+                //ToError("ERR##2 : socket="+SOCKET.ConnectID+"  SocketStatus="+GetSocketStatus(SOCKET));
                 //ToError(err);
             });
 
@@ -1415,6 +1419,10 @@ module.exports = class CTransport extends require("./connect")
             if(SELF.CanSend<2)
                 ToLogClient("Run TCP server on port: "+SELF.port);
             SELF.CanSend++;
+
+            var Hash=shaarr(SELF.addrStr+"-"+SELF.ip+":"+SELF.port);
+            SELF.ServerSign=secp256k1.sign(Buffer.from(Hash), SERVER.KeyPair.getPrivateKey('')).signature;
+
         });
 
     }
@@ -1522,7 +1530,7 @@ module.exports = class CTransport extends require("./connect")
             Node.BlockProcessCount--;
             if(Node.BlockProcessCount<0)
             {
-                this.AddToBan(Node);
+                this.AddToBan(Node,"BlockProcess:"+Node.BlockProcessCount);
             }
             else
             {

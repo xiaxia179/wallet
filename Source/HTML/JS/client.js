@@ -547,9 +547,21 @@ function ViewCurrent(Def,flag,This)
         {
             SetVisibleBlock(Def.BlockName,true);
         }
+        if(!IsVisibleBlock(Def.BlockName))
+            return;
     }
+
+
     var item=document.getElementById(Def.NumName);
-    ViewGrid("/"+Def.APIName+"/"+ParseNum(item.value)+"/"+CountViewRows+"/"+Def.Param3,Def.TabName,1,Def.TotalSum);
+    var Filter="";
+    if(Def.FilterName)
+    {
+        Filter=document.getElementById(Def.FilterName).value;
+    }
+    if(!Def.Param3)
+        Def.Param3="";
+
+    ViewGrid("/"+Def.APIName+"/"+ParseNum(item.value)+"/"+CountViewRows+"/"+Def.Param3+"/"+Filter,Def.TabName,1,Def.TotalSum);
 
     if(This)
         SetImg(This,Def.BlockName);
@@ -571,6 +583,16 @@ function ViewNext(Def,MaxNum)
     var item=document.getElementById(Def.NumName);
     var Num=ParseNum(item.value);
     Num+=CountViewRows;
+
+    if(Def.FilterName)
+    {
+        if(document.getElementById(Def.FilterName).value)
+        {
+            //set max row + 1
+            Num=document.getElementById(Def.TabName).MaxNum+1;
+        }
+    }
+
 
     if(Num<MaxNum)
     {
@@ -617,7 +639,7 @@ function DoStableScroll()
 
 //GRID
 var glWorkNum=0;
-function SetGridData(arr,id_name,btotal,bclear,revert)
+function SetGridData(arr,id_name,TotalSum,bclear,revert)
 {
     var htmlTable=document.getElementById(id_name);
 
@@ -640,7 +662,8 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
     for(var i=0;arr && i<arr.length;i++)
     {
         var Item=arr[i];
-        var ID=(Item.Num);
+        var ID=Item.Num;
+        htmlTable.MaxNum=Item.Num;
 
         var row=map[ID];
         if(!row)
@@ -687,7 +710,7 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
             }
         }
 
-        if(btotal)
+        if(TotalSum)
             ADD(ValueTotal,Item.Value);
     }
 
@@ -702,9 +725,9 @@ function SetGridData(arr,id_name,btotal,bclear,revert)
             delete map[key];
         }
     }
-    if(btotal)
+    if(TotalSum)
     {
-        var id = document.getElementById("idTotalSum");
+        var id = document.getElementById(TotalSum);
         id.innerText="Total: "+SUM_TO_STRING(ValueTotal,1);
 
     }
@@ -721,13 +744,13 @@ function ClearTable(htmlTable)
 }
 
 
-function ViewGrid(serverpath,nameid,bClear,bTotal)
+function ViewGrid(serverpath,nameid,bClear,TotalSum)
 {
     GetData(serverpath, function (Data)
     {
         if(!Data || !Data.result)
             return;
-        SetGridData(Data.arr,nameid,bTotal,bClear);
+        SetGridData(Data.arr,nameid,TotalSum,bClear);
     });
 }
 
@@ -774,4 +797,27 @@ function SetCheckPoint(BlockNum)
             SetStatus(Data.text,!Data.result);
         }
     });
+}
+
+
+function AddDiagramToArr(Arr,Item)
+{
+    var bWas=0;
+    for(var i=0;i<Arr.length;i++)
+    {
+        if(Arr[i].name===Item.name)
+        {
+            Item.Delete=0;
+            Arr[i]=Item;
+            bWas=1;
+            break;
+        }
+    }
+
+    if(!bWas)
+    {
+        Item.num=Arr.length;
+        Arr.push(Item);
+    }
+
 }

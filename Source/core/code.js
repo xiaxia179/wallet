@@ -27,31 +27,31 @@ module.exports = class CCode extends require("./base")
     }
     CheckLoadCodeTime()
     {
-        if(CODE_VERSION.StartLoadNode && CODE_VERSION.StartLoadVersionNum)
+        if(START_LOAD_CODE.StartLoadNode && START_LOAD_CODE.StartLoadVersionNum)
         {
-            var Delta=new Date()-CODE_VERSION.StartLoadVersionNumTime;
+            var Delta=new Date()-START_LOAD_CODE.StartLoadVersionNumTime;
             if(Delta>20*1000)
             {
-                ToError("Cannot load code version:"+CODE_VERSION.StartLoadVersionNum+" from node: "+CODE_VERSION.StartLoadNode.ip+":"+CODE_VERSION.StartLoadNode.port)
+                ToError("Cannot load code version:"+START_LOAD_CODE.StartLoadVersionNum+" from node: "+START_LOAD_CODE.StartLoadNode.ip+":"+START_LOAD_CODE.StartLoadNode.port)
                 this.ClearLoadCode();
             }
         }
     }
     ClearLoadCode()
     {
-        CODE_VERSION.StartLoad=undefined;
-        CODE_VERSION.StartLoadVersionNum=0;
-        CODE_VERSION.StartLoadVersionNumTime=0;
+        START_LOAD_CODE.StartLoad=undefined;
+        START_LOAD_CODE.StartLoadVersionNum=0;
+        START_LOAD_CODE.StartLoadVersionNumTime=0;
     }
 
     StartLoadCode(Node,CodeVersion)
     {
         var VersionNum=CodeVersion.VersionNum;
 
-        CODE_VERSION.StartLoad=CodeVersion;
-        CODE_VERSION.StartLoadNode=Node;
-        CODE_VERSION.StartLoadVersionNum=VersionNum;
-        CODE_VERSION.StartLoadVersionNumTime=new Date();
+        START_LOAD_CODE.StartLoad=CodeVersion;
+        START_LOAD_CODE.StartLoadNode=Node;
+        START_LOAD_CODE.StartLoadVersionNum=VersionNum;
+        START_LOAD_CODE.StartLoadVersionNumTime=new Date();
 
         var fname=GetDataPath("Update/wallet-"+VersionNum+".zip");
         if(fs.existsSync(fname))
@@ -102,7 +102,7 @@ module.exports = class CCode extends require("./base")
 
 
         var VersionNum=Info.Context.VersionNum;
-        if(!VersionNum || !CODE_VERSION.StartLoad)
+        if(!VersionNum || !START_LOAD_CODE.StartLoad)
             return;
 
 
@@ -112,7 +112,7 @@ module.exports = class CCode extends require("./base")
         {
             //проверка хеша
             var Hash=shaarr(Info.Data);
-            if(CompareArr(Hash,CODE_VERSION.StartLoad.Hash)===0)
+            if(CompareArr(Hash,START_LOAD_CODE.StartLoad.Hash)===0)
             {
                 var file_handle=fs.openSync(fname, "w");
                 fs.writeSync(file_handle, Info.Data,0,Info.Data.length);
@@ -124,7 +124,7 @@ module.exports = class CCode extends require("./base")
             }
             else
             {
-                ToError("Error check hash of version code :"+CODE_VERSION.StartLoadVersionNum+" from node: "+Info.Node.ip+":"+Info.Node.port)
+                ToError("Error check hash of version code :"+START_LOAD_CODE.StartLoadVersionNum+" from node: "+Info.Node.ip+":"+Info.Node.port)
                 this.ClearLoadCode();
                 this.AddCheckErrCount(Info.Node,1,"Error check hash of version code");
             }
@@ -142,13 +142,9 @@ module.exports = class CCode extends require("./base")
 
 
 
-        if(global.CODE_VERSION.StartLoad)
+        if(global.START_LOAD_CODE.StartLoad)
         {
-            global.CODE_VERSION=CODE_VERSION.StartLoad;
-            // CODE_VERSION.VersionNum=CODE_VERSION.StartLoad.VersionNum;
-            // CODE_VERSION.Hash=CODE_VERSION.StartLoad.Hash;
-            // CODE_VERSION.Sign=CODE_VERSION.StartLoad.Sign;
-
+            global.CODE_VERSION=START_LOAD_CODE.StartLoad;
             this.ClearLoadCode();
         }
     }

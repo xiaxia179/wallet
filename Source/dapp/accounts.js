@@ -29,7 +29,7 @@ global.FORMAT_CREATE=
     Currency:uint,\
     PubKey:arr33,\
     Description:str40,\
-    RefID:uint,\
+    Adviser:uint,\
     Reserve:arr7,\
     }";//1+6+33+40+6+7=93
 
@@ -152,7 +152,7 @@ class AccountApp extends require("./dapp")
             Description:str40,\
             Value:{SumTER:uint,SumCENT:uint32, OperationID:uint,Reserve:arr84},\
             BlockNumCreate:uint,\
-            RefID:uint,\
+            Adviser:uint,\
             Reserve:arr9,\
             }";
 
@@ -380,15 +380,15 @@ class AccountApp extends require("./dapp")
             if(!this.ISZERO(CoinSum))
             {
 
-                if(Data.RefID>=8 && Block.BlockNum<REF_PERIOD_END)
+                if(Data.Adviser>=8 && Block.BlockNum<REF_PERIOD_END)
                 {
-                    var RefData=this.ReadValue(Data.RefID);
+                    var RefData=this.ReadValue(Data.Adviser);
                     if(RefData && RefData.BlockNumCreate<Block.BlockNum-REF_PERIOD_MINING)
                     {
                         var K=(REF_PERIOD_END-Block.BlockNum)/(REF_PERIOD_END-REF_PERIOD_START);
                         var CoinAdv=this.COIN_FROM_FLOAT(Sum*K);
 
-                        this.SendMoney(0,Data.RefID,CoinAdv,Block.BlockNum,"Adviser coin base ["+AccountID+"]");
+                        this.SendMoney(0,Data.Adviser,CoinAdv,Block.BlockNum,"Adviser coin base ["+AccountID+"]");
                         this.ADD(CoinTotal,CoinAdv);
 
                         this.ADD(CoinSum,CoinAdv);
@@ -522,8 +522,8 @@ class AccountApp extends require("./dapp")
         Data.Num=undefined;
         Data.Value={};
         Data.BlockNumCreate=BlockNum;
-        if(Data.RefID>this.GetMaxAccount())
-            Data.RefID=0;
+        if(Data.Adviser>this.GetMaxAccount())
+            Data.Adviser=0;
         this.DBState.Write(Data);
         var Act={ID:Data.Num,BlockNum:BlockNum, PrevValue:{},Mode:1};
         this.DBAct.Write(Act);
@@ -941,9 +941,9 @@ class AccountApp extends require("./dapp")
 
 
     /////////////////////////////
-    FindAccounts(PubKeyArr)
+    FindAccounts(PubKeyArr,map,nSet)
     {
-        var map={};
+        var Count=0;
         for(var num=0;true;num++)
         {
             var Data=this.ReadState(num);
@@ -952,24 +952,26 @@ class AccountApp extends require("./dapp")
 
             if(CompareArr(Data.PubKey,PubKeyArr)===0)
             {
-                map[Data.Num]=Data.Num;
+                map[Data.Num]=nSet;
+                Count++;
             }
         }
-        return map;
+        return Count;
     }
 
-    GetWalletAccounts(map)
+    GetWalletAccountsByMap(map)
     {
         var arr=[];
         for(var key in map)
         {
-            var Num=map[key];
+            var Num=parseInt(key);
             var Data=this.ReadState(Num);
             if(Data)
             {
                 if(!Data.PubKeyStr)
                     Data.PubKeyStr=GetHexFromArr(Data.PubKey);
                 arr.push(Data);
+                Data.WN=map[key];
                 Data.Description=this.NormalizeName(Data.Description);
             }
         }
@@ -987,21 +989,48 @@ class AccountApp extends require("./dapp")
     }
 
     //Scroll
-    GetRowsAccounts(start,count)
+    GetRowsAccounts(start,count,Filter)
     {
 
+
+        var WasError=0;
         var arr=[];
-        for(var num=start;num<start+count;num++)
+        for(var num=start;true;num++)
         {
             var Data=this.ReadState(num);
             if(!Data)
                 break;
             if(!Data.PubKeyStr)
                 Data.PubKeyStr=GetHexFromArr(Data.PubKey);
-            arr.push(Data);
-
 
             Data.Description=this.NormalizeName(Data.Description);
+
+            if(Filter)
+            {
+                var Cur="TERA";
+                var ID=Data.Num;
+                var Operation=Data.Value.OperationID;
+                var Amount=this.FLOAT_FROM_COIN(Data.Value);
+                var Adviser=Data.Adviser;
+                var Name=Data.Description;
+                var PubKey=GetHexFromArr(Data.PubKey);
+                try
+                {
+                    if(!eval(Filter))
+                        continue;
+                }
+                catch (e)
+                {
+                    if(!WasError)
+                        ToLog(e);
+                    WasError=1;
+                }
+            }
+
+            arr.push(Data);
+            count--;
+            if(count<0)
+                break;
         }
         return arr;
     }
@@ -1083,6 +1112,23 @@ class AccountApp extends require("./dapp")
         var DescArr=shaarr(Item.Description);
         return shaarr2(Item.PubKey,DescArr);
     }
+
+    GetAdviserByMiner(Map,Id)
+    {
+        var Adviser=Map[Id];
+        if(Adviser===undefined)
+        {
+            var Item=this.ReadState(Id);
+            if(Item)
+                Adviser=Item.Adviser;
+            else
+                Adviser=0;
+            Map[Id]=Adviser;
+        }
+        return Adviser;
+    }
+
+
     /////////////////////////////
 
 

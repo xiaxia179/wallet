@@ -175,8 +175,8 @@ module.exports = class CDBState extends require("./db")
             this.WasUpdate=1;
             if(LastNum<0)
                 ToLog("Truncate "+this.FileName+" from 0")
-            else
-                ToLog("Truncate "+this.FileName+" after Num="+LastNum)
+            // else
+            //     ToLog("Truncate "+this.FileName+" after Num="+LastNum)
             FI.size=Position;
             fs.ftruncateSync(FI.fd,FI.size);
 

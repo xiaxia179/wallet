@@ -772,10 +772,11 @@ module.exports = class CDB extends require("../code")
 
 
     //Scroll
-    GetRows(start,count)
+    GetRows(start,count,Filter)
     {
+        var WasError=0;
         var arr=[];
-        for(var num=start;num<start+count;num++)
+        for(var num=start;true;num++)
         {
             var Block=this.ReadBlockHeaderDB(num);
             if(!Block)
@@ -786,9 +787,35 @@ module.exports = class CDB extends require("../code")
             {
                 //Block.AddrHash.len=0;
                 Block.Miner=ReadUintFromArr(Block.AddrHash,0);
+                if(Block.BlockNum<16)
+                    Block.Miner=0;
+            }
+
+
+            if(Filter)
+            {
+                var Num=Block.BlockNum;
+                var Bytes=Block.TrDataLen;
+                var Pow=Block.Power;
+                var Miner=Block.Miner;
+                var Date=DateFromBlock(Block.BlockNum);
+                try
+                {
+                    if(!eval(Filter))
+                        continue;
+                }
+                catch (e)
+                {
+                    if(!WasError)
+                        ToLog(e);
+                    WasError=1;
+                }
             }
 
             arr.push(Block);
+            count--;
+            if(count<0)
+                break;
         }
         return arr;
     }
@@ -855,16 +882,15 @@ module.exports = class CDB extends require("../code")
                 StartPos:0,
                 StartBlockNum:0,
                 Length:0,
-                "ArrPower":new Uint8Array(MAX_ARR_PERIOD),
-                "ArrPowerMy":new Uint8Array(MAX_ARR_PERIOD),
+                "ArrPower":new Float64Array(MAX_ARR_PERIOD),
+                "ArrPowerMy":new Float64Array(MAX_ARR_PERIOD),
             };
     }
 
     GetStatBlockchain(name,MinLength)
     {
-        var arr=[];
         if(!MinLength)
-            return arr;
+            return [];
 
 
         if(!this.StatMap)//init
@@ -923,11 +949,19 @@ module.exports = class CDB extends require("../code")
                         }
                     }
 
+                    // arr[i]=(Math.pow(2,Power)-1)/1000;
+                    // arrmy[i]=(Math.pow(2,PowerMy)-1)/1000;
                     arr[i]=Power;
                     arrmy[i]=PowerMy;
 
-                    ArrPower[i2]=Power;
-                    ArrPowerMy[i2]=PowerMy;
+                    if(arr[i]>10000)
+                        var sss=1;
+                    if(arr[i]<=0)
+                        var sss2=1;
+
+
+                    ArrPower[i2]=arr[i];
+                    ArrPowerMy[i2]=arrmy[i];
 
                     if(num>FinishNumStat)
                     {
@@ -946,7 +980,7 @@ module.exports = class CDB extends require("../code")
             //ToLog("CountReadDB="+CountReadDB)
 
             this.StatMap["POWER_BLOCKCHAIN"]=arr;
-            this.StatMap["MAX:WIN:POWER_MY"]=arrmy;
+            this.StatMap["POWER_MY_WIN"]=arrmy;
         }
 
 
@@ -956,6 +990,74 @@ module.exports = class CDB extends require("../code")
         return arr;
     }
 
+
+    GetStatBlockchainPeriod(StartNum,Count,MinerID,AdviserID)
+    {
+        if(!Count || Count<0)
+            Count=1000;
+
+        var arr=new Array(Count);
+        //var arrmy=new Array(Count);
+        var i=0;
+        for(var num=StartNum;num<StartNum+Count;num++)
+        {
+            var Power=0,PowerMy=0;
+            if(num<=this.BlockNumDB)
+            {
+                var Block=this.ReadBlockHeaderDB(num);
+                if(Block)
+                {
+                    Power=GetPowPower(Block.Hash);
+                    var Miner=ReadUintFromArr(Block.AddrHash,0);
+                    if(!MinerID)
+                    {
+                        if(AdviserID)
+                        {
+                            var Adviser=DApps.Accounts.GetAdviserByMiner(Map,Miner);
+                            if(Adviser===AdviserID)
+                                PowerMy=Power;
+                        }
+                        else
+                        {
+                            PowerMy=Power;
+                        }
+                    }
+                    else
+                    if(Miner===MinerID)
+                    {
+                        PowerMy=Power;
+                    }
+                }
+            }
+
+            arr[i]=PowerMy;
+            //arr[i]=(Math.pow(2,PowerMy)-1)/1000000;
+            i++;
+        }
+
+        //ToLog("CountReadDB="+CountReadDB)
+
+        //calc avg
+        var AvgValue=0;
+        for(var j=0;j<arr.length;j++)
+        {
+            if(arr[j])
+                AvgValue+=arr[j];
+        }
+        if(arr.length>0)
+            AvgValue=AvgValue/arr.length;
+
+        const MaxSizeArr=1000;
+        var StepTime=1;
+        while(arr.length>=MaxSizeArr)
+        {
+            arr=ResizeArrAvg(arr);
+            StepTime=StepTime*2;
+        }
+
+
+        return {arr:arr,AvgValue:AvgValue,steptime:StepTime};
+    }
 
 }
 

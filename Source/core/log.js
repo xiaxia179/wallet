@@ -46,14 +46,14 @@ global.ToLog=function (Str)
 }
 global.ToInfo=function (Str)
 {
-    ToLogFile(file_name_info,Str);
+    ToLogFile(file_name_info,Str,1);
 }
 global.ToError=function (Str)
 {
     ToLogFile(file_name_error,Str);
 }
 
-function ToLogFile(file_name,Str)
+function ToLogFile(file_name,Str,bNoFile)
 {
     if (Str instanceof Error)
     {
@@ -61,6 +61,9 @@ function ToLogFile(file_name,Str)
     }
 
     console.log(""+START_PORT_NUMBER+": "+GetStrOnlyTime()+": "+Str);
+
+    if(bNoFile)
+        return;
 
     SaveToLogFileSync(file_name,Str)
 }
@@ -208,7 +211,7 @@ global.GET_STATDIAGRAMS=function(Keys)
             MinLength=arr.length;
     }
 
-    const MaxSizeArr=512;
+    const MaxSizeArr=500;
 
     for(var i=0;i<Data.length;i++)
     {
@@ -221,7 +224,7 @@ global.GET_STATDIAGRAMS=function(Keys)
         }
 
         if(MinLength)
-        if(",MAX:WIN:POWER_MY,POWER_BLOCKCHAIN,".indexOf(","+ItemServer.name+",")>=0)
+        if(",POWER_MY_WIN,POWER_BLOCKCHAIN,".indexOf(","+ItemServer.name+",")>=0)
         {
             //calc from blockhain stat
             arr=SERVER.GetStatBlockchain(ItemServer.name,MinLength);
@@ -316,6 +319,8 @@ function ResizeArrAvg(arr)
     }
     return arr2;
 }
+global.ResizeArrAvg=ResizeArrAvg;
+global.ResizeArrMax=ResizeArrMax;
 
 
 function GetDiagramData(Context,Key)

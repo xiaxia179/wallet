@@ -59,7 +59,8 @@
     var CurTabName;
     var TabArr=[{name:"TabAccounts",log:1},{name:"TabSend",log:1},{name:"TabHistory"},{name:"TabExplorer"}];
     var SaveIdArr=["idAccount","idTo","idSumTER","idDescription","idSelStyle",
-        "idViewAccountNum","idViewBlockNum","idViewHistoryNum","idViewActNum","idViewHashNum","idWalletPow"];
+        "idViewAccountNum","idViewBlockNum","idViewHistoryNum","idViewActNum","idViewHashNum","idWalletPow",
+        "idRunText","idViewBlockFilter","idViewAccountFilter","idViewHistoryFilter"];
     var LoadMapAfter={};
 
 
@@ -286,17 +287,17 @@
     //ACCOUNTS
     //ACCOUNTS
     //ACCOUNTS
-//    function FindMyAccounts()
-//    {
-//        GetData("/FindMyAccounts",function (Data)
-//        {
-//           UpdatesData();
-//        });
-//
-//    }
+    function FindMyAccounts()
+    {
+        GetData("/FindMyAccounts",function (Data)
+        {
+           UpdatesData();
+        });
+
+    }
 
 
-    function NewAccount()
+    function ViewNewAccount()
     {
         var name="edit_create_acc";
         if(IsVisibleBlock(name))
@@ -319,17 +320,17 @@
     }
     function SetViewWN()
     {
-        if(CONFIG_DATA.CONSTANTS.MAX_WNUM)
-        {
-            document.getElementById("Item.WN").innerText="WN";
-            SetVisibleBlock("idRowWN","table-row");
-            SetVisibleBlock("Item.WN","table-column;");
-        }
-        else
-        {
+//        if(CONFIG_DATA.CONSTANTS.MAX_WNUM)
+//        {
+//            document.getElementById("Item.WN").innerText="WN";
+//            SetVisibleBlock("idRowWN","table-row");
+//            SetVisibleBlock("Item.WN","table-column;");
+//        }
+//        else
+//        {
             document.getElementById("Item.WN").innerText="";
             SetVisibleBlock("Item.WN","none");
-        }
+//        }
     }
     function CancelCreateAccount()
     {
@@ -345,36 +346,65 @@
             SetError("Can't Send transaction");
             return;
         }
-        var Description=document.getElementById("idAccDescription").value;
-        var Adviser=document.getElementById("idAdviser").value;
 
         WasCreateAccountInfo=PubKeyStr;
 
-        var PubKey=PubKeyStr;
+        var Description=document.getElementById("idAccDescription").value;
+        var Adviser=ParseNum(document.getElementById("idAdviser").value);
+        var WN=ParseNum(document.getElementById("idWN").value);
+
+        if(!Description)
+        {
+            SetError("Enter the account name.");
+            return;
+        }
+
+        if(WN)
+        {
+            GetData("/GetAccountKey",WN,function (Data)
+            {
+                if(Data && Data.result===1)
+                {
+                    SentTrCreateAcc(Data.PubKeyStr,Description,Adviser,1);
+                }
+            });
+        }
+        else
+        {
+            SentTrCreateAcc(PubKeyStr,Description,Adviser);
+        }
+
+    }
+
+    function SentTrCreateAcc(PubKey,Description,Adviser,bFindAcc)
+    {
+        SetStatus("Create: "+PubKey)
         var TR=
             {
                 Type:100,
                 Currency:0,
                 PubKey:PubKey,
                 Description:Description,
-                RefID:Adviser,
+                Adviser:Adviser,
             };
         var Body=[];
         WriteByte(Body,TR.Type);
         WriteUint(Body,TR.Currency);
         WriteArr(Body,GetArrFromHex(PubKey),33);
         WriteStr(Body,Description,40);
-        WriteUint(Body,TR.RefID);
+        WriteUint(Body,TR.Adviser);
         Body.length+=7;
         Body.length+=12;
 
+        TR.bFindAcc=1;
 
         TR.AutoSetMining=document.getElementById("idAutoSetMining").checked;
         SendTransaction(Body,min_power_pow_acc_create,TR);
 
-        CancelCreateAccount();
         document.getElementById("idAccDescription").value="";
+        CancelCreateAccount();
     }
+
     function CheckLengthAccDesription(name,Length)
     {
         var Str=document.getElementById(name).value.substr(0,Length+1);
@@ -920,12 +950,12 @@
 
     //Pagination
     var CountViewRows=20;
-    var DefAccounts={BlockName:"idPaginationAccount", NumName:"idViewAccountNum", TabName:"grid_accounts_all",APIName:"GetAccountsAll",Param3:"",TotalSum:1};
-    var DefBlock={BlockName:"idPaginationBlock", NumName:"idViewBlockNum", TabName:"grid_block_all",APIName:"GetBlockAll",Param3:""};
+    var DefAccounts={BlockName:"idPaginationAccount", NumName:"idViewAccountNum", TabName:"grid_accounts_all",APIName:"GetAccountsAll",Param3:"",FilterName:"idViewAccountFilter",TotalSum:"idTotalSum"};
+    var DefBlock={BlockName:"idPaginationBlock", NumName:"idViewBlockNum", TabName:"grid_block_all",APIName:"GetBlockAll",Param3:"",FilterName:"idViewBlockFilter"};
 
     //var DefTr={BlockName:"idTransactionBlock", NumName:"idViewTrNum", TabName:"grid_transaction_all",APIName:"GetTransactionAll",Param3:undefined};
 
-    var DefHistory={BlockName:"idPaginationHistory", NumName:"idViewHistoryNum", TabName:"grid_history",APIName:"GetHistoryAct",Param3:""};
+    var DefHistory={BlockName:"idPaginationHistory", NumName:"idViewHistoryNum", TabName:"grid_history",APIName:"GetHistoryAct",Param3:"",FilterName:"idViewHistoryFilter",TotalSum:"idTotalSumH"};
     var DefActs={BlockName:"idPaginationAct", NumName:"idViewActNum", TabName:"grid_acts_all",APIName:"GetActsAll",Param3:""};
     var DefHash={BlockName:"idPaginationHash", NumName:"idViewHashNum", TabName:"grid_hash_all",APIName:"GetHashAll",Param3:""};
     //History
@@ -1040,7 +1070,7 @@
 
             SelectTab('TabAccounts');
             SetVisibleBlock("edit_create_acc",false);
-            NewAccount();
+            ViewNewAccount();
         }
 
         //select list
@@ -1050,7 +1080,7 @@
             Select.options.length=arr.length;
         }
 
-        SetGridData(arr,"grid_accounts");
+        SetGridData(arr,"grid_accounts","idMyTotalSum");
         for(var i=0;arr && i<arr.length;i++)
         {
             var Item=arr[i];
@@ -1165,7 +1195,12 @@
         document.getElementById("idAdviser").max=MaxAccID;
 
         SetVisibleBlock("idDevelopService",Data.IsDevelopAccount);
-        SetVisibleBlock("idCleanChain",Data.IsDevelopAccount);
+        SetVisibleBlock("idDevelopService2",Data.IsDevelopAccount);
+//        SetVisibleBlock("idFilterA",Data.IsDevelopAccount);
+        SetVisibleBlock("idFilterB",Data.IsDevelopAccount);
+        //SetVisibleBlock("idFilterH",Data.IsDevelopAccount);
+
+
 
 
 
@@ -1227,6 +1262,7 @@
     function SetArrLog(arr)
     {
         var Str="";
+        var bFindAccount=0;
         //for(var i=arr.length-1;i>=0;i--)
         for(var i=0;i<arr.length;i++)
         {
@@ -1249,6 +1285,12 @@
                         SaveMiningSet(Select.options[Select.options.length-1].value)
                     }
                 }
+                if(TR && TR.bFindAcc)
+                {
+                    TR.bFindAcc=0;
+                    bFindAccount=1;
+                }
+
 
                 var Account=MapCheckTransaction[Item.key];
                 if(Account)
@@ -1263,6 +1305,11 @@
         }
         SetStatusFromServer(Str);
         CheckSending();
+
+        if(bFindAccount)
+        {
+            FindMyAccounts();
+        }
     }
 
 
@@ -1434,7 +1481,6 @@
         {
             UpdatesData();
         });
-
     }
 
     var PrevServerStr;
@@ -1731,7 +1777,24 @@
             },100)
 
 
-
+        if(localStorage["WasStart"]!=="1")
+        {
+            var ValText=document.getElementById("idRunText").value;
+            if(ValText && ValText!=="undefined" && ValText.trim())
+            {
+                localStorage["WasStart"]="1";
+                SetError("Run script ... Was Error?");
+                eval(ValText);
+                SetStatus("Run script ... OK");
+            }
+            localStorage["WasStart"]="0";
+        }
+    }
+    function SetRun()
+    {
+        SaveValues();
+        localStorage["WasStart"]="0";
+        SetStatus("Set to Run script");
     }
 
 
@@ -1763,7 +1826,7 @@
     function SetCodeVersion()
     {
         var Data=JSON.parse(JSON.stringify(CONFIG_DATA.CODE_VERSION));
-        if(!Data.Hash)
+        if(!Data.BlockNum)
         {
             Data.LevelUpdate=160;
         }
@@ -2155,7 +2218,7 @@
     <DIV id="wallet_config_tab" style="display: none">
         <INPUT type="button" onclick="NewPrivateKey();" class="btdoit bt" value="New wallet..." id="idDown2">
         <INPUT type="button" onclick="EditPrivateKey();SetImg(this,'edit_keys');" class="btdoit bt" value="Edit wallet" id="idDown">
-        <INPUT type="button" onclick="NewAccount();SetImg(this,'edit_create_acc');" class="btdoit bt" value="New account" id="idDown">
+        <INPUT type="button" onclick="ViewNewAccount();SetImg(this,'edit_create_acc');" class="btdoit bt" value="New account" id="idDown">
         <INPUT type="button" onclick="MiningSets();SetImg(this,'edit_mining_set');" class="btdoit bt" value="Set mining" id="idDown">
         <INPUT type="button" onclick="ViewSetPassword();itemBtPassword=this; SetImg(itemBtPassword,'idBlockPassword');" class="bt btdoit" value="Set password" id="idDown">
     </DIV>
@@ -2209,7 +2272,7 @@
     <DIV id="edit_create_acc" style="display: none">
         <table class="form_input keys" id="grid_edit_newacc">
             <tr>
-                <td><DIV>Short public name:</DIV></td>
+                <td><DIV>Public name:</DIV></td>
                 <td>
                     <INPUT type="string" maxlength="40" id="idAccDescription" onkeyup="CheckLengthAccDesription('idAccDescription',40)" value="">
                 </td>
@@ -2244,14 +2307,15 @@
         <tr>
             <th id="Item.Num" class="num">ID</th>
             <th id="SUM_TO_STRING(Item.Value)" class="sum bold">Amount</th>
-            <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
+            <th id="MapCurrency[Item.Currency]" class="cur">Cur</th>
             <th id="Item.Description" class="accname">Account name</th>
             <th id="Item.Value.OperationID" class="num">Operation</th>
-            <th id="Item.RefID" class="num">Adviser</th>
+            <th id="Item.Adviser" class="num">Adviser</th>
             <th id="Item.WN" class="num" style="width: 30px;"></th>
-
         </tr>
     </table>
+
+    <B><DIV id="idMyTotalSum"></DIV></B>
 
 
     <INPUT type="button" id="idDown" onclick="ViewNetworkMode();SetImg(this,'idNetworkView')"
@@ -2319,6 +2383,7 @@
 
 <DIV id="TabHistory" style="display: none">
     <DIV id="idPaginationHistory" style="display: none">
+        Search:<INPUT type="search" id="idViewHistoryFilter" value="" onchange="ViewCurrent(DefHistory)">
         <INPUT type="button" onclick="ViewBegin(DefHistory)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefHistory)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewHistoryNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefHistory)">
@@ -2336,10 +2401,11 @@
             <th id="Item.Description"class="desc">Description</th>
             <th id="Item.FromID" class="num">From</th>
             <th id="(GetStrID(Item.ToID,Item.ToName))" class="txt">To</th>
-            <th id="''+Item.FromID+'/'+Item.FromOperationID">Reference</th>
+            <th id="Item.FromOperationID">Operation</th>
             <th id="(RetOpenBlock(Item.BlockNum,1))" class="num">Block</th>
         </tr>
     </table>
+    <B><DIV id="idTotalSumH"></DIV></B>
     <script>
         //ACCOUNT ID
         function GetStrID(num,name)
@@ -2429,6 +2495,7 @@
     <DIV id="idPaginationAccount" style="display: none">
         <HR>
         <DIV id="view_header" >Accounts</DIV><BR>
+        JS:<INPUT type="search" id="idViewAccountFilter" value="" onchange="ViewCurrent(DefAccounts)">
         <INPUT type="button" onclick="ViewBegin(DefAccounts)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefAccounts)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewAccountNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefAccounts)">
@@ -2439,11 +2506,11 @@
             <tr>
                 <th id="Item.Num" class="num">ID</th>
                 <th id="SUM_TO_STRING(Item.Value)" class="sum smallbold">Amount</th>
-                <th id="MapCurrency[Item.Currency]" class="cur">Currency</th>
-                <th id="Item.Description" class="accname">Account name</th>
+                <th id="MapCurrency[Item.Currency]" class="cur">Cur</th>
+                <th id="Item.Description" class="accname">Name</th>
                 <th id="Item.PubKeyStr" class="pubkey">PubKey</th>
                 <th id="Item.Value.OperationID" class="num">Operation</th>
-                <th id="Item.RefID" class="num">Adviser</th>
+                <th id="Item.Adviser" class="num">Adviser</th>
                 <th id="(RetOpenBlock(Item.BlockNumCreate,1))" class="num">Block Num</th>
             </tr>
         </table>
@@ -2459,6 +2526,7 @@
     <DIV id="idPaginationBlock" style="display: none">
         <HR>
         <DIV id="view_header" >Blocks<BR></DIV>
+        <DIV id="idFilterB">JS:<INPUT type="search" id="idViewBlockFilter" value="" onchange="ViewCurrent(DefBlock)"></DIV>
         <INPUT type="button" onclick="ViewBegin(DefBlock)" class="btdoitm bt" value="|<-">
         <INPUT type="button" onclick="ViewPrev(DefBlock)" class="btdoit bt" value="<< Prev">
         <INPUT type="number" id="idViewBlockNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefBlock)">
@@ -2467,10 +2535,10 @@
 
         <table id="grid_block_all" class="grid">
             <tr>
-                <th id="(RetOpenBlock(Item.BlockNum,Item.TrDataLen))" class="num">Block</th>
+                <th id="(RetOpenBlock(Item.BlockNum,Item.TrDataLen))" class="num">Num</th>
                 <th id="(escapeHtml(DateFromBlock(Item.BlockNum)))" class="date">Date</th>
                 <th id="GetHexFromArr(Item.TreeHash)" class="hash">Data Hash</th>
-                <th id="GetHexFromArr(Item.Hash)" class="hash">Hash</th>
+                <th id="GetHexFromArr(Item.Hash)" class="hash">Block Hash</th>
                 <th id="Item.TrDataLen" class="num">Bytes</th>
                 <th id="Item.Power" class="num">Pow</th>
                 <th id="Item.Miner" class="num">Miner</th>
@@ -2539,7 +2607,17 @@
         <INPUT type="button" onclick="RewriteTransactions()"  class="bt btdoit btlong" value="Rewrite Transactions">
         <INPUT type="button" onclick="CheckBlocks()"  class="bt btdoit btlong" value="Check Blocks">
         <INPUT type="button" onclick="TruncateBlockChain()" class="btdoit btlong bt" value="Truncate chain <!>">
-        <INPUT type="button" onclick="CleanChain()"  class="bt btdoit btlong" value="Clean chain" id="idCleanChain">
+
+
+
+        <DIV id="idDevelopService2">
+        <INPUT type="button" onclick="CleanChain()"  class="bt btdoit btlong" value="Clean chain">
+            <BR>
+            <textarea id="idRunText" rows="8" cols="98" autofocus></textarea>
+            <BR>
+            <INPUT type="button" onclick="SetRun()"  class="bt btdoit" value="Set run">
+        </DIV>
+
         <BR>
 
     </DIV>
